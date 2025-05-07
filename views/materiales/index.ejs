@@ -1,0 +1,35 @@
+<% layout('layout') -%>
+<h1><%= title %></h1>
+
+<% if (success.length) { %>
+  <div class="alert alert-success"><%= success.join('<br>') %></div>
+<% } %>
+<% if (error.length) { %>
+  <div class="alert alert-danger"><%= error.join('<br>') %></div>
+<% } %>
+
+<a href="/materiales/new" class="btn btn-primary mb-3">Agregar Material</a>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Precio</th>
+      <th>Unidad</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% materials.forEach(m => { %>
+      <tr>
+        <td><%= m.id %></td>
+        <td><%= m.name %></td>
+        <td>$<%= m.price.toFixed(2) %></td>
+        <td><%= m.tipoUnidad %></td>
+      </tr>
+    <% }) %>
+    <% if (!materials.length) { %>
+      <tr><td colspan="4" class="text-center">No hay materiales aún.</td></tr>
+    <% } %>
+  </tbody>
+</table>

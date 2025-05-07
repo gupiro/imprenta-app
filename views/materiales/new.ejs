@@ -1,0 +1,57 @@
+<% layout('layout') -%>
+<h1><%= title %></h1>
+
+<% if (error.length) { %>
+  <div class="alert alert-danger"><%= error.join('<br>') %></div>
+<% } %>
+
+<form action="/materiales" method="POST" class="needs-validation" novalidate>
+  <div class="mb-3">
+    <label for="name" class="form-label">Nombre</label>
+    <input
+      type="text"
+      id="name"
+      name="name"
+      class="form-control"
+      required
+    >
+    <div class="invalid-feedback">El nombre es obligatorio.</div>
+  </div>
+  <div class="mb-3">
+    <label for="price" class="form-label">Precio</label>
+    <input
+      type="number"
+      step="0.01"
+      id="price"
+      name="price"
+      class="form-control"
+      required
+    >
+    <div class="invalid-feedback">El precio es obligatorio.</div>
+  </div>
+  <div class="mb-3">
+    <label for="tipoUnidad" class="form-label">Unidad</label>
+    <select id="tipoUnidad" name="tipoUnidad" class="form-select">
+      <option value="unidad">unidad</option>
+      <option value="metro">metro</option>
+      <option value="rollo">rollo</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-success">Crear</button>
+  <a href="/materiales" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<script>
+// JS para validación de Bootstrap (opcional)
+(() => {
+  'use strict';
+  document.querySelectorAll('.needs-validation')
+    .forEach(form => form.addEventListener('submit', e => {
+      if (!form.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }));
+})();
+</script>

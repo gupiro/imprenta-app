@@ -43,18 +43,13 @@ app.locals.basedir = app.get('views');
 // 3. Parseo de formularios
 app.use(express.urlencoded({ extended: true }));
 
-// 4. Asegurar carpeta de uploads
+// 4. Asegurar carpeta de uploads y thumbs
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-// 4.b) Asegurar carpeta de miniaturas
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const thumbsDir = path.join(uploadsDir, 'thumbs');
-if (!fs.existsSync(thumbsDir)) {
-  fs.mkdirSync(thumbsDir, { recursive: true });
-}
+if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
 
-// ─── Ruta de descarga de revisión: compresión + watermark ───
+// ─── Rutas de imágenes, watermark, etc. (tu código existente) ───
 app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
@@ -64,7 +59,6 @@ app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
       return res.status(404).send('Archivo no encontrado');
     }
 
-    // 1. Leer y comprimir/redimensionar si es calidad baja
     const inputBuffer = await fs.promises.readFile(filePath);
     let pipeline = sharp(inputBuffer);
     if (low) {
@@ -74,10 +68,7 @@ app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
     }
     const processedBuffer = await pipeline.toBuffer();
 
-    // 2. Obtener dimensiones reales
     const meta = await sharp(processedBuffer).metadata();
-
-    // 3. Preparar logo escalado para watermark
     const logoBuf  = await fs.promises.readFile(path.join(__dirname, 'public', 'logo.png'));
     const logoMeta = await sharp(logoBuf).metadata();
     const minSide  = Math.min(meta.width, meta.height);
@@ -86,7 +77,6 @@ app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
     const logoH    = Math.floor(logoMeta.height * scale);
     const logoRes  = await sharp(logoBuf).resize(logoW, logoH).png().toBuffer();
 
-    // 4. Generar mosaico de watermark
     const composites = [];
     for (let x = 0; x < meta.width; x += logoW * 2) {
       for (let y = 0; y < meta.height; y += logoH * 2) {
@@ -94,7 +84,6 @@ app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
       }
     }
 
-    // 5. Aplicar overlays y enviar PNG final
     const outBuf = await sharp(processedBuffer)
       .composite(composites)
       .png()
@@ -106,14 +95,12 @@ app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
       `attachment; filename="${path.parse(filename).name}-watermarked.png"`
     );
     return res.send(outBuf);
-
   } catch (err) {
     console.error('Error watermark:', err);
     return res.status(500).send('Error al procesar imagen');
   }
 });
 
-// ─── Ruta de /uploads para baja calidad sin watermark ───
 app.get('/uploads/:filename', async (req, res, next) => {
   const { filename } = req.params;
   const low = req.query.quality === 'low';
@@ -139,19 +126,14 @@ app.get('/uploads/:filename', async (req, res, next) => {
   }
   return next();
 });
-// ─── Ruta dinámica para servir miniaturas ───
+
 app.get('/uploads/thumbs/:filename', async (req, res, next) => {
   try {
     const { filename } = req.params;
     const origPath = path.join(uploadsDir, filename);
-    if (!fs.existsSync(origPath)) return next();     // sigue al siguiente middleware si no existe
+    if (!fs.existsSync(origPath)) return next();
 
-    // Genera miniatura de 150px de ancho (mantiene proporción)
-    const thumbBuffer = await sharp(origPath)
-      .resize({ width: 150 })
-      .toBuffer();
-
-    // Ajusta el Content-Type según la extensión original
+    const thumbBuffer = await sharp(origPath).resize({ width: 150 }).toBuffer();
     const ext = path.extname(filename).toLowerCase();
     if (ext === '.png')      res.type('image/png');
     else if (ext === '.gif') res.type('image/gif');
@@ -169,9 +151,7 @@ app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 6. Sesiones y flash
-app.use(
-  session({ secret: 'cualquier_secreto', resave: false, saveUninitialized: false })
-);
+app.use(session({ secret: 'cualquier_secreto', resave: false, saveUninitialized: false }));
 app.use(flash());
 
 // 7. Variables globales para vistas
@@ -189,11 +169,11 @@ app.use((req, res, next) => {
     { name: 'home',               label: 'Inicio',        url: '/',                     icon: 'bi-house-fill' },
     { name: 'clientes',           label: 'Clientes',      url: '/clientes',             icon: 'bi-people-fill' },
     { name: 'clientes-nuevo',     label: 'Nuevo Cliente', url: '/clientes/nuevo',       icon: 'bi-person-plus-fill' },
-    { name: 'materiales', label: 'Materiales', url: '/materiales', icon: 'bi-box-seam-fill' },
+    { name: 'materiales',         label: 'Materiales',    url: '/materiales',           icon: 'bi-box-seam-fill' },
     { name: 'pedidos-nuevo',      label: 'Nuevo Pedido',  url: '/pedidos/nuevo',        icon: 'bi-receipt-cutoff' },
     { name: 'pedidos-pendientes', label: 'Pendientes',     url: '/pedidos/pendientes',   icon: 'bi-clock-fill' },
     { name: 'pedidos-revision',   label: 'Revisión',       url: '/pedidos/revision',     icon: 'bi-pencil-square' },
-    { name: 'pedidos-impresiones',label: 'Para Imprimir', url: '/pedidos/impresiones',   icon: 'bi-printer-fill' },
+    { name: 'pedidos-impresiones',label: 'Para Imprimir',  url: '/pedidos/impresiones',  icon: 'bi-printer-fill' },
     { name: 'pedidos-terminados', label: 'Terminados',     url: '/pedidos/terminados',   icon: 'bi-check2-circle' },
     { name: 'pedidos-entregados', label: 'Entregados',     url: '/pedidos/entregados',   icon: 'bi-truck-flatbed' },
     { name: 'pedidos-historial',  label: 'Historial',      url: '/pedidos/historial',    icon: 'bi-clock-history' }
@@ -206,16 +186,11 @@ app.use((req, res, next) => {
 
 // 9. Rutas de autenticación y protegidas
 app.use('/auth', authRouter);
-app.use('/clientes', permitirRoles('Admin','Atención'),            checkPermission, clientesRouter);
-app.use('/pedidos',  permitirRoles('Admin','Atención','Impresor'), checkPermission, pedidosRouter);
-app.use('/usuarios', permitirRoles('Admin'),                      checkPermission, usuariosRouter);
-app.use(
-  '/materiales',
-  permitirRoles('Admin', 'Atención'), // ajusta roles si hace falta
-  checkPermission,
-  materialesRouter
-);
-
+app.use('/clientes',            permitirRoles('Admin','Atención'),            checkPermission, clientesRouter);
+app.use('/pedidos',             permitirRoles('Admin','Atención','Impresor'), checkPermission, pedidosRouter);
+app.use('/usuarios',            permitirRoles('Admin'),                      checkPermission, usuariosRouter);
+// Montar rutas de materiales en /materiales
+app.use('/materiales',          permitirRoles('Admin','Atención'),            checkPermission, materialesRouter);
 
 // 10. Home y 404
 app.get('/', (req, res) => res.render('home', { title: 'Panel Principal' }));

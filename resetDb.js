@@ -1,7 +1,9 @@
 // resetDb.js
 const Database = require('better-sqlite3');
 const path     = require('path');
-const bcrypt   = require('bcrypt');
+const bcrypt   = require('bcryptjs');
+
+
 
 // Ruta a la base de datos
 const DB_PATH = path.join(__dirname, 'imprenta.db');

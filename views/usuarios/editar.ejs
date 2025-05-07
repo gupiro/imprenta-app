@@ -1,0 +1,31 @@
+<%- include('../partials/header', { title }) %>
+
+<h1 class="mb-4">Editar Usuario</h1>
+
+<form action="/usuarios/editar/<%= usuario.id %>" method="POST" class="formulario bg-white p-4 rounded shadow-sm">
+  <div class="mb-3">
+    <label for="username" class="form-label">Nombre de usuario</label>
+    <input type="text" id="username" name="username" class="form-control" value="<%= usuario.username %>" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="password" class="form-label">Contraseña (texto plano)</label>
+    <input type="text" id="password" name="password" class="form-control" value="<%= usuario.password %>" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="rol" class="form-label">Rol</label>
+    <select id="rol" name="rol" class="form-select" required>
+      <option value="Admin"    <%= usuario.rol === 'Admin'    ? 'selected' : '' %>>Admin</option>
+      <option value="Atención" <%= usuario.rol === 'Atención' ? 'selected' : '' %>>Atención</option>
+      <option value="Impresor" <%= usuario.rol === 'Impresor' ? 'selected' : '' %>>Impresor</option>
+    </select>
+  </div>
+
+  <div class="mt-4 d-flex justify-content-between">
+    <a href="/usuarios/listado" class="btn btn-secondary">Cancelar</a>
+    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+  </div>
+</form>
+
+<%- include('../partials/footer') %>

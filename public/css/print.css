@@ -1,0 +1,60 @@
+/* Estilos para impresión o PDF */
+
+@media print {
+    body {
+      font-family: 'Arial', sans-serif;
+      color: #000;
+      background: #fff;
+      font-size: 12px;
+      margin: 0;
+      padding: 0;
+    }
+  
+    h1, h2, h3, h4 {
+      color: #000;
+      font-weight: bold;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+  
+    .no-print {
+      display: none !important;
+    }
+  
+    .container {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+  
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+  
+    .table th, .table td {
+      border: 1px solid #444;
+      padding: 4px 8px;
+      text-align: left;
+    }
+  
+    .table th {
+      background-color: #eee;
+    }
+  
+    .alert, .btn, .navbar, footer {
+      display: none !important;
+    }
+  
+    .print-title {
+      font-size: 18px;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+  
+    .page-break {
+      page-break-before: always;
+    }
+  }
+  

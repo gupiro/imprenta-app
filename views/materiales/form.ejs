@@ -1,0 +1,99 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4" style="max-width:600px; margin:auto;">
+  <h1 class="mb-4 text-center"><%= title %></h1>
+
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger"><%= error.join('<br>') %></div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success"><%= success.join('<br>') %></div>
+  <% } %>
+
+  <form
+    action="<%= material.id ? '/materiales/editar/' + material.id : '/materiales/nuevo' %>"
+    method="POST"
+    class="needs-validation"
+    novalidate
+  >
+    <div class="mb-3">
+      <label for="name" class="form-label">Nombre</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        class="form-control"
+        required
+        value="<%= material.name || '' %>"
+      />
+      <div class="invalid-feedback">El nombre es obligatorio.</div>
+    </div>
+
+    <div class="mb-3">
+      <label for="price" class="form-label">Precio</label>
+      <input
+        type="number"
+        step="0.01"
+        id="price"
+        name="price"
+        class="form-control"
+        required
+        value="<%= material.price || '' %>"
+      />
+      <div class="invalid-feedback">El precio es obligatorio.</div>
+    </div>
+
+    <div class="mb-3">
+      <label for="tipoUnidad" class="form-label">Tipo de Unidad</label>
+      <select id="tipoUnidad" name="tipoUnidad" class="form-select" required>
+        <option value="">-- Elige tipo --</option>
+        <option value="unidad" <%= material.tipoUnidad==='unidad' ? 'selected' : '' %>>
+          Unidad
+        </option>
+        <option value="m2" <%= material.tipoUnidad==='m2' ? 'selected' : '' %>>
+          Metro cuadrado
+        </option>
+      </select>
+      <div class="invalid-feedback">El tipo de unidad es obligatorio.</div>
+    </div>
+
+    <div class="mb-3">
+      <label for="unit" class="form-label">Unidad (ej. “m”, “kg”, “u”)</label>
+      <input
+        type="text"
+        id="unit"
+        name="unit"
+        class="form-control"
+        required
+        value="<%= material.unit || '' %>"
+      />
+      <div class="invalid-feedback">La unidad es obligatoria.</div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <a href="/materiales" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <%= material.id ? 'Actualizar' : 'Crear' %>
+      </button>
+    </div>
+  </form>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+  // Bootstrap validation
+  (function () {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>

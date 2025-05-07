@@ -1,0 +1,39 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h1 class="mb-4">Historial de Pedidos de <%= cliente.name %></h1>
+
+  <div class="mb-3">
+    <a href="/pedidos/nuevo?clienteId=<%= cliente.id %>" class="btn btn-success">
+      ➕ Crear nuevo pedido
+    </a>
+    <a href="/clientes" class="btn btn-secondary">← Volver a Clientes</a>
+  </div>
+
+  <% if (pedidos.length > 0) { %>
+    <div class="list-group">
+      <% pedidos.forEach(p => { %>
+        <a href="/pedidos/detalle/<%= p.id %>"
+           class="list-group-item list-group-item-action">
+          <div class="d-flex justify-content-between">
+            <div>
+              <strong>#<%= p.id %></strong> – <%= p.fecha %>
+            </div>
+            <div>
+              <strong>Total:</strong> $<%= Math.round(p.precio||0) %>
+            </div>
+          </div>
+          <% if (p.productos.length) { %>
+            <small class="text-muted">Productos:
+              <%= p.productos.map(x => `${x.material} (${x.ancho}×${x.alto})`).join(', ') %>
+            </small>
+          <% } %>
+        </a>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="alert alert-info">Este cliente no tiene pedidos aún.</div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>

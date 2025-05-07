@@ -1,0 +1,13 @@
+<h1>Gestión de Usuarios</h1>
+<a href="/usuarios/nuevo" class="btn btn-primary mb-3">Nuevo Usuario</a>
+<table class="table">
+  <thead><tr><th>Usuario</th><th>Rol</th></tr></thead>
+  <tbody>
+    <% usuarios.forEach(u => { %>
+      <tr>
+        <td><%= u.username %></td>
+        <td><%= u.rol %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>

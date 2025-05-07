@@ -1,0 +1,94 @@
+<% /* form.ejs */ %>
+
+<div class="row justify-content-center py-4" style="max-width:600px; margin:auto;">
+  <h1 class="mb-4 text-center"><%= title %></h1>
+
+  <form
+    action="<%= client.id ? '/clientes/editar/' + client.id : '/clientes/nuevo' %>"
+    method="POST"
+    class="needs-validation"
+    novalidate
+  >
+    <div class="mb-3">
+      <label for="name" class="form-label">Nombre</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        class="form-control"
+        required
+        value="<%= client.name || '' %>"
+      />
+      <div class="invalid-feedback">El nombre es obligatorio.</div>
+    </div>
+
+    <div class="mb-3">
+      <label for="address" class="form-label">Dirección</label>
+      <input
+        type="text"
+        id="address"
+        name="address"
+        class="form-control"
+        value="<%= client.address || '' %>"
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label">Teléfono</label>
+      <input
+        type="text"
+        id="phone"
+        name="phone"
+        class="form-control"
+        value="<%= client.phone || '' %>"
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Email</label>
+      <input
+        type="email"
+        id="email"
+        name="email"
+        class="form-control"
+        value="<%= client.email || '' %>"
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="cuit" class="form-label">CUIT</label>
+      <input
+        type="text"
+        id="cuit"
+        name="cuit"
+        class="form-control"
+        required
+        value="<%= client.cuit || '' %>"
+      />
+      <div class="invalid-feedback">El CUIT es obligatorio.</div>
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <a href="/clientes" class="btn btn-secondary">Cancelar</a>
+      <button type="submit" class="btn btn-primary">
+        <%= client.id ? 'Actualizar Cliente' : 'Crear Cliente' %>
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function () {
+    'use strict';
+    const forms = document.querySelectorAll('.needs-validation');
+    Array.from(forms).forEach(form => {
+      form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+  })();
+</script>

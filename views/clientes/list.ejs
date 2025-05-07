@@ -1,0 +1,76 @@
+<%- include('../partials/header', { title: 'Clientes' }) %>
+
+<main class="container py-4">
+  <h1 class="mb-4">👥 Clientes</h1>
+
+  <div class="mb-3">
+    <a href="/clientes/nuevo" class="btn btn-primary">+ Nuevo Cliente</a>
+  </div>
+
+  <% if (clients.length) { %>
+    <table class="table table-striped align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Teléfono</th>
+          <th>Email</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% clients.forEach(client => { %>
+          <tr>
+            <td><%= client.id %></td>
+            <td><%= client.name %></td>
+            <td><%= client.phone %></td>
+            <td><%= client.email %></td>
+            <td class="text-center">
+              <!-- Ver Historial -->
+              <a 
+                href="/clientes/<%= client.id %>/historial" 
+                class="btn btn-sm btn-info me-1"
+              >Historial</a>
+              
+              <!-- Editar -->
+              <a 
+                href="/clientes/editar/<%= client.id %>" 
+                class="btn btn-sm btn-warning me-1"
+              >Editar</a>
+              
+              <!-- Eliminar con clave -->
+              <form 
+                action="/clientes/eliminar/<%= client.id %>" 
+                method="POST" 
+                class="d-inline"
+                onsubmit="return pedirClave(this, '<%= client.name %>');"
+              >
+                <button class="btn btn-sm btn-danger">Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <div class="alert alert-info">No hay clientes aún.</div>
+  <% } %>
+</main>
+
+<%- include('../partials/footer') %>
+
+<script>
+function pedirClave(form, nombreCliente) {
+  const clave = prompt(`Introduce la clave para eliminar al cliente "${nombreCliente}":`);
+  if (!clave) {
+    alert('Operación cancelada.');
+    return false;
+  }
+  const inputClave = document.createElement('input');
+  inputClave.type = 'hidden';
+  inputClave.name = 'clave';
+  inputClave.value = clave;
+  form.appendChild(inputClave);
+  return true;
+}
+</script>

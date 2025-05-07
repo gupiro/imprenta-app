@@ -1,0 +1,131 @@
+<%- include('../partials/header') %>
+
+<style>
+  .tarjeta-terminado {
+    background: linear-gradient(135deg, #f9f9f9, #e0f7ff);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    border-left: 6px solid #0d6efd;
+    border-radius: 10px;
+  }
+  .tarjeta-terminado:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  }
+  .imagen-previa {
+    max-width: 160px;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+  }
+  .btn-pagar {
+    transition: all 0.2s ease-in-out;
+  }
+  .btn-pagar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
+  }
+</style>
+
+<h1 class="mb-4 text-center">🖨️ Trabajos Terminados para Entregar</h1>
+
+<% if ((Array.isArray(error) && error.length) || (!Array.isArray(error) && error)) { %>
+  <div class="alert alert-danger text-center">
+    <%= Array.isArray(error) ? error.join('<br>') : error %>
+  </div>
+<% } %>
+<% if ((Array.isArray(success) && success.length) || (!Array.isArray(success) && success)) { %>
+  <div class="alert alert-success text-center">
+    <%= Array.isArray(success) ? success.join('<br>') : success %>
+  </div>
+<% } %>
+
+<% if (pedidos.length > 0) { %>
+  <div class="d-flex flex-column gap-3">
+    <% pedidos.forEach(pedido => {
+         // Calcular saldo pendiente
+         let saldo  = Math.round(pedido.monto_restante || 0);
+
+         // Normalizar teléfono y asegurar prefijo +549
+         let raw    = pedido.telefono || '';
+         let digits = raw.replace(/\D/g, '');
+         let tel    = digits.startsWith('549') ? digits : '549' + digits;
+
+         // Construir mensaje cordial sin número de trabajo
+         let msg  = `Hola ${pedido.cliente_nombre}, tu trabajo ya está listo para retirar.`;
+             msg += ` Tu saldo pendiente es $${saldo}.`;
+             msg += ` ¡Muchas gracias por elegirnos y esperamos tu visita!`;
+    %>
+      <div class="tarjeta-terminado p-3 shadow-sm d-flex gap-3 align-items-center flex-wrap">
+        
+        <% if (pedido.imagen) { %>
+          <img src="/uploads/<%= pedido.imagen %>" alt="Diseño Final" class="imagen-previa">
+        <% } else { %>
+          <div class="imagen-previa bg-light d-flex justify-content-center align-items-center text-muted">
+            Sin imagen
+          </div>
+        <% } %>
+
+        <div class="flex-grow-1">
+          <h5 class="mb-1 text-primary">📌 <%= pedido.cliente_nombre %></h5>
+          <div class="small">
+            📞 <strong>Teléfono:</strong> <%= pedido.telefono || 'No disponible' %><br>
+            📦 <strong>Material:</strong> <%= pedido.material %><br>
+            📝 <strong>Descripción:</strong> <%= pedido.descripcion %><br>
+            💵 <strong>Precio:</strong> $<%= pedido.precio ? Math.round(pedido.precio) : 0 %><br>
+            💸 <strong>Saldo:</strong> $<%= saldo %><br>
+            📅 <strong>Fecha:</strong> <%= pedido.fecha %>
+          </div>
+        </div>
+
+        <div class="text-end d-flex flex-column align-items-end gap-2">
+          <!-- 1) Botón WhatsApp -->
+          <a
+            href="https://wa.me/<%= tel %>?text=<%= encodeURIComponent(msg) %>"
+            target="_blank"
+            class="btn btn-success btn-sm"
+          >
+            <i class="bi bi-whatsapp"></i> Avisar cliente
+          </a>
+
+          <!-- 2) Botón para Entregar -->
+          <form action="/pedidos/<%= pedido.id %>/entregar" method="POST" class="w-100 mb-2">
+            <input
+              type="number"
+              name="monto_extra"
+              step="0.01"
+              class="form-control form-control-sm mb-1"
+              placeholder="💰 Pago parcial (opcional)"
+            >
+            <button class="btn btn-warning btn-sm w-100">
+              ✅ Entregar trabajo
+            </button>
+          </form>
+
+          <!-- 3) Botón para Marcar como Pagado -->
+          <form action="/pedidos/<%= pedido.id %>/pagar" method="POST" class="w-100">
+            <select name="forma_pago" class="form-select form-select-sm mb-1" required>
+              <option value="" disabled selected>Forma de pago</option>
+              <option value="EFECTIVO">Efectivo</option>
+              <option value="TARJETA">Tarjeta</option>
+              <option value="TRANSFERENCIA">Transferencia</option>
+            </select>
+            <button class="btn btn-success btn-sm btn-pagar w-100">
+              💵 Marcar como Pagado
+            </button>
+          </form>
+        </div>
+
+      </div>
+    <% }); %>
+  </div>
+<% } else { %>
+  <div class="alert alert-info text-center">
+    No hay trabajos terminados todavía. 🕐
+  </div>
+<% } %>
+
+<div class="text-center mt-4">
+  <a href="/" class="btn btn-secondary">← Volver al Inicio</a>
+</div>
+
+<%- include('../partials/footer') %>

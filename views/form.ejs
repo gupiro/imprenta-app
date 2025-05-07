@@ -1,0 +1,32 @@
+<%- include('partials/header') %>
+
+<main class="container py-4" style="max-width:600px;">
+  <h1 class="mb-4"><%= title %></h1>
+  <form action="<%= client.id ? '/clientes/editar/' + client.id : '/clientes' %>" method="POST">
+    <div class="mb-3">
+      <label class="form-label">Nombre</label>
+      <input type="text" name="name" class="form-control" required value="<%= client.name || '' %>">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Dirección</label>
+      <input type="text" name="address" class="form-control" value="<%= client.address || '' %>">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Teléfono</label>
+      <input type="text" name="phone" class="form-control" value="<%= client.phone || '' %>">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Email</label>
+      <input type="email" name="email" class="form-control" value="<%= client.email || '' %>">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">CUIT</label>
+      <input type="text" name="cuit" class="form-control" value="<%= client.cuit || '' %>">
+    </div>
+    <button type="submit" class="btn btn-primary">
+      <%= client.id ? 'Actualizar Cliente' : 'Crear Cliente' %>
+    </button>
+  </form>
+</main>
+
+<%- include('partials/footer') %>

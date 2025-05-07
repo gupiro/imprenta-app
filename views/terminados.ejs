@@ -1,0 +1,84 @@
+<%- include('partials/header') %>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Trabajos Terminados para Entregar</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/estilos.css">
+</head>
+
+<body class="container py-5">
+
+<h1 class="mb-4 text-center">✅ Trabajos Terminados para Entregar</h1>
+
+<% if (pedidos.length > 0) { %>
+  <% pedidos.forEach(function(pedido) { 
+       const telefono = (pedido.telefono || '').replace(/\D/g, ''); 
+       const mensaje = encodeURIComponent(`Hola ${pedido.cliente_nombre}, tu trabajo ya está listo para retirar. ¡Gracias por confiar en nosotros!`);
+  %>
+    <div class="card mb-4 shadow w-100">
+      <div class="row g-0 align-items-center">
+        <div class="col-md-3 text-center p-3">
+          <img src="/uploads/<%= pedido.imagen || 'default.png' %>" alt="Imagen Pedido" class="img-fluid rounded" style="max-height: 200px; object-fit: cover;">
+        </div>
+        <div class="col-md-9">
+          <div class="card-body">
+            <h5 class="card-title mb-1">Cliente: <%= pedido.cliente_nombre %></h5>
+            <p class="card-text mb-1">
+              <strong>Material:</strong> <%= pedido.material %> |
+              <strong>Descripción:</strong> <%= pedido.descripcion %>
+            </p>
+            <p class="card-text mb-1">
+              <strong>Precio:</strong> $<%= pedido.precio ? Math.round(pedido.precio) : 0 %> |
+              <strong>Saldo:</strong> $<%= pedido.monto_restante ? Math.round(pedido.monto_restante) : 0 %>
+            </p>
+            <p class="card-text"><small class="text-muted">Fecha: <%= pedido.fecha %></small></p>
+
+            <div class="row">
+              <div class="col-md-4">
+                <form action="/pedidos/<%= pedido.id %>/pagar" method="POST">
+                  <select name="forma_pago" class="form-select mb-2" required>
+                    <option value="" disabled selected>Forma de pago</option>
+                    <option value="EFECTIVO">Efectivo</option>
+                    <option value="TARJETA">Tarjeta</option>
+                    <option value="TRANSFERENCIA">Transferencia</option>
+                  </select>
+                  <button type="submit" class="btn btn-success w-100">💵 Marcar como Pagado</button>
+                </form>
+              </div>
+
+              <div class="col-md-4">
+                <form action="/pedidos/<%= pedido.id %>/entregar" method="POST">
+                  <input type="number" step="0.01" min="0" name="monto_extra" placeholder="💰 Pago parcial (opcional)" class="form-control mb-2">
+                  <button type="submit" class="btn btn-warning w-100">✅ Entregar trabajo</button>
+                </form>
+              </div>
+
+              <div class="col-md-4 d-grid gap-2">
+                <% if (telefono) { %>
+                  <a class="btn btn-outline-info mb-2" target="_blank" href="https://wa.me/54<%= telefono %>?text=<%= mensaje %>">
+                    📲 Enviar WhatsApp
+                  </a>
+                <% } %>
+
+                <form action="/pedidos/<%= pedido.id %>/eliminar" method="POST" onsubmit="return confirm('¿Seguro que querés eliminar este pedido? 😨')">
+                  <button type="submit" class="btn btn-outline-danger w-100">🗑️ Eliminar</button>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  <% }) %>
+<% } else { %>
+  <div class="alert alert-info text-center">
+    No hay trabajos terminados para entregar todavía. 🕐
+  </div>
+<% } %>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+<%- include('partials/header') %>
+
+<main class="container py-4" style="max-width:600px;">
+  <h1 class="mb-4">➕ Nuevo Cliente</h1>
+
+  <form action="/clientes" method="POST">
+    <div class="mb-3">
+      <label for="name" class="form-label">Nombre</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        class="form-control"
+        placeholder="Ej. Juan Pérez"
+        required
+      >
+    </div>
+
+    <div class="mb-3">
+      <label for="address" class="form-label">Dirección</label>
+      <input
+        type="text"
+        id="address"
+        name="address"
+        class="form-control"
+        placeholder="Calle Falsa 123"
+      >
+    </div>
+
+    <div class="mb-3">
+      <label for="phone" class="form-label">Teléfono</label>
+      <input
+        type="tel"
+        id="phone"
+        name="phone"
+        class="form-control"
+        placeholder="(011) 1234-5678"
+      >
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Email</label>
+      <input
+        type="email"
+        id="email"
+        name="email"
+        class="form-control"
+        placeholder="cliente@ejemplo.com"
+      >
+    </div>
+
+    <div class="mb-3">
+      <label for="cuit" class="form-label">CUIT</label>
+      <input
+        type="text"
+        id="cuit"
+        name="cuit"
+        class="form-control"
+        placeholder="20-12345678-9"
+      >
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+      <a href="/clientes" class="btn btn-secondary">
+        ← Volver a Clientes
+      </a>
+      <button type="submit" class="btn btn-primary">
+        💾 Crear Cliente
+      </button>
+    </div>
+  </form>
+</main>
+
+<%- include('partials/footer') %>

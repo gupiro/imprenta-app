@@ -1,0 +1,126 @@
+<%- include('../partials/header', { title: 'Historial de Trabajos' }) %>
+
+<style>
+  .tarjeta-pedido {
+    background: linear-gradient(135deg, #f0f4ff, #e1ecff);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    border: none;
+    border-radius: 6px;
+  }
+
+  .tarjeta-pedido:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-repetir {
+    transition: all 0.2s ease-in-out;
+  }
+
+  .btn-repetir:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+  }
+
+  .imagen-previa {
+    width: 120px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 10px;
+  }
+</style>
+
+<h1 class="text-center mb-4">📚 Historial de Trabajos</h1>
+
+<!-- ——— Formulario de filtrado + Exportar PDF ——— -->
+<form action="/pedidos/historial" method="GET" class="row g-2 mb-4 align-items-end">
+  <div class="col-auto">
+    <label for="start" class="form-label">Fecha desde:</label>
+    <input type="date" id="start" name="start"
+      value="<%= typeof start !== 'undefined' ? start : '' %>"
+      class="form-control form-control-sm">
+  </div>
+  <div class="col-auto">
+    <label for="end" class="form-label">Fecha hasta:</label>
+    <input type="date" id="end" name="end"
+      value="<%= typeof end !== 'undefined' ? end : '' %>"
+      class="form-control form-control-sm">
+  </div>
+  <div class="col-auto">
+    <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+  </div>
+  <div class="col-auto">
+    <a
+      href="/pedidos/historial/pdf?<%= start ? 'start='+start : '' %><%= end ? '&end='+end : '' %>"
+      target="_blank"
+      class="btn btn-outline-dark btn-sm"
+    >📄 Exportar PDF</a>
+  </div>
+</form>
+
+<% if (pedidos.length > 0) { %>
+  <div class="d-flex flex-column gap-3">
+    <% pedidos.forEach(function(pedido) { %>
+      <div class="tarjeta-pedido p-3 d-flex justify-content-between align-items-start flex-wrap shadow-sm">
+        <!-- Miniatura -->
+        <% if (pedido.imagen) { %>
+          <img
+            src="/uploads/<%= pedido.imagen %>"
+            alt="Miniatura Pedido"
+            class="imagen-previa"
+          >
+        <% } %>
+
+        <div class="flex-grow-1">
+          <h5 class="mb-1 text-primary">📌 <%= pedido.cliente_nombre %></h5>
+          <div class="small">
+            💵 <strong>Precio:</strong> $<%= Math.round(pedido.precio||0) %><br>
+            💳 <strong>Pago:</strong> <%= pedido.forma_pago || 'N/D' %><br>
+            📅 <strong>Fecha:</strong> <%= pedido.fecha_pago || 'N/D' %>
+          </div>
+
+          <% if (pedido.productos.length) { %>
+            <div class="lista-productos mt-2">
+              <strong>Productos:</strong>
+              <ul class="mb-0">
+                <% pedido.productos.forEach(function(prod) { %>
+                  <li><%= prod.material %> (<%= prod.ancho %>m × <%= prod.alto %>m)</li>
+                <% }) %>
+              </ul>
+            </div>
+          <% } %>
+        </div>
+
+        <form action="/pedidos/<%= pedido.id %>/repetir" method="GET" class="mt-2">
+          <button class="btn btn-success btn-sm btn-repetir">🔁 Repetir trabajo</button>
+        </form>
+      </div>
+    <% }) %>
+  </div>
+
+  <div class="alert alert-info text-center mt-4">
+    💰 Total ingresado hoy: <strong>$<%= totalDia || 0 %></strong>
+  </div>
+<% } else { %>
+  <div class="alert alert-info text-center">
+    No hay trabajos en el historial todavía. 🕐
+  </div>
+<% } %>
+
+<div class="text-center mt-4">
+  <a href="/" class="btn btn-secondary">← Volver al Inicio</a>
+</div>
+
+<%- include('../partials/footer') %>
+
+<script>
+  function pedirClaveHistorialPedidos() {
+    const clave = prompt("Introduce la clave para acceder al historial de pedidos:");
+    if (!clave) {
+      alert('Operación cancelada.');
+      return false;
+    }
+    window.location.href = `/pedidos/historial?clave=${encodeURIComponent(clave)}`;
+  }
+</script>

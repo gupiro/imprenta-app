@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+
+<h1 class="mb-4">👥 Gestión de Usuarios</h1>
+
+<a href="/usuarios/registro" class="btn btn-primary mb-3">➕ Nuevo Usuario</a>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Usuario</th>
+      <th>Rol</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% usuarios.forEach(user => { %>
+      <tr>
+        <td><%= user.username %></td>
+        <td><%= user.rol %></td>
+        <td>
+          <form method="POST" action="/usuarios/eliminar/<%= user.id %>" onsubmit="return confirm('¿Eliminar este usuario?')">
+            <button class="btn btn-sm btn-danger">🗑️ Eliminar</button>
+          </form>
+        </td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>
+
+<%- include('../partials/footer') %>

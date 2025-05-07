@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Historial de Trabajos</title>
+  <style>
+    /* Elimina márgenes por defecto */
+    body { font-family: sans-serif; margin: 0; padding: 0; }
+
+    /* Cabecera con logo pegado arriba */
+    .pdf-header {
+      text-align: center;
+      margin: 0;
+      padding: 10px 0;
+    }
+    .pdf-header img {
+      width: 120px;
+    }
+
+    /* Tabla de contenidos */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 4mm;
+    }
+    th, td {
+      border: 1px solid #555;
+      padding: 4px;
+      font-size: 10pt;
+    }
+    th {
+      background: #eee;
+    }
+    tfoot td {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="pdf-header">
+    <img src="Images/logo.png" alt="Logo Empresa">
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Cliente</th>
+        <th>Producto (m × m)</th>
+        <th style="text-align:right">Precio</th>
+        <th style="text-align:center">Pago</th>
+        <th style="text-align:center">Fecha Pago</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% let total = 0; %>
+      <% pedidos.forEach(p => { %>
+        <% p.productos.forEach(prod => { %>
+          <tr>
+            <td><%= p.cliente_nombre %></td>
+            <td><%= prod.material %> (<%= prod.ancho %>×<%= prod.alto %>)</td>
+            <td style="text-align:right">$<%= Math.round(p.precio||0) %></td>
+            <td style="text-align:center"><%= p.forma_pago || 'N/D' %></td>
+            <td style="text-align:center"><%= p.fecha_pago || 'N/D' %></td>
+          </tr>
+          <% total += p.precio||0; %>
+        <% }) %>
+      <% }) %>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="2">TOTAL</td>
+        <td style="text-align:right">$<%= Math.round(total) %></td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+</body>
+</html>

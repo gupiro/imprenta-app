@@ -1,0 +1,98 @@
+<%- include('../partials/header', { title: 'Trabajos Entregados' }) %>
+
+<style>
+  .tarjeta-entregado {
+    background: linear-gradient(135deg, #f9f9f9, #e0f7ff);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    border-left: 6px solid #0d6efd;
+    border-radius: 10px;
+  }
+  .tarjeta-entregado:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  }
+  .btn-pagar {
+    transition: all 0.2s ease-in-out;
+  }
+  .btn-pagar:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
+  }
+  .imagen-previa {
+    max-width: 160px;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 10px;
+  }
+</style>
+
+<h1 class="mb-4 text-center">📦 Trabajos Entregados</h1>
+
+<% if (pedidos && pedidos.length) { %>
+  <div class="d-flex flex-column gap-3">
+    <% pedidos.forEach(pedido => {
+      const saldo = Math.round(pedido.monto_restante || 0);
+      const fechaEntrega = pedido.fecha_entrega ? new Date(pedido.fecha_entrega) : null;
+      const fechaEntregaStr = fechaEntrega
+        ? fechaEntrega.toISOString().substring(0,10)
+        : 'Sin fecha';
+      const diasDesde = fechaEntrega
+        ? Math.floor((Date.now() - fechaEntrega.getTime()) / (1000*60*60*24))
+        : null;
+    %>
+      <div class="tarjeta-entregado p-3 shadow-sm">
+        <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
+          <% if (pedido.imagen) { %>
+            <img src="/uploads/<%= pedido.imagen %>" class="imagen-previa" alt="Preview">
+          <% } %>
+          <div class="flex-grow-1">
+            <h5 class="mb-1 text-primary">📌 <%= pedido.cliente_nombre %></h5>
+            <div class="small">
+              📞 <strong>Teléfono:</strong> <%= pedido.telefono || 'No disponible' %><br>
+              ✉️ <strong>Email:</strong> <%= pedido.email || 'No disponible' %><br>
+              💵 <strong>Precio:</strong> $<%= Math.round(pedido.precio||0) %><br>
+              💸 <strong>Saldo:</strong> $<%= saldo %><br>
+              📅 <strong>Entregado:</strong> <%= fechaEntregaStr %>
+              <% if (diasDesde !== null) { %>(hace <%= diasDesde %> días)<% } %>
+            </div>
+          </div>
+          <div class="text-end">
+            <% if (saldo > 0) { %>
+              <div class="alert alert-warning p-2 mb-2">⚠️ Saldo pendiente</div>
+              <button class="btn btn-outline-success btn-sm mb-2" onclick="mostrarFormulario('<%= pedido.id %>')">
+                💵 Pagar saldo
+              </button>
+              <form id="form-<%= pedido.id %>" action="/pedidos/<%= pedido.id %>/completar-pago"
+                    method="POST" class="d-none mt-2">
+                <div class="input-group input-group-sm">
+                  <input type="number" name="monto_pagado" class="form-control"
+                         min="0.01" max="<%= saldo %>" step="0.01" required>
+                  <button type="submit" class="btn btn-success">Confirmar</button>
+                </div>
+              </form>
+            <% } else { %>
+              <div class="alert alert-success p-2 mt-3">✅ Totalmente pagado</div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } else { %>
+  <div class="alert alert-info text-center">No hay trabajos entregados aún. 🕐</div>
+<% } %>
+
+<div class="text-center mt-4">
+  <a href="/" class="btn btn-secondary">← Volver al Inicio</a>
+</div>
+
+<script>
+  function mostrarFormulario(id) {
+    document.querySelectorAll("form[id^='form-']").forEach(f => f.classList.add('d-none'));
+    const form = document.getElementById('form-' + id);
+    if (form) form.classList.remove('d-none');
+  }
+</script>
+
+<%- include('../partials/footer') %>

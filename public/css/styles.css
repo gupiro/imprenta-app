@@ -1,0 +1,279 @@
+:root {
+  --pink: #F2668B;
+  --pink-dark: #D3546E;
+  --teal: #025E73;
+  --teal-dark: #014A5A;
+  --cyan: #026873;
+  --cyan-dark: #014D5A;
+  --sea: #03A688;
+  --sea-dark: #02806E;
+  --dark: #011F26;
+  --dark-light: #0D2D34;
+
+  --bg-light: #F8F9FA;
+  --bg-light-dark: #E9ECEF;
+
+  --card-radius: 1.5rem;
+
+  /* CMYK Pop */
+  --c: #00B7EB;
+  --m: #E4007C;
+  --y: #FFD100;
+  --k: #333333;
+
+  /* Retro Offset */
+  --coral: #FF6F61;
+  --mint:  #98DDCA;
+  --mustard: #F8B400;
+}
+
+/* BODY: degradado con ruido mejorado */
+body {
+  background: 
+    linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%),
+    url('data:image/svg+xml;utf8,\
+      <svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" opacity="0.06">\
+        <circle cx="3" cy="3" r="1.5" fill="black"/>\
+      </svg>') repeat;
+  background-attachment: fixed;
+  background-blend-mode: overlay;
+  color: #333333;
+}
+
+/* NAVBAR ANIMADO */
+.animated-navbar {
+  background: linear-gradient(45deg, var(--dark), var(--dark-light), #000);
+  background-size: 400% 400%;
+  animation: gradientBG 15s ease infinite;
+}
+@keyframes gradientBG {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* IMAGOTIPO */
+.logo {
+  height: 40px;
+  width: auto;
+}
+
+/* ÍCONOS DE NAVEGACIÓN */
+.nav-icon-list {
+  display: flex;
+  gap: 0.5rem;
+}
+.nav-icon-list .nav-link {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.25rem;
+  border-radius: 0.5rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+.nav-icon-list .nav-link:hover {
+  transform: scale(1.1);
+}
+
+/* COLORES POR SECCIÓN */
+.nav-clients     .nav-link { background: var(--pink); }
+.nav-new-client  .nav-link { background: var(--sea); }
+.nav-new-order   .nav-link { background: var(--cyan); }
+.nav-pending     .nav-link { background: var(--teal); }
+.nav-revision    .nav-link { background: var(--teal-dark); }
+.nav-impresiones .nav-link { background: var(--cyan-dark); }
+.nav-terminados  .nav-link { background: var(--dark-light); }
+.nav-entregados  .nav-link { background: var(--dark); }
+.nav-historial   .nav-link { background: var(--sea-dark); }
+
+/* Bordes CMYK */
+.border-c { border-color: var(--c); }
+.border-m { border-color: var(--m); }
+.border-y { border-color: var(--y); }
+.border-k { border-color: var(--k); }
+
+/* Tarjeta base Retro Offset */
+.retro-card {
+  background: #fafafa;
+  border: 1px solid #ddd;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+/* Long shadow generator */
+.shadow-offset-coral { --clr: var(--coral); }
+.shadow-offset-menta { --clr: var(--mint); }
+.shadow-offset-mostaza { --clr: var(--mustard); }
+.retro-card.shadow-offset-coral .card-body,
+.retro-card.shadow-offset-menta .card-body,
+.retro-card.shadow-offset-mostaza .card-body {
+  position: relative;
+}
+.retro-card.shadow-offset-coral .card-body::after,
+.retro-card.shadow-offset-menta .card-body::after,
+.retro-card.shadow-offset-mostaza .card-body::after {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: 100%;
+  height: 100%;
+  background: var(--clr);
+  opacity: 0.1;
+  z-index: -1;
+  transform: skew(-20deg, -20deg);
+  box-shadow: 8px 8px 0 var(--clr);
+  transition: opacity .3s ease, transform .3s ease;
+}
+
+/* Hover effect Retro Offset */
+.retro-card:hover {
+  transform: translateY(-6px);
+}
+.retro-card:hover .card-body::after {
+  opacity: 0.2;
+  transform: skew(-20deg, -20deg) translate(4px, 4px);
+}
+
+/* Semitono de fondo */
+.retro-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('data:image/svg+xml;utf8,\
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" opacity="0.08">\
+      <circle cx="10" cy="10" r="2" fill="black"/>\
+    </svg>') repeat;
+  z-index: 0;
+}
+.retro-card .card-body {
+  position: relative;
+  z-index: 1;
+}
+
+/* Textos y botones Retro Offset */
+.retro-card .card-title {
+  font-family: 'Courier New', Courier, monospace;
+  margin-bottom: 0.5rem;
+}
+.retro-card .card-text {
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.retro-card .btn-outline-dark {
+  border-color: #333;
+  color: #333;
+}
+.retro-card .btn-outline-dark:hover {
+  background-color: #333;
+  color: #fff;
+}
+
+/* Letterpress en títulos */
+h1, h2, .section-title {
+  color: #1a1a1a;
+  font-family: 'Courier New', Courier, monospace;
+  position: relative;
+  text-shadow:
+    1px 1px 0 rgba(255,255,255,0.8),
+   -1px -1px 0 rgba(0,0,0,0.1),
+    1px -1px 0 rgba(0,0,0,0.05),
+   -1px 1px 0 rgba(0,0,0,0.05);
+}
+h1:hover, h2:hover, .section-title:hover {
+  text-shadow:
+    2px 2px 0 rgba(255,255,255,0.7),
+   -2px -2px 0 rgba(0,0,0,0.15),
+    2px -2px 0 rgba(0,0,0,0.1),
+   -2px 2px 0 rgba(0,0,0,0.1);
+  transition: text-shadow .2s ease;
+}
+
+/* Ajustes de tipografía y espaciado */
+.card .display-4 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem !important;
+}
+.card .card-title {
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+.card .card-text {
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+.card .btn-light {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  background-color: rgba(255,255,255,0.9);
+  color: #333;
+  font-weight: bold;
+}
+
+/* GRID MÁS COMPACTO */
+.row.row-cols-1.row-cols-md-2.row-cols-lg-4.g-3.my-4 {
+  gap: 1rem;
+}
+
+/* CLIENT CARDS LIST */
+.client-list {
+  display: flex;
+  flex-direction: column;
+}
+.client-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  border-left: 4px solid var(--pink);
+  border-radius: var(--card-radius);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  transition:
+    background 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+.client-card:hover {
+  background: var(--bg-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  border-color: var(--pink-dark);
+}
+
+.client-card-info > div {
+  margin-right: 2rem;
+  font-size: 0.9rem;
+}
+.client-card-info > div strong {
+  color: var(--pink-dark);
+  margin-right: 0.25rem;
+}
+
+.client-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.client-card-actions .btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Botones específicos de pedido */
+.pedido-nuevo {
+  background: linear-gradient(90deg, #ffa726, #ffcc80);
+}
+.pedido-normal {
+  background: #fff;
+}

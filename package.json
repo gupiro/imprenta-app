@@ -1,0 +1,29 @@
+{
+  "name": "imprenta-app",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "reset": "node resetDb.js && npm run start",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "archiver": "^7.0.1",
+    "bcrypt": "^5.1.1",
+    "better-sqlite3": "^11.9.1",
+    "connect-flash": "^0.1.1",
+    "ejs": "^3.1.10",
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.18.1",
+    "html-pdf": "^3.0.1",
+    "jimp": "^1.6.0",
+    "multer": "^1.4.5-lts.2",
+    "pdfkit": "^0.17.0",
+    "sharp": "^0.34.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "sequelize-cli": "^6.6.2"
+  }
+}

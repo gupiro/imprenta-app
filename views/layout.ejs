@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : 'El Gráfico' %></title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <!-- Tu CSS personalizado -->
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <style>
+    .nav-link.activo {
+      background-color: #0dcaf0;
+      border-radius: 0.5rem;
+      color: #fff !important;
+    }
+    .navbar {
+      background-color: #343a40;
+    }
+    .navbar .nav-link {
+      color: #ccc;
+    }
+    .navbar .nav-link:hover {
+      color: #fff;
+    }
+    .logo {
+      height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg py-2">
+    <div class="container d-flex align-items-center">
+      <!-- Logo y botón Inicio -->
+      <a class="navbar-brand d-flex align-items-center me-4" href="/">
+        <img src="/images/logo.png" alt="El Gráfico" class="logo me-2" />
+        
+      </a>
+      <button class="navbar-toggler text-white" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- Menú principal dinámico con iconos -->
+        <ul class="navbar-nav mx-auto">
+          <% pages.forEach(page => { %>
+            <li class="nav-item">
+              <a
+                class="nav-link <%= activePage === page.name ? 'activo' : '' %>"
+                href="<%= page.url %>"
+                title="<%= page.label %>"
+                aria-label="<%= page.label %>"
+              >
+                <i class="<%= page.icon %> fs-5"></i>
+              </a>
+            </li>
+          <% }) %>
+        </ul>
+
+        <!-- Login/Usuario -->
+        <ul class="navbar-nav ms-auto">
+          <% if (!user) { %>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="/auth/login">Login</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="/auth/register">Registro</a>
+            </li>
+          <% } else { %>
+            <li class="nav-item navbar-text text-white me-3">
+              Hola, <%= user.username %>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="/auth/logout">Logout</a>
+            </li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mt-3">
+    <% if (Array.isArray(error) && error.length) { %>
+      <div class="alert alert-danger"><%= error.join('<br>') %></div>
+    <% } %>
+    <% if (Array.isArray(success) && success.length) { %>
+      <div class="alert alert-success"><%= success.join('<br>') %></div>
+    <% } %>
+
+    <%- body %>
+  </main>
+
+  <footer class="bg-light text-center py-3 mt-4">
+    <div class="container">
+      &copy; <%= new Date().getFullYear() %> Imprenta El Gráfico
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+</body>
+</html>

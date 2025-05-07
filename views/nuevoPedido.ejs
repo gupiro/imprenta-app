@@ -1,0 +1,197 @@
+<%- include('partials/header') %>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nuevo Pedido - El Gráfico Multigráfica</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/estilos.css">
+  <style>
+    body {
+      background-color: #f5f5f5;
+    }
+    .drop-area {
+      border: 2px dashed #bbb;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+      color: #666;
+      margin-top: 15px;
+      background-color: #fff;
+    }
+    .producto-card {
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      background-color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+
+<body class="container py-5">
+
+<h1 class="text-center mb-4">➕ Nuevo Pedido 📄</h1>
+
+<% if (mensajeExito) { %>
+  <div class="alert alert-success text-center"><%= mensajeExito %></div>
+<% } %>
+
+<form action="/pedidos/nuevo" method="POST" enctype="multipart/form-data" class="row g-4">
+
+  <!-- Cliente -->
+  <div class="col-12">
+    <label class="form-label">Seleccionar Cliente Existente:</label>
+    <select name="clienteExistente" class="form-select">
+      <option value="">-- Elegir cliente --</option>
+      <% clientes.forEach(cliente => { %>
+        <option value="<%= cliente.id %>"><%= cliente.nombre %> - <%= cliente.telefono %> - <%= cliente.direccion %></option>
+      <% }) %>
+    </select>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Nombre Nuevo:</label>
+    <input type="text" name="nombreNuevo" class="form-control">
+  </div>
+  <div class="col-md-6">
+    <label class="form-label">Teléfono Nuevo:</label>
+    <input type="text" name="telefonoNuevo" class="form-control">
+  </div>
+  <div class="col-12">
+    <label class="form-label">Dirección Nueva:</label>
+    <input type="text" name="direccionNuevo" class="form-control">
+  </div>
+
+  <hr class="my-4">
+
+  <!-- Productos -->
+  <h4 class="text-primary">Productos:</h4>
+  <div id="productos"></div>
+
+  <div class="col-12 text-center mb-4">
+    <button type="button" class="btn btn-outline-success" onclick="agregarProducto()">➕ Agregar Producto</button>
+  </div>
+
+  <!-- Precio total del pedido -->
+  <div class="col-md-6">
+    <label class="form-label fw-bold">💵 Precio Total del Pedido:</label>
+    <input type="number" id="precioTotalPedido" class="form-control" readonly>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Monto Señado Total:</label>
+    <input type="number" name="monto_entregado" step="0.01" class="form-control" required>
+  </div>
+
+  <div class="col-md-6">
+    <label class="form-label">Medio de Pago:</label>
+    <select name="medio_pago" class="form-select" required>
+      <option value="Efectivo">Efectivo</option>
+      <option value="Transferencia">Transferencia</option>
+      <option value="Tarjeta">Tarjeta</option>
+    </select>
+  </div>
+
+  <div class="col-12 text-center mt-4">
+    <button type="submit" class="btn btn-danger px-5">💾 Guardar Pedido</button>
+  </div>
+
+</form>
+
+<div class="text-center mt-4">
+  <a href="/" class="btn btn-secondary">← Volver al Inicio</a>
+</div>
+
+<script>
+let contadorProductos = 0;
+
+function agregarProducto() {
+  contadorProductos++;
+  const productosDiv = document.getElementById('productos');
+
+  const nuevoProducto = document.createElement('div');
+  nuevoProducto.classList.add('producto-card');
+  nuevoProducto.innerHTML = `
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label>Material:</label>
+        <select name="material[]" class="form-select" onchange="calcularPrecio(${contadorProductos})">
+          <option value="Lona">Lona</option>
+          <option value="Vinilo">Vinilo</option>
+          <option value="Otros">Otros</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label>Ancho (m):</label>
+        <input type="number" name="ancho[]" class="form-control" step="0.01" oninput="calcularPrecio(${contadorProductos})">
+      </div>
+      <div class="col-md-2">
+        <label>Alto (m):</label>
+        <input type="number" name="alto[]" class="form-control" step="0.01" oninput="calcularPrecio(${contadorProductos})">
+      </div>
+      <div class="col-md-2">
+        <label>Descuento (%):</label>
+        <input type="number" name="descuento[]" class="form-control" step="1" oninput="calcularPrecio(${contadorProductos})">
+      </div>
+      <div class="col-md-2">
+        <label>Precio:</label>
+        <input type="number" name="precio[]" id="precio_${contadorProductos}" class="form-control" readonly required>
+      </div>
+
+      <div class="col-12">
+        <label>Descripción:</label>
+        <textarea name="descripcion[]" class="form-control" rows="2" required></textarea>
+      </div>
+
+      <div class="col-12">
+        <label>Imagen (opcional):</label>
+        <input type="file" name="imagen_${contadorProductos}" class="form-control">
+      </div>
+
+      <div class="col-12 text-end">
+        <button type="button" class="btn btn-outline-danger btn-sm mt-3" onclick="eliminarProducto(this)">🗑️ Eliminar Producto</button>
+      </div>
+    </div>
+  `;
+  productosDiv.appendChild(nuevoProducto);
+}
+
+function eliminarProducto(boton) {
+  boton.closest('.producto-card').remove();
+  recalcularTotalPedido();
+}
+
+function calcularPrecio(id) {
+  const materiales = document.getElementsByName('material[]');
+  const anchos = document.getElementsByName('ancho[]');
+  const altos = document.getElementsByName('alto[]');
+  const descuentos = document.getElementsByName('descuento[]');
+  const precioInput = document.getElementById(`precio_${id}`);
+
+  const material = materiales[id-1]?.value || '';
+  const ancho = parseFloat(anchos[id-1]?.value) || 0;
+  const alto = parseFloat(altos[id-1]?.value) || 0;
+  const descuento = parseFloat(descuentos[id-1]?.value) || 0;
+
+  let precioM2 = material === 'Lona' ? 13600 : material === 'Vinilo' ? 15400 : 3000;
+  let total = ancho * alto * precioM2;
+  total -= total * (descuento / 100);
+
+  precioInput.value = Math.round(total);
+  recalcularTotalPedido();
+}
+
+function recalcularTotalPedido() {
+  const precios = document.querySelectorAll('input[name="precio[]"]');
+  let total = 0;
+  precios.forEach(input => {
+    total += parseFloat(input.value) || 0;
+  });
+  document.getElementById('precioTotalPedido').value = Math.round(total);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,337 @@
+/* ================================
+   GLOBAL
+   ================================ */
+   body {
+    font-family: Arial, sans-serif;
+    /* Gris suave con patrón sutil */
+    background-color: #f0f2f5;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.02) 1px, transparent 1px);
+    background-size: 10px 10px;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* ================================
+     HEADER BAR
+     ================================ */
+  .header-bar {
+    background: linear-gradient(135deg, #b71c1c 0%, #283048 100%);
+    color: #fff;
+    padding-top: 2rem;   /* espacio extra arriba del logo */
+    padding-bottom: 2rem;
+    text-align: center;  /* aseguramos centrado */
+  }
+  
+  .logo-xl {
+    height: 100px;
+    display: block;
+    margin: 0 auto;
+  }
+  
+  .site-title {
+    font-size: 2.5rem; /* un poco más grande */
+    font-weight: bold;
+    margin: 0.5rem 0 1.5rem; /* más separación arriba y abajo */
+  }
+  
+  /* ================================
+     ICON NAV
+     ================================ */
+  .icon-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    padding: 0 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .icon-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    border-radius: 0.75rem;
+    color: #fff;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.9rem;
+    width: 4.5rem;
+    transition: background .2s, transform .2s;
+  }
+  .icon-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .icon-btn:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-3px);
+    cursor: pointer;
+  }
+  
+  /* ================================
+     DASHBOARD CARDS
+     ================================ */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+  
+  .card-dashboard {
+    position: relative;
+    overflow: hidden;
+    border: none;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 200px;
+    text-decoration: none;
+    transition: transform .2s, box-shadow .2s;
+    /* Levantarlas un poco sobre el fondo */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  
+  .card-dashboard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+  }
+  
+  .card-dashboard .icon {
+    font-size: 3rem;
+    opacity: .85;
+  }
+  
+  .card-dashboard h5 {
+    margin-top: 1rem;
+    font-weight: bold;
+    font-size: 1.25rem;
+  }
+  
+  .card-dashboard p {
+    opacity: .85;
+    margin-top: .5rem;
+  }
+  
+  /* Gradientes existentes para cada tipo */
+  .card-dashboard.clients    { background: linear-gradient(135deg, #283048 0%, #859398 100%); }
+  .card-dashboard.new-client { background: linear-gradient(135deg, #6A3093 0%, #A044FF 100%); }
+  .card-dashboard.new-order  { background: linear-gradient(135deg, #11998E 0%, #38EF7D 100%); }
+  .card-dashboard.pending    { background: linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%); }
+  
+  /* ================================
+     MAIN & FOOTER (fondo transparente)
+     ================================ */
+  main.container,
+  footer {
+    background-color: transparent;   /* para no re-pintar de blanco */
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+  
+  /* ================================
+     DATATABLES: filas alternadas y hover
+     ================================ */
+  .table-row-light {
+    background-color: #ffffff !important;
+  }
+  .table-row-dark {
+    background-color: #f7f7f7 !important;
+  }
+  
+  #clientesTable tbody tr:hover {
+    background-color: #e2f3ff !important;
+  }
+  /* Reusar estilos de dashboard para "cliente cards" */
+.card-dashboard.clients {
+  background: linear-gradient(135deg, #283048 0%, #859398 100%);
+  color: #fff;
+}
+.card-dashboard.clients .icon {
+  font-size: 3rem;
+  opacity: .85;
+}
+.card-dashboard.clients p {
+  opacity: .85;
+  margin: .2rem 0;
+}
+.card-dashboard.clients h5 {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+/* Asegura altura mínima para contenido */
+.card-dashboard {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+/* Tarjetas de cliente naranja */
+.client-card.new-order {
+  background: linear-gradient(135deg, #FF9800 0%, #FFC107 100%);
+  color: #fff;
+}
+
+/* Ajustes de texto dentro */
+.client-card p {
+  opacity: .9;
+  margin: .2rem 0;
+}
+
+/* Botones pequeños semitransparentes */
+.client-card .btn-outline-light {
+  background: rgba(255,255,255,0.25);
+  border: none;
+  transition: background .2s;
+}
+.client-card .btn-outline-light:hover {
+  background: rgba(255,255,255,0.45);
+}
+
+/* Asegura coherencia de altura */
+.client-card {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+/* === CLIENT CARDS (gris azulado) === */
+.client-card.clients {
+  background: linear-gradient(135deg, #283048 0%, #859398 100%);
+  color: #fff;
+}
+
+/* Avatar grande */
+.avatar-icon {
+  font-size: 4rem;
+  opacity: .85;
+}
+
+/* Botones de acción (editar / eliminar) */
+.action-btn {
+  background: rgba(255,255,255,0.3);
+  border: none;
+  border-radius: 0.75rem;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s, transform .2s;
+}
+.action-btn i {
+  font-size: 1.25rem;
+  color: #283048;
+}
+.action-btn:hover {
+  background: rgba(255,255,255,0.5);
+  transform: translateY(-2px);
+}
+
+/* Asegurar buena separación interna */
+.client-card p {
+  margin: .3rem 0;
+}
+
+/* Ajuste de altura para tarjetas más uniformes */
+.client-card {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+/* ==============================
+   LISTA COMPACTA DE CLIENTES
+   ============================== */
+
+   .client-list {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+  }
+  
+  /* Fila genérica */
+  .client-row {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: .75rem;
+    padding: .75rem 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: background .2s;
+  }
+  .client-row:hover {
+    background: rgba(0,0,0,0.02);
+  }
+  
+  /* Encabezado */
+  .client-row.header {
+    font-weight: bold;
+    background: #283048;
+    color: #fff;
+    box-shadow: none;
+  }
+  
+  /* Celdas */
+  .client-row .cell {
+    flex: 1;
+    padding: 0 .5rem;
+    font-size: .9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .client-row .cell.name {
+    flex: 1.5;
+  }
+  
+  /* Zona de acciones */
+  .client-row .cell.actions {
+    flex: 0 0 auto;
+    display: flex;
+    gap: .5rem;
+  }
+  
+  /* Botones pequeños */
+  .action-btn {
+    background: #f0f0f0;
+    border: none;
+    border-radius: .5rem;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s, transform .2s;
+  }
+  .action-btn i {
+    font-size: 1.1rem;
+    color: #283048;
+  }
+  .action-btn:hover {
+    background: #e0e0e0;
+    transform: translateY(-1px);
+    cursor: pointer;
+  }
+  
+  /* Responsive: en pantallas muy pequeñas, apilar columnas */
+  @media (max-width: 576px) {
+    .client-row,
+    .client-row.header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .25rem;
+    }
+    .client-row.header .cell {
+      padding: .25rem .5rem;
+    }
+    .client-row .cell.actions {
+      gap: .25rem;
+    }
+  }
+  

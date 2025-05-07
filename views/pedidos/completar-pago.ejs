@@ -1,0 +1,49 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h1 class="mb-4">💰 Completar Pago</h1>
+
+  <% if ((Array.isArray(error) && error.length) || (!Array.isArray(error) && error)) { %>
+    <div class="alert alert-danger">
+      <%= Array.isArray(error) ? error.join('<br>') : error %>
+    </div>
+  <% } %>
+  <% if ((Array.isArray(success) && success.length) || (!Array.isArray(success) && success)) { %>
+    <div class="alert alert-success">
+      <%= Array.isArray(success) ? success.join('<br>') : success %>
+    </div>
+  <% } %>
+
+  <p><strong>Cliente:</strong> <%= pedido.cliente_nombre %></p>
+  <p><strong>Saldo pendiente:</strong> $<%= Math.round(pedido.monto_restante || 0) %></p>
+
+  <form action="/pedidos/<%= pedido.id %>/completar-pago" method="POST">
+    <div class="mb-3">
+      <label for="monto_extra" class="form-label">Monto a pagar</label>
+      <input
+        type="number"
+        name="monto_extra"
+        id="monto_extra"
+        class="form-control"
+        step="0.01"
+        min="0.01"
+        max="<%= pedido.monto_restante %>"
+        value="<%= pedido.monto_restante %>"
+        required
+      >
+    </div>
+    <div class="mb-3">
+      <label for="forma_pago" class="form-label">Forma de pago</label>
+      <select name="forma_pago" id="forma_pago" class="form-select" required>
+        <option value="" disabled selected>Selecciona</option>
+        <option value="EFECTIVO">Efectivo</option>
+        <option value="TARJETA">Tarjeta</option>
+        <option value="TRANSFERENCIA">Transferencia</option>
+      </select>
+    </div>
+    <button class="btn btn-primary">Pagar saldo</button>
+    <a href="/pedidos/entregados" class="btn btn-link">← Volver</a>
+  </form>
+</main>
+
+<%- include('../partials/footer') %>

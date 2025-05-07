@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= title || 'El Gráfico' %></title>
+
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    crossorigin="anonymous"
+  />
+
+  <style>
+    .nav-link.active {
+      font-weight: bold;
+      color: #fff !important;
+      background-color: #0d6efd;
+      border-radius: 5px;
+      padding: 5px 12px;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+    <div class="container">
+      <a class="navbar-brand" href="/">El Gráfico</a>
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarNav"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath.startsWith('/clientes') ? 'active' : '' %>"
+              href="/clientes"
+            >Clientes</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/clientes/nuevo' ? 'active' : '' %>"
+              href="/clientes/nuevo"
+            >Nuevo Cliente</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/nuevo' ? 'active' : '' %>"
+              href="/pedidos/nuevo"
+            >Nuevo Pedido</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/pendientes' ? 'active' : '' %>"
+              href="/pedidos/pendientes"
+            >Pendientes</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/revision' ? 'active' : '' %>"
+              href="/pedidos/revision"
+            >Revisión</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/impresiones' ? 'active' : '' %>"
+              href="/pedidos/impresiones"
+            >Para Imprimir</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/terminados' ? 'active' : '' %>"
+              href="/pedidos/terminados"
+            >Terminados</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/entregados' ? 'active' : '' %>"
+              href="/pedidos/entregados"
+            >Entregados</a>
+          </li>
+          <li class="nav-item">
+            <a
+              class="nav-link <%= currentPath === '/pedidos/historial' ? 'active' : '' %>"
+              href="/pedidos/historial"
+            >Historial</a>
+          </li>
+          <% if (user && user.rol === 'admin') { %>
+            <li class="nav-item">
+              <a
+                class="nav-link <%= currentPath === '/usuarios/registro' ? 'active' : '' %>"
+                href="/usuarios/registro"
+              >Crear Usuario</a>
+            </li>
+          <% } %>
+        </ul>
+
+        <ul class="navbar-nav">
+          <% if (!user) { %>
+            <li class="nav-item">
+              <a class="nav-link <%= currentPath === '/auth/login' ? 'active' : '' %>"
+                 href="/auth/login"
+              >Login</a>
+            </li>
+          <% } else { %>
+            <li class="nav-item">
+              <span class="navbar-text me-3">Hola, <%= user.username %></span>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/auth/logout">Logout</a>
+            </li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>

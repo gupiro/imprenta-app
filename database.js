@@ -1,13 +1,14 @@
 const Database = require('better-sqlite3');
 const path     = require('path');
 
-/* Ruta del archivo de base de datos
-   – En Render: /data/imprenta.db   (Disk)
-   – En local : imprenta.db (junto al código) */
+/* Ruta del archivo de base de datos:
+   - En Render usaremos /data/imprenta.db  (el Disk persistente)
+   - En desarrollo local usaremos ./imprenta.db junto al código */
 const dbFile = process.env.DB_FILE || path.join(__dirname, 'imprenta.db');
 
-// Abrimos (o creamos) la base de datos
+// Abrimos (o creamos) la base de datos con un timeout de 10 s
 const db = new Database(dbFile, { timeout: 10000 });
+
 
 
 

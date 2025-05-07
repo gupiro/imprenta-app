@@ -1,12 +1,10 @@
-// resetDb.js
 const Database = require('better-sqlite3');
 const path     = require('path');
 const bcrypt   = require('bcryptjs');
 
+// Usar la misma ruta que database.js:
+const DB_PATH = process.env.DB_FILE || path.join(__dirname, 'imprenta.db');
 
-
-// Ruta a la base de datos
-const DB_PATH = path.join(__dirname, 'imprenta.db');
 
 // 1) Abrimos una conexión temporal para manipular tablas
 const db = new Database(DB_PATH);

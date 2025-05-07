@@ -1,1 +1,4 @@
 .vercel
+# evita subir dependencias y archivos de BD
+node_modules/
+*.db*

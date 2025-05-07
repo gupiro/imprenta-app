@@ -1,7 +1,7 @@
 // routes/usuarios.js
 const express = require('express');
 const router  = express.Router();
-const bcrypt  = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const db      = require('../database');
 
 // 3.1.1 Listar todos los usuarios

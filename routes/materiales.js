@@ -14,60 +14,54 @@ router.get(
     const materiales = db
       .prepare('SELECT * FROM materials ORDER BY id ASC')
       .all();
-    res.render('materiales/list', {
+    res.render('materiales/index', {   // apuntamos a views/materiales/index.ejs
       title:      'Materiales',
-      materiales,
+      materials:  materiales,
       success:    req.flash('success'),
       error:      req.flash('error')
     });
   }
 );
 
-// ▶ Formulario Nuevo Material (GET)
+// ▶ Formulario para nuevo material
 router.get(
-  '/nuevo',
+  '/new',
   permitirRoles('Admin','Atención'),
   checkPermission,
   (req, res) => {
-    res.render('materiales/form', {
-      title:    'Nuevo Material',
-      material: {},
-      success:  req.flash('success'),
-      error:    req.flash('error')
+    res.render('materiales/new', {    // apuntamos a views/materiales/new.ejs
+      title: 'Agregar Material',
+      error: req.flash('error')
     });
   }
 );
 
-// ▶ Procesar Nuevo Material (POST)
+// ▶ Crear material
 router.post(
-  '/nuevo',
+  '/',
   permitirRoles('Admin','Atención'),
   checkPermission,
   (req, res) => {
-    const name        = (req.body.name        || '').trim();
-    const price       = parseFloat(req.body.price    || '');
-    const tipoUnidad  = (req.body.tipoUnidad || '').trim();
-    const unit        = (req.body.unit        || '').trim();
-
-    if (!name || isNaN(price) || !tipoUnidad || !unit) {
-      req.flash('error', 'Todos los campos son obligatorios.');
-      return res.redirect('/materiales/nuevo');
+    const { name, price, tipoUnidad } = req.body;
+    if (!name || !price) {
+      req.flash('error', 'Nombre y precio son obligatorios.');
+      return res.redirect('/materiales/new');
     }
-
     try {
-      db.prepare(`
-        INSERT INTO materials (name, price, tipoUnidad, unit)
-        VALUES (?, ?, ?, ?)
-      `).run(name, price, tipoUnidad, unit);
-      req.flash('success', 'Material creado exitosamente.');
+      db.prepare(
+        'INSERT INTO materials (name, price, tipoUnidad) VALUES (?, ?, ?)'
+      ).run(name.trim(), parseFloat(price), tipoUnidad || 'unidad');
+      req.flash('success', `Material "${name}" agregado correctamente.`);
+      res.redirect('/materiales');
     } catch (err) {
-      console.error('Error al crear material:', err);
-      req.flash('error', 'Error al guardar el material.');
+      req.flash('error', 'Error al crear el material: ' + err.message);
+      res.redirect('/materiales/new');
     }
-
-    res.redirect('/materiales');
   }
 );
+
+module.exports = router;
+
 
 // ▶ Formulario Editar Material (GET)
 router.get(

@@ -48,25 +48,19 @@ const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const thumbsDir = path.join(uploadsDir, 'thumbs');
 if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
-// Montar static public — esto sirve /images/logo.png
 app.use(express.static(path.join(__dirname, 'public')));
-// ─── Rutas de imágenes, watermark, etc. (tu código existente) ───
+
+// ─── Rutas de imágenes, watermark, etc. ───
 app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
   try {
     const { filename } = req.params;
     const low = req.query.quality === 'low';
     const filePath = path.join(uploadsDir, filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).send('Archivo no encontrado');
-    }
+    if (!fs.existsSync(filePath)) return res.status(404).send('Archivo no encontrado');
 
     const inputBuffer = await fs.promises.readFile(filePath);
     let pipeline = sharp(inputBuffer);
-    if (low) {
-      pipeline = pipeline
-        .jpeg({ quality: 50, chromaSubsampling: '4:2:0' })
-        .resize({ width: 1200 });
-    }
+    if (low) pipeline = pipeline.jpeg({ quality: 50, chromaSubsampling: '4:2:0' }).resize({ width: 1200 });
     const processedBuffer = await pipeline.toBuffer();
 
     const meta = await sharp(processedBuffer).metadata();
@@ -85,20 +79,13 @@ app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
       }
     }
 
-    const outBuf = await sharp(processedBuffer)
-      .composite(composites)
-      .png()
-      .toBuffer();
-
+    const outBuf = await sharp(processedBuffer).composite(composites).png().toBuffer();
     res.setHeader('Content-Type', 'image/png');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="${path.parse(filename).name}-watermarked.png"`
-    );
-    return res.send(outBuf);
+    res.setHeader('Content-Disposition', `attachment; filename="${path.parse(filename).name}-watermarked.png"`);
+    res.send(outBuf);
   } catch (err) {
     console.error('Error watermark:', err);
-    return res.status(500).send('Error al procesar imagen');
+    res.status(500).send('Error al procesar imagen');
   }
 });
 
@@ -106,19 +93,12 @@ app.get('/uploads/:filename', async (req, res, next) => {
   const { filename } = req.params;
   const low = req.query.quality === 'low';
   const filePath = path.join(uploadsDir, filename);
-  if (!fs.existsSync(filePath)) {
-    return next();
-  }
+  if (!fs.existsSync(filePath)) return next();
   if (low) {
     try {
-      const transformer = sharp(filePath)
-        .jpeg({ quality: 50, chromaSubsampling: '4:2:0' })
-        .resize({ width: 1200 });
+      const transformer = sharp(filePath).jpeg({ quality: 50, chromaSubsampling: '4:2:0' }).resize({ width: 1200 });
       res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${filename.replace(/\.(jpe?g)$/i, '-low.$1')}"`
-      );
+      res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/\.(jpe?g)$/i, '-low.$1')}"`);
       return transformer.pipe(res);
     } catch (err) {
       console.error('Error low-quality streaming:', err);
@@ -136,11 +116,10 @@ app.get('/uploads/thumbs/:filename', async (req, res, next) => {
 
     const thumbBuffer = await sharp(origPath).resize({ width: 150 }).toBuffer();
     const ext = path.extname(filename).toLowerCase();
-    if (ext === '.png')      res.type('image/png');
+    if (ext === '.png') res.type('image/png');
     else if (ext === '.gif') res.type('image/gif');
-    else                     res.type('image/jpeg');
-
-    return res.send(thumbBuffer);
+    else res.type('image/jpeg');
+    res.send(thumbBuffer);
   } catch (err) {
     console.error('Error al servir miniatura:', err);
     return next(err);
@@ -172,31 +151,39 @@ app.use((req, res, next) => {
     { name: 'clientes-nuevo',     label: 'Nuevo Cliente', url: '/clientes/nuevo',       icon: 'bi-person-plus-fill' },
     { name: 'materiales',         label: 'Materiales',    url: '/materiales',           icon: 'bi-box-seam-fill' },
     { name: 'pedidos-nuevo',      label: 'Nuevo Pedido',  url: '/pedidos/nuevo',        icon: 'bi-receipt-cutoff' },
-    { name: 'pedidos-pendientes', label: 'Pendientes',     url: '/pedidos/pendientes',   icon: 'bi-clock-fill' },
-    { name: 'pedidos-revision',   label: 'Revisión',       url: '/pedidos/revision',     icon: 'bi-pencil-square' },
-    { name: 'pedidos-impresiones',label: 'Para Imprimir',  url: '/pedidos/impresiones',  icon: 'bi-printer-fill' },
-    { name: 'pedidos-terminados', label: 'Terminados',     url: '/pedidos/terminados',   icon: 'bi-check2-circle' },
-    { name: 'pedidos-entregados', label: 'Entregados',     url: '/pedidos/entregados',   icon: 'bi-truck-flatbed' },
-    { name: 'pedidos-historial',  label: 'Historial',      url: '/pedidos/historial',    icon: 'bi-clock-history' }
+    { name: 'pedidos-pendientes', label: 'Pendientes',    url: '/pedidos/pendientes',   icon: 'bi-clock-fill' },
+    { name: 'pedidos-revision',   label: 'Revisión',      url: '/pedidos/revision',     icon: 'bi-pencil-square' },
+    { name: 'pedidos-impresiones',label: 'Para Imprimir', url: '/pedidos/impresiones',  icon: 'bi-printer-fill' },
+    { name: 'pedidos-terminados', label: 'Terminados',    url: '/pedidos/terminados',   icon: 'bi-check2-circle' },
+    { name: 'pedidos-entregados', label: 'Entregados',    url: '/pedidos/entregados',   icon: 'bi-truck-flatbed' },
+    { name: 'pedidos-historial',  label: 'Historial',     url: '/pedidos/historial',    icon: 'bi-clock-history' }
   ];
-  res.locals.activePage = req.path === '/'
-    ? 'home'
-    : req.path.slice(1).replace(/\//g, '-');
+  res.locals.activePage = req.path === '/' ? 'home' : req.path.slice(1).replace(/\//g, '-');
   next();
 });
 
-// 9. Rutas de autenticación y protegidas
+// 9. Rutas protegidas
 app.use('/auth', authRouter);
-app.use('/clientes',            permitirRoles('Admin','Atención'),            checkPermission, clientesRouter);
-app.use('/pedidos',             permitirRoles('Admin','Atención','Impresor'), checkPermission, pedidosRouter);
-app.use('/usuarios',            permitirRoles('Admin'),                      checkPermission, usuariosRouter);
-// Montar rutas de materiales en /materiales
-app.use('/materiales',          permitirRoles('Admin','Atención'),            checkPermission, materialesRouter);
+app.use('/clientes',    permitirRoles('Admin','Atención'),            checkPermission, clientesRouter);
+app.use('/pedidos',     permitirRoles('Admin','Atención','Impresor'), checkPermission, pedidosRouter);
+app.use('/usuarios',    permitirRoles('Admin'),                       checkPermission, usuariosRouter);
+app.use('/materiales',  permitirRoles('Admin','Atención'),            checkPermission, materialesRouter);
 
-// 10. Home y 404
-app.get('/', (req, res) => res.render('home', { title: 'Panel Principal' }));
+// 10. Home con contadores
+app.get('/', (req, res) => {
+  const counts = {
+    pendientes: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'").get().c,
+    revision: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_REVISIÓN'").get().c,
+    impresion: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO_IMPRESION'").get().c,
+    terminados: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'TERMINADO'").get().c,
+    entregados: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'").get().c
+  };
+  res.render('home', { title: 'Panel Principal', counts });
+});
+
+// 11. 404
 app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
 
-// 11. Iniciar servidor
+// 12. Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));

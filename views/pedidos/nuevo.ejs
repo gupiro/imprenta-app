@@ -216,9 +216,17 @@
           <textarea name="descripcion[]" class="form-control" rows="2" required></textarea>
         </div>
         <div class="col-12">
-          <label>Imágenes (opcional):</label>
-          <input type="file" name="imagen_${contadorProductos}" class="form-control" multiple>
-        </div>
+  <label>Imágenes (opcional):</label>
+  <div class="dropzone border border-secondary rounded p-3 text-center"
+       data-input="imagen_${contadorProductos}"
+       ondragover="event.preventDefault()"
+       ondrop="handleDrop(event, ${contadorProductos})">
+    Arrastrá imágenes aquí o hacé clic para seleccionarlas
+    <input type="file" name="imagen_${contadorProductos}" class="form-control mt-2 d-none"
+           id="fileInput_${contadorProductos}" multiple onchange="showFiles(${contadorProductos})">
+  </div>
+  <div id="preview_${contadorProductos}" class="mt-2 d-flex flex-wrap gap-2"></div>
+</div>
         <div class="col-12 text-end">
           <button type="button" class="btn btn-outline-danger btn-sm"
                   onclick="eliminarProducto(this)">🗑️ Eliminar Producto</button>
@@ -281,4 +289,63 @@
 
   // iniciar total
   totalInput.value = '0.00';
+
+  function handleDrop(event, id) {
+  event.preventDefault();
+  const input = document.getElementById(`fileInput_${id}`);
+  const dt = new DataTransfer();
+
+  // Agregar las que ya estaban
+  Array.from(input.files).forEach(f => dt.items.add(f));
+
+  // Agregar nuevas arrastradas
+  Array.from(event.dataTransfer.files).forEach(f => {
+    if (f.type.startsWith('image/')) dt.items.add(f);
+  });
+
+  input.files = dt.files;
+  showFiles(id);
+}
+
+function showFiles(id) {
+  const input = document.getElementById(`fileInput_${id}`);
+  const preview = document.getElementById(`preview_${id}`);
+  preview.innerHTML = '';
+
+  Array.from(input.files).forEach((file, index) => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'position-relative d-inline-block';
+      wrapper.innerHTML = `
+        <img src="${e.target.result}" class="border rounded me-2" style="max-height: 80px;">
+        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                onclick="removeImage(${id}, ${index})">×</button>
+      `;
+      preview.appendChild(wrapper);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeImage(id, indexToRemove) {
+  const input = document.getElementById(`fileInput_${id}`);
+  const dt = new DataTransfer();
+  Array.from(input.files).forEach((file, index) => {
+    if (index !== indexToRemove) dt.items.add(file);
+  });
+  input.files = dt.files;
+  showFiles(id);
+}
+
+document.addEventListener('click', e => {
+  const dz = e.target.closest('.dropzone');
+  if (dz) {
+    const inputName = dz.dataset.input;
+    document.querySelector(`input[name="${inputName}"]`).click();
+  }
+});
+
+
 </script>

@@ -5,7 +5,7 @@ const db              = require('../database');
 const checkPermission = require('../middleware/permissions');
 const { permitirRoles } = require('../middleware/roles');
 
-// ▶ Listar materiales
+// ▶ GET /materiales — Listar materiales
 router.get(
   '/',
   permitirRoles('Admin','Atención'),
@@ -14,7 +14,7 @@ router.get(
     const materiales = db
       .prepare('SELECT * FROM materials ORDER BY id ASC')
       .all();
-    res.render('materiales/index', {   // apuntamos a views/materiales/index.ejs
+    res.render('materiales/index', {
       title:      'Materiales',
       materials:  materiales,
       success:    req.flash('success'),
@@ -23,20 +23,20 @@ router.get(
   }
 );
 
-// ▶ Formulario para nuevo material
+// ▶ GET /materiales/nuevo — Formulario para crear nuevo material
 router.get(
-  '/new',
+  '/nuevo',
   permitirRoles('Admin','Atención'),
   checkPermission,
   (req, res) => {
-    res.render('materiales/new', {    // apuntamos a views/materiales/new.ejs
+    res.render('materiales/new', {
       title: 'Agregar Material',
       error: req.flash('error')
     });
   }
 );
 
-// ▶ Crear material
+// ▶ POST /materiales — Crear material
 router.post(
   '/',
   permitirRoles('Admin','Atención'),
@@ -45,7 +45,7 @@ router.post(
     const { name, price, tipoUnidad } = req.body;
     if (!name || !price) {
       req.flash('error', 'Nombre y precio son obligatorios.');
-      return res.redirect('/materiales/new');
+      return res.redirect('/materiales/nuevo');
     }
     try {
       db.prepare(
@@ -55,7 +55,7 @@ router.post(
       res.redirect('/materiales');
     } catch (err) {
       req.flash('error', 'Error al crear el material: ' + err.message);
-      res.redirect('/materiales/new');
+      res.redirect('/materiales/nuevo');
     }
   }
 );

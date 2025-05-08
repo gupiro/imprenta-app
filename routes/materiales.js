@@ -16,7 +16,7 @@ router.get(
       .all();
     res.render('materiales/list', {
       title:      'Materiales',
-      materiales,                 // la vista espera "materiales"
+      materiales,              // list.ejs recibe "materiales"
       success:    req.flash('success'),
       error:      req.flash('error')
     });
@@ -30,15 +30,13 @@ router.get(
   checkPermission,
   (req, res) => {
     res.render('materiales/new', {
-      title:    'Agregar Material',
-      success:  req.flash('success'),
-      error:    req.flash('error'),
-      material: null            // lo marcamos explícitamente para la vista
+      title: 'Agregar Material',
+      error: req.flash('error')
     });
   }
 );
 
-// ▶ POST /materiales — Crear material incluyendo la columna `unit`
+// ▶ POST /materiales — Crear material
 router.post(
   '/',
   permitirRoles('Admin','Atención'),
@@ -50,11 +48,10 @@ router.post(
       req.flash('error', 'Nombre y precio son obligatorios.');
       return res.redirect('/materiales/nuevo');
     }
-    const unit = tipoUnidad;  // tu tabla tiene `unit NOT NULL`
     try {
       const info = db.prepare(
-        'INSERT INTO materials (name, price, tipoUnidad, unit) VALUES (?, ?, ?, ?)'
-      ).run(name.trim(), parseFloat(price), tipoUnidad, unit);
+        'INSERT INTO materials (name, price, tipoUnidad) VALUES (?, ?, ?)'
+      ).run(name.trim(), parseFloat(price), tipoUnidad || 'unidad');
       console.log('✅ Material insertado, id =', info.lastInsertRowid);
       req.flash('success', `Material "${name}" agregado correctamente.`);
       res.redirect('/materiales');
@@ -66,7 +63,7 @@ router.post(
   }
 );
 
-// ▶ GET /materiales/editar/:id — Formulario para editar material
+// ▶ GET /materiales/editar/:id — Formulario editar material
 router.get(
   '/editar/:id',
   permitirRoles('Admin','Atención'),
@@ -79,16 +76,16 @@ router.get(
       req.flash('error', 'Material no encontrado.');
       return res.redirect('/materiales');
     }
-    res.render('materiales/new', {
+    res.render('materiales/form', {
       title:    'Editar Material',
+      material,               // form.ejs recibirá "material"
       success:  req.flash('success'),
-      error:    req.flash('error'),
-      material                  // pasamos el objeto para precargar el form
+      error:    req.flash('error')
     });
   }
 );
 
-// ▶ POST /materiales/editar/:id — Procesar edición incluyendo `unit`
+// ▶ POST /materiales/editar/:id — Procesar edición
 router.post(
   '/editar/:id',
   permitirRoles('Admin','Atención'),
@@ -101,18 +98,16 @@ router.post(
       req.flash('error', 'Todos los campos son obligatorios.');
       return res.redirect(`/materiales/editar/${id}`);
     }
-    const unit = tipoUnidad;
     try {
       db.prepare(
-        'UPDATE materials SET name = ?, price = ?, tipoUnidad = ?, unit = ? WHERE id = ?'
-      ).run(name.trim(), parseFloat(price), tipoUnidad, unit, id);
+        'UPDATE materials SET name = ?, price = ?, tipoUnidad = ? WHERE id = ?'
+      ).run(name.trim(), parseFloat(price), tipoUnidad, id);
       req.flash('success', 'Material actualizado.');
-      res.redirect('/materiales');
     } catch (err) {
       console.error('❌ Error al actualizar material:', err);
       req.flash('error', 'Error al actualizar el material.');
-      res.redirect(`/materiales/editar/${id}`);
     }
+    res.redirect('/materiales');
   }
 );
 

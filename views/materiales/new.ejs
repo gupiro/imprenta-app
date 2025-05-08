@@ -1,24 +1,27 @@
-<%
-// Si viene un objeto `material` estamos en edición,
-// si no, en creación:
-title = material ? 'Editar Material' : 'Agregar Material';
+<% 
+  // Si no vino material desde la ruta, lo inicializamos a null
+  if (typeof material === 'undefined') material = null;
+  // Calculamos título dinámico
+  title = material 
+    ? '✏️ Editar Material' 
+    : '➕ Agregar Material';
 %>
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title }) %>
 
 <main class="container py-4">
-  <h1 class="mb-4">
-    <%= material ? '✏️ Editar Material' : '➕ Agregar Material' %>
-  </h1>
+  <h1 class="mb-4"><%= title %></h1>
 
-  <% if (error.length) { %>
+  <% if (error && error.length) { %>
     <div class="alert alert-danger"><%= error.join('<br>') %></div>
   <% } %>
-  <% if (success.length) { %>
+  <% if (success && success.length) { %>
     <div class="alert alert-success"><%= success.join('<br>') %></div>
   <% } %>
 
   <form
-    action="<%= material ? '/materiales/editar/' + material.id : '/materiales' %>"
+    action="<%= material 
+      ? '/materiales/editar/' + material.id 
+      : '/materiales' %>"
     method="POST"
     class="row g-3 needs-validation"
     novalidate
@@ -52,7 +55,12 @@ title = material ? 'Editar Material' : 'Agregar Material';
 
     <div class="col-md-6">
       <label for="tipoUnidad" class="form-label">Unidad</label>
-      <select id="tipoUnidad" name="tipoUnidad" class="form-select" required>
+      <select 
+        id="tipoUnidad" 
+        name="tipoUnidad" 
+        class="form-select" 
+        required
+      >
         <option value="unidad"
           <%= material && material.tipoUnidad === 'unidad' ? 'selected' : '' %>
         >Unidad</option>
@@ -75,16 +83,16 @@ title = material ? 'Editar Material' : 'Agregar Material';
 <%- include('../partials/footer') %>
 
 <script>
-// Bootstrap validation
-(() => {
-  'use strict';
-  document.querySelectorAll('.needs-validation')
-    .forEach(form => form.addEventListener('submit', e => {
-      if (!form.checkValidity()) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      form.classList.add('was-validated');
-    }));
-})();
+  // Bootstrap validation
+  (() => {
+    'use strict';
+    document.querySelectorAll('.needs-validation')
+      .forEach(form => form.addEventListener('submit', e => {
+        if (!form.checkValidity()) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }));
+  })();
 </script>

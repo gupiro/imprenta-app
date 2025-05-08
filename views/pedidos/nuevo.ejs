@@ -104,72 +104,65 @@
 
 <script>
   //────────────────────────────────────────────────────────────
-  // Autocomplete / creación de Cliente
-  //────────────────────────────────────────────────────────────
-  const inpCliente   = document.getElementById('clienteInput');
-  const hidCliente   = document.getElementById('clienteExistente');
-  const sugerencias  = document.getElementById('sugerencias');
-  const btnClientes  = document.getElementById('btnMostrarClientes');
-
-  async function fetchClientes(q) {
-    const res = await fetch(`/clientes/search?q=${encodeURIComponent(q)}`);
-    const list = await res.json();
-    sugerencias.innerHTML = list.map(c =>
-      `<button type="button" class="list-group-item list-group-item-action"
-         data-id="${c.id}" data-name="${c.name}">${c.name}</button>`
-    ).join('') +
-    (q
-      ? `<button type="button" class="list-group-item list-group-item-action text-primary"
-           data-new="true" data-name="${q}">
-           ➕ Nuevo: “${q}”
-         </button>`
-      : ''
-    );
-  }
-
-  inpCliente.addEventListener('input', () => {
-    clearTimeout(inpCliente._deb);
-    inpCliente._deb = setTimeout(() => {
-      const q = inpCliente.value.trim();
-      if (!q) {
-        sugerencias.innerHTML = '';
-        toggleNuevoCliente(true);
-        return;
-      }
-      fetchClientes(q);
-    }, 300);
-  });
-
-  btnClientes.addEventListener('click', () => fetchClientes(inpCliente.value.trim()));
-
-  sugerencias.addEventListener('click', e => {
-    if (!e.target.matches('.list-group-item')) return;
-    const isNew = e.target.dataset.new;
-    inpCliente.value = e.target.dataset.name;
-    hidCliente.value = isNew ? '' : e.target.dataset.id;
-    toggleNuevoCliente(!!isNew);
-    sugerencias.innerHTML = '';
-  });
-
-  function toggleNuevoCliente(show) {
-    document.getElementById('nuevoClienteFields').style.display = show ? 'block' : 'none';
-  }
-  toggleNuevoCliente(true);
-
-  //────────────────────────────────────────────────────────────
-  // Gestión de Productos
+  // Datos de materiales (inyectados desde el servidor)
   //────────────────────────────────────────────────────────────
   const materialesData = <%- JSON.stringify(materiales) %>;
   const totalInput     = document.getElementById('precioTotalPedido');
   let contadorProductos = 0;
   let manualTotal       = false;
 
+  // Autocomplete Cliente (igual que antes)
+  const inp  = document.getElementById('clienteInput');
+  const hid  = document.getElementById('clienteExistente');
+  const box  = document.getElementById('sugerencias');
+  const btn  = document.getElementById('btnMostrarClientes');
+  async function fetchClientes(q) {
+    const res = await fetch(`/clientes/search?q=${encodeURIComponent(q)}`);
+    const list = await res.json();
+    box.innerHTML = list.map(c =>
+      `<button type="button" class="list-group-item list-group-item-action`
+      + ` data-id="${c.id}" data-name="${c.name}">${c.name}</button>`
+    ).join('') +
+    (q
+      ? `<button type="button" class="list-group-item list-group-item-action text-primary`
+        + ` data-new="true" data-name="${q}">➕ Nuevo: “${q}”</button>`
+      : ''
+    );
+  }
+  inp.addEventListener('input', () => {
+    clearTimeout(inp._deb);
+    inp._deb = setTimeout(() => {
+      const q = inp.value.trim();
+      if (!q) {
+        box.innerHTML = '';
+        toggleNuevo(true);
+        return;
+      }
+      fetchClientes(q);
+    }, 300);
+  });
+  btn.addEventListener('click', () => fetchClientes(inp.value.trim()));
+  box.addEventListener('click', e => {
+    if (!e.target.matches('.list-group-item')) return;
+    const isNew = e.target.dataset.new;
+    inp.value = e.target.dataset.name;
+    hid.value = isNew ? '' : e.target.dataset.id;
+    toggleNuevo(!!isNew);
+    box.innerHTML = '';
+  });
+  function toggleNuevo(show) {
+    document.getElementById('nuevoClienteFields').style.display = show ? 'block' : 'none';
+  }
+  toggleNuevo(true);
+
+  // ───── Gestión de Productos ─────
   totalInput.addEventListener('input', () => { manualTotal = true; });
 
   function agregarProducto() {
     contadorProductos++;
     const cont = document.getElementById('productos');
 
+    // Opciones de materiales
     const opciones = materialesData.map(m =>
       `<option
          value="${m.name}"
@@ -251,6 +244,7 @@
     const selEl = document.getElementsByName('material[]')[id-1];
     if (!selEl.value) return;
 
+    // Leemos precio y unidad del <option>
     const pricePerUnit = parseFloat(selEl.selectedOptions[0].dataset.price) || 0;
     const unitType     = selEl.selectedOptions[0].dataset.tipounidad;
 
@@ -260,12 +254,17 @@
     const desc     = parseFloat(document.getElementsByName('descuento[]')[id-1]?.value)|| 0;
     const inpPre   = document.getElementById(`precio_${id}`);
 
-    let unitPrice = unitType==='m2'
-      ? ancho*alto*pricePerUnit
-      : pricePerUnit;
+    // Cálculo: si es "unidad", precio directo; si no, por m² (ancho*alto*precio)
+    let unitPrice;
+    if (unitType === 'unidad') {
+      unitPrice = pricePerUnit;
+    } else {
+      unitPrice = ancho * alto * pricePerUnit;
+    }
 
+    // Aplicamos cantidad y descuento
     let total = unitPrice * cantidad;
-    total = total - (total * (desc/100));
+    total = total - (total * (desc / 100));
 
     inpPre.value = total.toFixed(2);
     recalcularTotalPedido();
@@ -275,11 +274,11 @@
     if (manualTotal) return;
     let sum = 0;
     document.querySelectorAll('input[name="precio[]"]').forEach(i => {
-      sum += parseFloat(i.value)||0;
+      sum += parseFloat(i.value) || 0;
     });
     totalInput.value = sum.toFixed(2);
   }
 
-  // inicializar
+  // iniciar total
   totalInput.value = '0.00';
 </script>

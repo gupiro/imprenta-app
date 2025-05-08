@@ -38,7 +38,8 @@
 </head>
 <body>
   <div class="pdf-header">
-    <img src="Images/logo.png" alt="Logo Empresa">
+    <!-- Se servirá desde public/logo.png gracias a `base: 'file://.../public/'` -->
+    <img src="logo.png" alt="Logo Empresa">
   </div>
 
   <table>
@@ -59,7 +60,7 @@
             <td><%= p.cliente_nombre %></td>
             <td><%= prod.material %> (<%= prod.ancho %>×<%= prod.alto %>)</td>
             <td style="text-align:right">$<%= Math.round(p.precio||0) %></td>
-            <td style="text-align:center"><%= p.forma_pago || 'N/D' %></td>
+            <td style="text-align:center"><%= p.medio_pago || 'N/D' %></td>
             <td style="text-align:center"><%= p.fecha_pago || 'N/D' %></td>
           </tr>
           <% total += p.precio||0; %>

@@ -46,9 +46,20 @@
           <div class="pedido-card">
 
             <% if (pedido.imagen) { %>
-              <img src="/uploads/<%= pedido.imagen %>" alt="Imagen Pedido" class="pedido-img">
+              <!-- Carga perezosa y baja calidad con query param -->
+              <img
+                src="/uploads/<%= pedido.imagen %>?quality=low"
+                loading="lazy"
+                alt="Imagen Pedido"
+                class="pedido-img"
+              >
             <% } else { %>
-              <img src="/uploads/default.png" alt="Sin imagen" class="pedido-img">
+              <img
+                src="/uploads/default.png"
+                loading="lazy"
+                alt="Sin imagen"
+                class="pedido-img"
+              >
             <% } %>
 
             <h5><strong>Cliente:</strong> <%= pedido.cliente_nombre %></h5>
@@ -59,7 +70,12 @@
             <div class="acciones-btns">
 
               <% if (pedido.imagen) { %>
-                <a href="/uploads/<%= pedido.imagen %>" download class="btn btn-outline-primary w-100">
+                <!-- Enlace de descarga a alta calidad -->
+                <a
+                  href="/uploads/<%= pedido.imagen %>"
+                  download
+                  class="btn btn-outline-primary w-100"
+                >
                   📥 Descargar Imagen
                 </a>
               <% } %>

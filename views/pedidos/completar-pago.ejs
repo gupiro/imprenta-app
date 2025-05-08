@@ -1,7 +1,7 @@
 <%- include('../partials/header', { title }) %>
 
 <main class="container py-4">
-  <h1 class="mb-4">💰 Completar Pago</h1>
+  <h1 class="mb-4"><%= title %></h1>
 
   <% if ((Array.isArray(error) && error.length) || (!Array.isArray(error) && error)) { %>
     <div class="alert alert-danger">

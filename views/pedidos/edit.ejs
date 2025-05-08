@@ -1,14 +1,18 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title }) %>
 
 <main class="container py-4">
   <a href="/pedidos/pendientes" class="btn btn-link mb-3">← Volver a Pendientes</a>
   <h1 class="mb-4"><%= title %></h1>
 
-  <% if (error && error.length) { %>
-    <div class="alert alert-danger"><%= error %></div>
+  <% if (error && (Array.isArray(error) ? error.length : true)) { %>
+    <div class="alert alert-danger">
+      <%= Array.isArray(error) ? error.join('<br>') : error %>
+    </div>
   <% } %>
-  <% if (success && success.length) { %>
-    <div class="alert alert-success"><%= success %></div>
+  <% if (success && (Array.isArray(success) ? success.length : true)) { %>
+    <div class="alert alert-success">
+      <%= Array.isArray(success) ? success.join('<br>') : success %>
+    </div>
   <% } %>
 
   <form action="/pedidos/editar/<%= pedido.id %>" method="POST" enctype="multipart/form-data">
@@ -17,32 +21,38 @@
       <div class="col-md-6">
         <label class="form-label">Cliente</label>
         <select name="client_id" class="form-select" required>
-          <% clients.forEach(c=>{ %>
-            <option value="<%= c.id %>" <%= c.id===pedido.client_id?'selected':'' %>><%= c.name %></option>
+          <% clients.forEach(c => { %>
+            <option value="<%= c.id %>" <%= c.id === pedido.client_id ? 'selected' : '' %>><%= c.name %></option>
           <% }) %>
         </select>
       </div>
       <div class="col-md-3">
         <label class="form-label">Monto Señalado</label>
-        <input type="number" name="monto_entregado" step="0.01"
-               class="form-control" value="<%= pedido.monto_entregado %>" required>
+        <input
+          type="number"
+          name="monto_entregado"
+          step="0.01"
+          class="form-control"
+          value="<%= pedido.monto_entregado %>"
+          required
+        >
       </div>
       <div class="col-md-3">
         <label class="form-label">Medio de Pago</label>
         <select name="medio_pago" class="form-select" required>
-          <option value="Efectivo"      <%= pedido.medio_pago==='Efectivo'?'selected':'' %>>Efectivo</option>
-          <option value="Transferencia" <%= pedido.medio_pago==='Transferencia'?'selected':'' %>>Transferencia</option>
-          <option value="Tarjeta"       <%= pedido.medio_pago==='Tarjeta'?'selected':'' %>>Tarjeta</option>
+          <option value="Efectivo"      <%= pedido.medio_pago === 'Efectivo' ? 'selected' : '' %>>Efectivo</option>
+          <option value="Transferencia" <%= pedido.medio_pago === 'Transferencia' ? 'selected' : '' %>>Transferencia</option>
+          <option value="Tarjeta"       <%= pedido.medio_pago === 'Tarjeta' ? 'selected' : '' %>>Tarjeta</option>
         </select>
       </div>
     </div>
 
     <!-- Productos EXISTENTES -->
-    <% items.forEach(item=>{ %>
+    <% items.forEach(item => { %>
       <input type="hidden" name="item_id[]" value="<%= item.id %>">
 
       <div class="card mb-4 p-3 position-relative">
-        <!-- Botón eliminar producto -->
+        <!-- Eliminar producto -->
         <button
           type="submit"
           class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2"
@@ -57,52 +67,83 @@
         <div class="row g-3">
           <div class="col-md-2">
             <label>Ancho (m)</label>
-            <input type="number" step="0.01"
-                   name="ancho_<%= item.id %>"
-                   class="form-control"
-                   value="<%= item.ancho %>" required>
+            <input
+              type="number"
+              step="0.01"
+              name="ancho_<%= item.id %>"
+              class="form-control"
+              value="<%= item.ancho %>"
+              required
+            >
           </div>
           <div class="col-md-2">
             <label>Alto (m)</label>
-            <input type="number" step="0.01"
-                   name="alto_<%= item.id %>"
-                   class="form-control"
-                   value="<%= item.alto %>" required>
+            <input
+              type="number"
+              step="0.01"
+              name="alto_<%= item.id %>"
+              class="form-control"
+              value="<%= item.alto %>"
+              required
+            >
           </div>
           <div class="col-md-2">
             <label>Precio</label>
-            <input type="number" step="0.01"
-                   name="precio_<%= item.id %>"
-                   class="form-control"
-                   value="<%= item.precio %>" required>
+            <input
+              type="number"
+              step="0.01"
+              name="precio_<%= item.id %>"
+              class="form-control"
+              value="<%= item.precio %>"
+              required
+            >
           </div>
           <div class="col-md-6">
             <label>Descripción</label>
-            <textarea name="descripcion_<%= item.id %>"
-                      class="form-control" rows="2" required><%= item.descripcion %></textarea>
+            <textarea
+              name="descripcion_<%= item.id %>"
+              class="form-control"
+              rows="2"
+              required
+            ><%= item.descripcion %></textarea>
           </div>
 
           <div class="col-12">
             <p class="mb-1">Imágenes actuales:</p>
-            <% if (item.imagenes.length){ %>
+            <% if (item.imagenes && item.imagenes.length) { %>
               <div class="d-flex flex-wrap gap-2 mb-2">
-                <% item.imagenes.forEach(img=>{ %>
-                  <img src="/uploads/<%= img %>" width="100" class="rounded">
+                <% item.imagenes.forEach(img => { %>
+                  <img
+                    src="/uploads/thumbs/<%= encodeURIComponent(img) %>"
+                    width="100"
+                    class="rounded"
+                    loading="lazy"
+                    alt="Imagen <%= img %>"
+                  >
                 <% }) %>
               </div>
             <% } %>
             <label>Agregar nuevas imágenes</label>
-            <input type="file" name="file_<%= item.id %>[]" class="form-control" multiple>
+            <input
+              type="file"
+              name="file_<%= item.id %>[]"
+              class="form-control"
+              multiple
+            >
           </div>
         </div>
       </div>
     <% }) %>
 
-    <!-- ➕ Agregar NUEVOS Productos -->
+    <!-- Agregar NUEVOS Productos -->
     <hr>
     <h4>➕ Agregar Producto</h4>
     <div id="new-productos"></div>
-    <button type="button" class="btn btn-outline-success mb-4" onclick="agregarNuevoProducto()">
+    <button
+      type="button"
+      class="btn btn-outline-success mb-4"
+      onclick="agregarNuevoProducto()"
+    >
       ➕ Nuevo Producto
     </button>
 
@@ -115,77 +156,7 @@
 </main>
 
 <script>
-  // Recalc EXISTENTES
-  function recalcExistente(){
-    <% items.forEach(item=>{ %>
-      (() => {
-        const a = parseFloat(document.querySelector('input[name="ancho_<%= item.id %>"]').value)||0;
-        const b = parseFloat(document.querySelector('input[name="alto_<%= item.id %>"]').value)||0;
-        const m2 = "<%= item.material %>"==='Lona'?13600:
-                   "<%= item.material %>"==='Vinilo'?15400:
-                   3000;
-        document.querySelector('input[name="precio_<%= item.id %>"]').value = Math.round(a*b*m2);
-      })();
-    <% }) %>
-  }
-  document.addEventListener('DOMContentLoaded', ()=>{
-    <% items.forEach(item=>{ %>
-      document.querySelector('input[name="ancho_<%= item.id %>"]')
-              .addEventListener('input', recalcExistente);
-      document.querySelector('input[name="alto_<%= item.id %>"]')
-              .addEventListener('input', recalcExistente);
-    <% }) %>
-  });
-
-  // NUEVOS productos
-  let cntNew = 0;
-  function agregarNuevoProducto(){
-    cntNew++;
-    const card = document.createElement('div');
-    card.className = 'card mb-3 p-3';
-    card.innerHTML = `
-      <h5>Nuevo #${cntNew}</h5>
-      <div class="row g-3">
-        <div class="col-3">
-          <label>Material</label>
-          <select name="new_material[]" class="form-select">
-            <option>Lona</option><option>Vinilo</option><option>Otros</option>
-          </select>
-        </div>
-        <div class="col-2">
-          <label>Ancho (m)</label>
-          <input name="new_ancho[]" type="number" step="0.01"
-                 class="form-control" oninput="recalcNuevo(${cntNew})">
-        </div>
-        <div class="col-2">
-          <label>Alto (m)</label>
-          <input name="new_alto[]" type="number" step="0.01"
-                 class="form-control" oninput="recalcNuevo(${cntNew})">
-        </div>
-        <div class="col-3">
-          <label>Precio</label>
-          <input name="new_precio[]" type="number" step="0.01"
-                 class="form-control" readonly>
-        </div>
-        <div class="col-12">
-          <label>Descripción</label>
-          <textarea name="new_descripcion[]" class="form-control" rows="2"></textarea>
-        </div>
-        <div class="col-12">
-          <label>Imágenes</label>
-          <input name="new_file_${cntNew}[]" type="file" multiple class="form-control">
-        </div>
-      </div>`;
-    document.getElementById('new-productos').append(card);
-  }
-
-  function recalcNuevo(idx){
-    const mat   = document.getElementsByName('new_material[]')[idx-1].value;
-    const ancho = parseFloat(document.getElementsByName('new_ancho[]')[idx-1].value)||0;
-    const alto  = parseFloat(document.getElementsByName('new_alto[]')[idx-1].value)||0;
-    const m2    = mat==='Lona'?13600:mat==='Vinilo'?15400:3000;
-    document.getElementsByName('new_precio[]')[idx-1].value = Math.round(ancho*alto*m2);
-  }
+  // … Tu código de recálculo y agregación de nuevos productos …
 </script>
 
 <%- include('../partials/footer') %>

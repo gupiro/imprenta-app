@@ -42,23 +42,26 @@
 <% if (pedidos.length > 0) { %>
   <div class="d-flex flex-column gap-3">
     <% pedidos.forEach(pedido => {
-         // Calcular saldo pendiente
-         let saldo  = Math.round(pedido.monto_restante || 0);
-
-         // Normalizar teléfono y asegurar prefijo +549
-         let raw    = pedido.telefono || '';
-         let digits = raw.replace(/\D/g, '');
-         let tel    = digits.startsWith('549') ? digits : '549' + digits;
-
-         // Construir mensaje cordial sin número de trabajo
-         let msg  = `Hola ${pedido.cliente_nombre}, tu trabajo ya está listo para retirar.`;
-             msg += ` Tu saldo pendiente es $${saldo}.`;
-             msg += ` ¡Muchas gracias por elegirnos y esperamos tu visita!`;
+         const saldo  = Math.round(pedido.monto_restante || 0);
+         // Normalizar teléfono con +549…
+         const raw    = pedido.telefono || '';
+         const digits = raw.replace(/\D/g, '');
+         const tel    = digits.startsWith('549') ? digits : '549' + digits;
+         let msg  = `Hola ${pedido.cliente_nombre}, tu trabajo ya está listo para retirar.` +
+                    ` Tu saldo pendiente es $${saldo}. ¡Muchas gracias!`;
     %>
       <div class="tarjeta-terminado p-3 shadow-sm d-flex gap-3 align-items-center flex-wrap">
         
         <% if (pedido.imagen) { %>
-          <img src="/uploads/<%= pedido.imagen %>" alt="Diseño Final" class="imagen-previa">
+          <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>" download>
+            <img
+              src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>"
+              alt="Diseño Final"
+              class="imagen-previa"
+              loading="lazy"
+              onerror="this.src='/images/default.png';"
+            >
+          </a>
         <% } else { %>
           <div class="imagen-previa bg-light d-flex justify-content-center align-items-center text-muted">
             Sin imagen
@@ -78,7 +81,7 @@
         </div>
 
         <div class="text-end d-flex flex-column align-items-end gap-2">
-          <!-- 1) Botón WhatsApp -->
+          <!-- 1) WhatsApp -->
           <a
             href="https://wa.me/<%= tel %>?text=<%= encodeURIComponent(msg) %>"
             target="_blank"
@@ -87,7 +90,7 @@
             <i class="bi bi-whatsapp"></i> Avisar cliente
           </a>
 
-          <!-- 2) Botón para Entregar -->
+          <!-- 2) Entregar (con pago parcial) -->
           <form action="/pedidos/<%= pedido.id %>/entregar" method="POST" class="w-100 mb-2">
             <input
               type="number"
@@ -101,7 +104,7 @@
             </button>
           </form>
 
-          <!-- 3) Botón para Marcar como Pagado -->
+          <!-- 3) Marcar como Pagado -->
           <form action="/pedidos/<%= pedido.id %>/pagar" method="POST" class="w-100">
             <select name="forma_pago" class="form-select form-select-sm mb-1" required>
               <option value="" disabled selected>Forma de pago</option>

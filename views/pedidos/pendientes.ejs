@@ -44,11 +44,18 @@
                     <strong><%= prod.material %></strong> –
                     <%= prod.ancho %>×<%= prod.alto %> m
                   </p>
-                  <% if (prod.imagenes.length) { %>
-                    <img src="/uploads/<%= prod.imagenes[0] %>"
-                         class="img-fluid mb-2 rounded"
-                         style="max-height:100px;"
-                         alt="Producto"/>
+                  <% if (prod.imagenes.length) { 
+                       const img = prod.imagenes[0];
+                  %>
+                    <a href="/uploads/<%= img %>" download>
+                      <img
+                        src="/uploads/thumbs/<%= img %>"
+                        class="img-fluid mb-2 rounded"
+                        style="max-height:100px;"
+                        loading="lazy"
+                        alt="Producto <%= prod.material %>"
+                      >
+                    </a>
                   <% } %>
                   <hr/>
                 <% }) %>

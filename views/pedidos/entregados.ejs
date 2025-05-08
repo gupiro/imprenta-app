@@ -43,9 +43,18 @@
     %>
       <div class="tarjeta-entregado p-3 shadow-sm">
         <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
+          
           <% if (pedido.imagen) { %>
-            <img src="/uploads/<%= pedido.imagen %>" class="imagen-previa" alt="Preview">
+            <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>?quality=low" download>
+              <img 
+                src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>" 
+                class="imagen-previa" 
+                alt="Preview" 
+                loading="lazy"
+              >
+            </a>
           <% } %>
+
           <div class="flex-grow-1">
             <h5 class="mb-1 text-primary">📌 <%= pedido.cliente_nombre %></h5>
             <div class="small">
@@ -57,6 +66,7 @@
               <% if (diasDesde !== null) { %>(hace <%= diasDesde %> días)<% } %>
             </div>
           </div>
+
           <div class="text-end">
             <% if (saldo > 0) { %>
               <div class="alert alert-warning p-2 mb-2">⚠️ Saldo pendiente</div>
@@ -66,7 +76,7 @@
               <form id="form-<%= pedido.id %>" action="/pedidos/<%= pedido.id %>/completar-pago"
                     method="POST" class="d-none mt-2">
                 <div class="input-group input-group-sm">
-                  <input type="number" name="monto_pagado" class="form-control"
+                  <input type="number" name="monto_extra" class="form-control"
                          min="0.01" max="<%= saldo %>" step="0.01" required>
                   <button type="submit" class="btn btn-success">Confirmar</button>
                 </div>

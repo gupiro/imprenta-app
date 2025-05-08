@@ -7,21 +7,17 @@
     border: none;
     border-radius: 6px;
   }
-
   .tarjeta-pedido:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
   }
-
   .btn-repetir {
     transition: all 0.2s ease-in-out;
   }
-
   .btn-repetir:hover {
     transform: scale(1.05);
     box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
   }
-
   .imagen-previa {
     width: 120px;
     height: 80px;
@@ -65,18 +61,21 @@
       <div class="tarjeta-pedido p-3 d-flex justify-content-between align-items-start flex-wrap shadow-sm">
         <!-- Miniatura -->
         <% if (pedido.imagen) { %>
-          <img
-            src="/uploads/<%= pedido.imagen %>"
-            alt="Miniatura Pedido"
-            class="imagen-previa"
-          >
+          <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>?quality=low" download>
+            <img
+              src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>"
+              alt="Miniatura Pedido"
+              class="imagen-previa"
+              loading="lazy"
+            >
+          </a>
         <% } %>
 
         <div class="flex-grow-1">
           <h5 class="mb-1 text-primary">📌 <%= pedido.cliente_nombre %></h5>
           <div class="small">
             💵 <strong>Precio:</strong> $<%= Math.round(pedido.precio||0) %><br>
-            💳 <strong>Pago:</strong> <%= pedido.forma_pago || 'N/D' %><br>
+            💳 <strong>Pago:</strong> <%= pedido.medio_pago || 'N/D' %><br>
             📅 <strong>Fecha:</strong> <%= pedido.fecha_pago || 'N/D' %>
           </div>
 
@@ -113,14 +112,3 @@
 </div>
 
 <%- include('../partials/footer') %>
-
-<script>
-  function pedirClaveHistorialPedidos() {
-    const clave = prompt("Introduce la clave para acceder al historial de pedidos:");
-    if (!clave) {
-      alert('Operación cancelada.');
-      return false;
-    }
-    window.location.href = `/pedidos/historial?clave=${encodeURIComponent(clave)}`;
-  }
-</script>

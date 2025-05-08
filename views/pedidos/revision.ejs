@@ -17,12 +17,11 @@
   <% if (pedidos && pedidos.length > 0) { %>
     <div class="list-group">
       <% pedidos.forEach(p => {
-           // Seleccionamos la última revisión subida
-           const files = p.archivos || [];
+           const files      = p.archivos || [];
            const latestFile = files.length ? files[files.length - 1] : null;
-           const ext = latestFile ? latestFile.split('.').pop().toLowerCase() : '';
-           const isImg = ['jpg','jpeg','png','gif'].includes(ext);
-           const hasNew = p.unread_comments > 0;
+           const ext        = latestFile ? latestFile.split('.').pop().toLowerCase() : '';
+           const isImg      = ['jpg','jpeg','png','gif'].includes(ext);
+           const hasNew     = p.unread_comments > 0;
       %>
         <a
           href="/pedidos/detalle/<%= p.id %>"
@@ -30,10 +29,11 @@
         >
           <% if (latestFile && isImg) { %>
             <img
-              src="/uploads/<%= latestFile %>"
+              src="/uploads/thumbs/<%= encodeURIComponent(latestFile) %>"
               alt="Última revisión de <%= p.cliente_nombre %>"
               class="rounded-circle"
               style="width:50px; height:50px; object-fit:cover;"
+              loading="lazy"
               onerror="this.src='/images/fallback.png';"
             >
           <% } else if (latestFile) { %>

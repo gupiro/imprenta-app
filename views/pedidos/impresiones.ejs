@@ -3,11 +3,11 @@
 <main class="container py-4">
   <h1 class="mb-4">🖨️ <%= title %></h1>
 
-  <% if (error.length) { %>
-    <div class="alert alert-danger"><%= error %></div>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger"><%= Array.isArray(error) ? error.join('<br>') : error %></div>
   <% } %>
-  <% if (success.length) { %>
-    <div class="alert alert-success"><%= success %></div>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success"><%= Array.isArray(success) ? success.join('<br>') : success %></div>
   <% } %>
 
   <% if (pedidos.length) { %>
@@ -48,22 +48,28 @@
                 <div class="card h-100">
                   <div class="card-body text-center p-2">
                     <% if (isImage) { %>
-                      <a href="/uploads/<%= encodeURIComponent(fn) %>" download>
+                      <a href="/uploads/<%= encodeURIComponent(fn) %>?quality=low" download>
                         <img
                           src="/uploads/thumbs/<%= encodeURIComponent(fn) %>"
                           class="img-fluid mb-1"
                           style="max-height:100px;"
                           loading="lazy"
+                          alt="<%= fn %>"
                         >
                       </a>
                     <% } else { %>
-                      <i class="bi bi-file-earmark-text" style="font-size:2rem;"></i>
+                      <a
+                        href="/uploads/<%= encodeURIComponent(fn) %>?quality=low"
+                        download
+                        class="btn btn-outline-secondary btn-sm mb-1"
+                      >
+                        📄 <%= fn %>
+                      </a>
                     <% } %>
-                    <p class="small text-truncate"><%= fn %></p>
                   </div>
                   <div class="card-footer bg-transparent d-flex justify-content-between p-2">
                     <a
-                      href="/uploads/<%= encodeURIComponent(fn) %>"
+                      href="/uploads/<%= encodeURIComponent(fn) %>?quality=low"
                       download
                       class="btn btn-outline-primary btn-sm"
                     >

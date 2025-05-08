@@ -1,45 +1,6 @@
-<%- include('partials/header') %>
+<%- include('../partials/header', { title: '✅ Diseños Confirmados' }) %>
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Diseños Confirmados</title>
-  <link rel="stylesheet" href="/css/estilos.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    .pedido-card {
-      background: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 15px;
-      margin: 15px 0;
-      box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
-      transition: transform 0.2s;
-    }
-    .pedido-card:hover {
-      transform: scale(1.02);
-    }
-    .pedido-img {
-      width: 100%;
-      max-height: 200px;
-      object-fit: contain;
-      margin-bottom: 10px;
-    }
-    .acciones-btns {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .acciones-btns form, .acciones-btns a {
-      flex: 1;
-    }
-  </style>
-</head>
-
-<body class="container py-5">
-
+<main class="container py-5">
   <h1 class="mb-4 text-center">✅ Diseños Confirmados</h1>
 
   <% if (pedidos.length > 0) { %>
@@ -49,9 +10,22 @@
           <div class="pedido-card">
 
             <% if (pedido.imagen) { %>
-              <img src="/uploads/<%= pedido.imagen %>" alt="Imagen Pedido" class="pedido-img">
+              <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>" download>
+                <img
+                  src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>"
+                  alt="Imagen Pedido"
+                  class="pedido-img"
+                  loading="lazy"
+                  onerror="this.src='/images/default.png';"
+                >
+              </a>
             <% } else { %>
-              <img src="/uploads/default.png" alt="Sin imagen" class="pedido-img">
+              <img
+                src="/uploads/default.png"
+                alt="Sin imagen"
+                class="pedido-img"
+                loading="lazy"
+              >
             <% } %>
 
             <h5><strong>Cliente:</strong> <%= pedido.cliente_nombre %></h5>
@@ -64,7 +38,7 @@
             <div class="acciones-btns">
 
               <% if (pedido.imagen) { %>
-                <a href="/uploads/<%= pedido.imagen %>" download class="btn btn-outline-primary">
+                <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>" download class="btn btn-outline-primary">
                   📥 Descargar Imagen
                 </a>
               <% } %>
@@ -80,7 +54,11 @@
               </form>
 
               <form action="/pedidos/<%= pedido.id %>/eliminar" method="POST">
-                <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('¿Seguro que querés eliminar este pedido? 😨')">
+                <button
+                  type="submit"
+                  class="btn btn-outline-danger w-100"
+                  onclick="return confirm('¿Seguro que querés eliminar este pedido? 😨')"
+                >
                   🗑️ Eliminar
                 </button>
               </form>
@@ -96,6 +74,6 @@
       No hay diseños confirmados todavía. ✍️
     </div>
   <% } %>
+</main>
 
-</body>
-</html>
+<%- include('../partials/footer') %>

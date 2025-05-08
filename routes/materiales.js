@@ -14,9 +14,9 @@ router.get(
     const materiales = db
       .prepare('SELECT * FROM materials ORDER BY id ASC')
       .all();
-    res.render('materiales/index', {
+    res.render('materiales/list', {
       title:      'Materiales',
-      materials:  materiales,
+      materiales,                 // la vista espera "materiales"
       success:    req.flash('success'),
       error:      req.flash('error')
     });
@@ -30,40 +30,43 @@ router.get(
   checkPermission,
   (req, res) => {
     res.render('materiales/new', {
-      title: 'Agregar Material',
-      error: req.flash('error')
+      title:    'Agregar Material',
+      success:  req.flash('success'),
+      error:    req.flash('error'),
+      material: null            // lo marcamos explícitamente para la vista
     });
   }
 );
 
-// ▶ POST /materiales — Crear material
+// ▶ POST /materiales — Crear material incluyendo la columna `unit`
 router.post(
   '/',
   permitirRoles('Admin','Atención'),
   checkPermission,
   (req, res) => {
+    console.log('🛠️  POST /materiales → body:', req.body);
     const { name, price, tipoUnidad } = req.body;
     if (!name || !price) {
       req.flash('error', 'Nombre y precio son obligatorios.');
       return res.redirect('/materiales/nuevo');
     }
+    const unit = tipoUnidad;  // tu tabla tiene `unit NOT NULL`
     try {
-      db.prepare(
-        'INSERT INTO materials (name, price, tipoUnidad) VALUES (?, ?, ?)'
-      ).run(name.trim(), parseFloat(price), tipoUnidad || 'unidad');
+      const info = db.prepare(
+        'INSERT INTO materials (name, price, tipoUnidad, unit) VALUES (?, ?, ?, ?)'
+      ).run(name.trim(), parseFloat(price), tipoUnidad, unit);
+      console.log('✅ Material insertado, id =', info.lastInsertRowid);
       req.flash('success', `Material "${name}" agregado correctamente.`);
       res.redirect('/materiales');
     } catch (err) {
+      console.error('❌ Error al crear material:', err);
       req.flash('error', 'Error al crear el material: ' + err.message);
       res.redirect('/materiales/nuevo');
     }
   }
 );
 
-module.exports = router;
-
-
-// ▶ Formulario Editar Material (GET)
+// ▶ GET /materiales/editar/:id — Formulario para editar material
 router.get(
   '/editar/:id',
   permitirRoles('Admin','Atención'),
@@ -76,61 +79,55 @@ router.get(
       req.flash('error', 'Material no encontrado.');
       return res.redirect('/materiales');
     }
-    res.render('materiales/form', {
+    res.render('materiales/new', {
       title:    'Editar Material',
-      material,
       success:  req.flash('success'),
-      error:    req.flash('error')
+      error:    req.flash('error'),
+      material                  // pasamos el objeto para precargar el form
     });
   }
 );
 
-// ▶ Procesar Edición de Material (POST)
+// ▶ POST /materiales/editar/:id — Procesar edición incluyendo `unit`
 router.post(
   '/editar/:id',
   permitirRoles('Admin','Atención'),
   checkPermission,
   (req, res) => {
-    const name        = (req.body.name        || '').trim();
-    const price       = parseFloat(req.body.price    || '');
-    const tipoUnidad  = (req.body.tipoUnidad || '').trim();
-    const unit        = (req.body.unit        || '').trim();
-
-    if (!name || isNaN(price) || !tipoUnidad || !unit) {
+    console.log(`🛠️  POST /materiales/editar/${req.params.id} → body:`, req.body);
+    const id = req.params.id;
+    const { name, price, tipoUnidad } = req.body;
+    if (!name || isNaN(parseFloat(price)) || !tipoUnidad) {
       req.flash('error', 'Todos los campos son obligatorios.');
-      return res.redirect(`/materiales/editar/${req.params.id}`);
+      return res.redirect(`/materiales/editar/${id}`);
     }
-
+    const unit = tipoUnidad;
     try {
-      db.prepare(`
-        UPDATE materials
-           SET name       = ?,
-               price      = ?,
-               tipoUnidad = ?,
-               unit       = ?
-         WHERE id = ?
-      `).run(name, price, tipoUnidad, unit, req.params.id);
+      db.prepare(
+        'UPDATE materials SET name = ?, price = ?, tipoUnidad = ?, unit = ? WHERE id = ?'
+      ).run(name.trim(), parseFloat(price), tipoUnidad, unit, id);
       req.flash('success', 'Material actualizado.');
+      res.redirect('/materiales');
     } catch (err) {
-      console.error('Error al actualizar material:', err);
+      console.error('❌ Error al actualizar material:', err);
       req.flash('error', 'Error al actualizar el material.');
+      res.redirect(`/materiales/editar/${id}`);
     }
-
-    res.redirect('/materiales');
   }
 );
 
-// ▶ Eliminar Material (POST)
+// ▶ POST /materiales/eliminar/:id — Eliminar material
 router.post(
   '/eliminar/:id',
   permitirRoles('Admin','Atención'),
   checkPermission,
   (req, res) => {
+    console.log(`🗑️  POST /materiales/eliminar/${req.params.id}`);
     try {
       db.prepare('DELETE FROM materials WHERE id = ?').run(req.params.id);
       req.flash('success', 'Material eliminado.');
     } catch (err) {
-      console.error('Error al eliminar material:', err);
+      console.error('❌ Error al eliminar material:', err);
       req.flash('error', 'Error al eliminar el material.');
     }
     res.redirect('/materiales');

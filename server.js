@@ -48,7 +48,8 @@ const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 const thumbsDir = path.join(uploadsDir, 'thumbs');
 if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
-
+// Montar static public — esto sirve /images/logo.png
+app.use(express.static(path.join(__dirname, 'public')));
 // ─── Rutas de imágenes, watermark, etc. (tu código existente) ───
 app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
   try {

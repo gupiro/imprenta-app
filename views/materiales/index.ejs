@@ -1,36 +1,51 @@
-<h1><%= title %></h1>
+<% title = 'Materiales'; %>
+<%- include('../partials/header') %>
 
-<% if (success.length) { %>
-  <div class="alert alert-success"><%= success.join('<br>') %></div>
-<% } %>
-<% if (error.length) { %>
-  <div class="alert alert-danger"><%= error.join('<br>') %></div>
-<% } %>
+<main class="container py-4">
+  <h1 class="mb-4">📦 Materiales</h1>
 
-<a href="/materiales/nuevo" class="btn btn-primary mb-3">Agregar Material</a>
+  <% if (success.length) { %>
+    <div class="alert alert-success"><%= success.join('<br>') %></div>
+  <% } %>
+  <% if (error.length) { %>
+    <div class="alert alert-danger"><%= error.join('<br>') %></div>
+  <% } %>
 
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Nombre</th>
-      <th>Precio</th>
-      <th>Unidad</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% materials.forEach(m => { %>
-      <tr>
-        <td><%= m.id %></td>
-        <td><%= m.name %></td>
-        <td>$<%= m.price.toFixed(2) %></td>
-        <td><%= m.tipoUnidad %></td>
-      </tr>
-    <% }) %>
-    <% if (!materials.length) { %>
-      <tr>
-        <td colspan="4" class="text-center">No hay materiales aún.</td>
-      </tr>
-    <% } %>
-  </tbody>
-</table>
+  <a href="/materiales/nuevo" class="btn btn-primary mb-3">+ Nuevo Material</a>
+
+  <% if (materiales.length) { %>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Unidad</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% materiales.forEach(m => { %>
+          <tr>
+            <td><%= m.id %></td>
+            <td><%= m.name %></td>
+            <td>$<%= m.price.toFixed(2) %></td>
+            <td><%= m.tipoUnidad === 'm2' ? 'Metro²' : m.tipoUnidad %></td>
+            <td class="text-center">
+              <a href="/materiales/editar/<%= m.id %>" class="btn btn-sm btn-warning me-1">✏️</a>
+              <form action="/materiales/eliminar/<%= m.id %>" method="POST" class="d-inline">
+                <button class="btn btn-sm btn-danger">🗑️</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <div class="alert alert-info">No hay materiales aún.</div>
+  <% } %>
+
+  <a href="/" class="btn btn-secondary mt-4">← Volver al panel</a>
+</main>
+
+<%- include('../partials/footer') %>

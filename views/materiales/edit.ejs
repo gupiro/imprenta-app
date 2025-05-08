@@ -1,27 +1,17 @@
-<%
-// Definimos el título según exista o no el objeto `material`
-title = material ? 'Editar Material' : 'Agregar Material';
-%>
-<%- include('../partials/header', { title }) %>
+<% title = 'Editar Material'; %>
+<%- include('../partials/header') %>
 
 <main class="container py-4">
-  <h1 class="mb-4">
-    <%= material ? '✏️ Editar Material' : '➕ Agregar Material' %>
-  </h1>
+  <h1 class="mb-4">✏️ Editar Material</h1>
 
-  <% if (error && error.length) { %>
+  <% if (error.length) { %>
     <div class="alert alert-danger"><%= error.join('<br>') %></div>
   <% } %>
-  <% if (success && success.length) { %>
+  <% if (success.length) { %>
     <div class="alert alert-success"><%= success.join('<br>') %></div>
   <% } %>
 
-  <form
-    action="<%= material ? '/materiales/editar/' + material.id : '/materiales' %>"
-    method="POST"
-    class="row g-3 needs-validation"
-    novalidate
-  >
+  <form action="/materiales/editar/<%= material.id %>" method="POST" class="row g-3 needs-validation" novalidate>
     <div class="col-md-6">
       <label for="name" class="form-label">Nombre</label>
       <input
@@ -29,39 +19,34 @@ title = material ? 'Editar Material' : 'Agregar Material';
         id="name"
         name="name"
         class="form-control"
-        value="<%= material ? material.name : '' %>"
+        value="<%= material.name %>"
         required
       >
       <div class="invalid-feedback">El nombre es obligatorio.</div>
     </div>
-
     <div class="col-md-6">
       <label for="price" class="form-label">Precio</label>
       <input
         type="number"
         id="price"
         name="price"
-        class="form-control"
         step="0.01"
-        value="<%= material ? material.price.toFixed(2) : '' %>"
+        class="form-control"
+        value="<%= material.price %>"
         required
       >
       <div class="invalid-feedback">El precio es obligatorio.</div>
     </div>
-
     <div class="col-md-6">
       <label for="tipoUnidad" class="form-label">Unidad</label>
-      <select id="tipoUnidad" name="tipoUnidad" class="form-select" required>
-        <option value="unidad"  <%= material && material.tipoUnidad==='unidad'  ? 'selected' : '' %>>Unidad</option>
-        <option value="m2"       <%= material && material.tipoUnidad==='m2'       ? 'selected' : '' %>>Metro²</option>
+      <select id="tipoUnidad" name="tipoUnidad" class="form-select">
+        <option value="unidad" <%= material.tipoUnidad==='unidad' ? 'selected' : '' %>>Unidad</option>
+        <option value="m2"      <%= material.tipoUnidad==='m2'      ? 'selected' : '' %>>Metro²</option>
       </select>
-      <div class="invalid-feedback">La unidad es obligatoria.</div>
     </div>
 
     <div class="col-12 text-center mt-4">
-      <button type="submit" class="btn btn-success px-5">
-        <%= material ? '💾 Guardar Cambios' : 'Crear' %>
-      </button>
+      <button type="submit" class="btn btn-warning px-5">Guardar Cambios</button>
       <a href="/materiales" class="btn btn-secondary px-4">Cancelar</a>
     </div>
   </form>
@@ -70,7 +55,7 @@ title = material ? 'Editar Material' : 'Agregar Material';
 <%- include('../partials/footer') %>
 
 <script>
-  // Bootstrap validation (opcional)
+  // Validación de Bootstrap (opcional)
   (() => {
     'use strict';
     document.querySelectorAll('.needs-validation')

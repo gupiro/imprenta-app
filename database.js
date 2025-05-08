@@ -5,11 +5,10 @@ const path     = require('path');
    - En Render usaremos /data/imprenta.db  (el Disk persistente)
    - En desarrollo local usaremos ./imprenta.db junto al código */
 const dbFile = process.env.DB_FILE || path.join(__dirname, 'imprenta.db');
++ console.log('🔍 Using DB file at', dbFile);
 
 // Abrimos (o creamos) la base de datos con un timeout de 10 s
 const db = new Database(dbFile, { timeout: 10000 });
-
-
 
 
 // Configuramos WAL y llaves foráneas, y busy_timeout en la sesión de SQLite
@@ -145,3 +144,4 @@ db.prepare(`
 `).run();
 
 module.exports = db;
+

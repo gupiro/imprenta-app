@@ -1,18 +1,19 @@
 <%
-// Definimos el título según exista o no el objeto `material`
+// Si viene un objeto `material` estamos en edición,
+// si no, en creación:
 title = material ? 'Editar Material' : 'Agregar Material';
 %>
-<%- include('../partials/header', { title }) %>
+<%- include('../partials/header') %>
 
 <main class="container py-4">
   <h1 class="mb-4">
     <%= material ? '✏️ Editar Material' : '➕ Agregar Material' %>
   </h1>
 
-  <% if (error && error.length) { %>
+  <% if (error.length) { %>
     <div class="alert alert-danger"><%= error.join('<br>') %></div>
   <% } %>
-  <% if (success && success.length) { %>
+  <% if (success.length) { %>
     <div class="alert alert-success"><%= success.join('<br>') %></div>
   <% } %>
 
@@ -29,8 +30,8 @@ title = material ? 'Editar Material' : 'Agregar Material';
         id="name"
         name="name"
         class="form-control"
-        value="<%= material ? material.name : '' %>"
         required
+        value="<%= material ? material.name : '' %>"
       >
       <div class="invalid-feedback">El nombre es obligatorio.</div>
     </div>
@@ -43,8 +44,8 @@ title = material ? 'Editar Material' : 'Agregar Material';
         name="price"
         class="form-control"
         step="0.01"
-        value="<%= material ? material.price.toFixed(2) : '' %>"
         required
+        value="<%= material ? material.price : '' %>"
       >
       <div class="invalid-feedback">El precio es obligatorio.</div>
     </div>
@@ -52,15 +53,19 @@ title = material ? 'Editar Material' : 'Agregar Material';
     <div class="col-md-6">
       <label for="tipoUnidad" class="form-label">Unidad</label>
       <select id="tipoUnidad" name="tipoUnidad" class="form-select" required>
-        <option value="unidad"  <%= material && material.tipoUnidad==='unidad'  ? 'selected' : '' %>>Unidad</option>
-        <option value="m2"       <%= material && material.tipoUnidad==='m2'       ? 'selected' : '' %>>Metro²</option>
+        <option value="unidad"
+          <%= material && material.tipoUnidad === 'unidad' ? 'selected' : '' %>
+        >Unidad</option>
+        <option value="m2"
+          <%= material && material.tipoUnidad === 'm2' ? 'selected' : '' %>
+        >Metro²</option>
       </select>
       <div class="invalid-feedback">La unidad es obligatoria.</div>
     </div>
 
     <div class="col-12 text-center mt-4">
       <button type="submit" class="btn btn-success px-5">
-        <%= material ? '💾 Guardar Cambios' : 'Crear' %>
+        <%= material ? 'Actualizar' : 'Crear' %>
       </button>
       <a href="/materiales" class="btn btn-secondary px-4">Cancelar</a>
     </div>
@@ -70,16 +75,16 @@ title = material ? 'Editar Material' : 'Agregar Material';
 <%- include('../partials/footer') %>
 
 <script>
-  // Bootstrap validation (opcional)
-  (() => {
-    'use strict';
-    document.querySelectorAll('.needs-validation')
-      .forEach(form => form.addEventListener('submit', e => {
-        if (!form.checkValidity()) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
-        form.classList.add('was-validated');
-      }));
-  })();
+// Bootstrap validation
+(() => {
+  'use strict';
+  document.querySelectorAll('.needs-validation')
+    .forEach(form => form.addEventListener('submit', e => {
+      if (!form.checkValidity()) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      form.classList.add('was-validated');
+    }));
+})();
 </script>

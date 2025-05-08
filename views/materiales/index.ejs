@@ -8,7 +8,7 @@
   <div class="alert alert-danger"><%= error.join('<br>') %></div>
 <% } %>
 
-<a href="/materiales/new" class="btn btn-primary mb-3">Agregar Material</a>
+<a href="/materiales/nuevo" class="btn btn-primary mb-3">Agregar Material</a>
 
 <table class="table table-striped">
   <thead>
@@ -29,7 +29,9 @@
       </tr>
     <% }) %>
     <% if (!materials.length) { %>
-      <tr><td colspan="4" class="text-center">No hay materiales aún.</td></tr>
+      <tr>
+        <td colspan="4" class="text-center">No hay materiales aún.</td>
+      </tr>
     <% } %>
   </tbody>
 </table>

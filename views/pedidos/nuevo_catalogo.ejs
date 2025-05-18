@@ -1,0 +1,117 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h1 class="mb-4">Nuevo Pedido con Producto del Catálogo</h1>
+
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <form action="/pedidos/nuevo-con-catalogo" method="POST" enctype="multipart/form-data">
+    <div class="row mb-3">
+      <div class="col">
+        <label>Cliente existente</label>
+        <select name="clienteExistente" class="form-control">
+          <option value="">-- Selecciona --</option>
+          <% clientes.forEach(c => { %>
+            <option value="<%= c.id %>"><%= c.name %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="col">
+        <label>O ingresa nuevo cliente</label>
+        <input type="text" name="clienteInput" class="form-control" placeholder="Nombre del cliente">
+      </div>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col">
+        <input type="text" name="telefonoNuevo" class="form-control" placeholder="Teléfono">
+      </div>
+      <div class="col">
+        <input type="text" name="direccionNuevo" class="form-control" placeholder="Dirección">
+      </div>
+      <div class="col">
+        <input type="text" name="cuitNuevo" class="form-control" placeholder="CUIT">
+      </div>
+      <div class="col">
+        <input type="email" name="emailNuevo" class="form-control" placeholder="Email">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label>Producto del Catálogo</label>
+      <select name="producto_id" id="producto_id" class="form-control" required onchange="mostrarCampos()">
+        <option value="">-- Selecciona producto --</option>
+        <% productos_catalogo.forEach(p => { %>
+          <option value="<%= p.id %>" data-tipo="<%= p.tipo %>" data-minimo="<%= p.minimo %>">
+            <%= p.nombre %> – €<%= p.precio_base.toFixed(2) %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div id="campos-dinamicos"></div>
+
+    <div class="mb-3">
+      <label>Descripción</label>
+      <textarea name="descripcion" class="form-control" required></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label>Imágenes</label>
+      <input type="file" name="imagenes" multiple class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label>Medio de pago</label>
+      <input type="text" name="medio_pago" class="form-control">
+    </div>
+    <div class="mb-3">
+      <label>Monto entregado</label>
+      <input type="number" name="monto_entregado" step="0.01" class="form-control">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Crear Pedido</button>
+  </form>
+</main>
+
+<script>
+  function mostrarCampos() {
+    const select = document.getElementById('producto_id');
+    const tipo = select.options[select.selectedIndex]?.dataset.tipo;
+    const minimo = parseFloat(select.options[select.selectedIndex]?.dataset.minimo || 1);
+    const contenedor = document.getElementById('campos-dinamicos');
+
+    contenedor.innerHTML = '';
+    if (!tipo) return;
+
+    if (tipo === 'metro_cuadrado') {
+      contenedor.innerHTML = `
+        <div class="row mb-3">
+          <div class="col">
+            <input type="number" step="0.01" name="ancho" class="form-control" placeholder="Ancho (m)">
+          </div>
+          <div class="col">
+            <input type="number" step="0.01" name="alto" class="form-control" placeholder="Alto (m)">
+          </div>
+        </div>
+        <p class="text-muted">Mínimo facturable: ${minimo} m²</p>
+      `;
+    }
+
+    if (tipo === 'unidad' || tipo === 'hoja') {
+      contenedor.innerHTML = `
+        <div class="mb-3">
+          <input type="number" name="cantidad" class="form-control" placeholder="Cantidad" min="${minimo}">
+        </div>
+        <p class="text-muted">Mínimo: ${minimo} unidades</p>
+      `;
+    }
+  }
+</script>
+
+<%- include('../partials/footer') %>

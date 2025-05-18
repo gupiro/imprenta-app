@@ -1,0 +1,42 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h2>Nuevo Producto del Catálogo</h2>
+
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger text-center"><%= error %></div>
+  <% } %>
+
+  <form action="/catalogo/nuevo" method="POST" class="border p-4 rounded bg-light">
+    <div class="mb-3">
+      <label for="nombre" class="form-label">Nombre</label>
+      <input type="text" id="nombre" name="nombre" class="form-control" required placeholder="Ej: Cartel lona, Afiches, Stickers">
+    </div>
+
+    <div class="mb-3">
+      <label for="tipo" class="form-label">Tipo de cálculo</label>
+      <select id="tipo" name="tipo" class="form-select" required>
+        <option value="">Seleccionar tipo…</option>
+        <option value="unidad">Por unidad</option>
+        <option value="metro_cuadrado">Por metro cuadrado (m²)</option>
+        <option value="hoja">Por hoja</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="precio_base" class="form-label">Precio base (€)</label>
+      <input type="number" id="precio_base" name="precio_base" step="0.01" min="0" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="minimo" class="form-label">Cantidad mínima facturable (opcional)</label>
+      <input type="number" id="minimo" name="minimo" step="0.1" class="form-control" placeholder="Ej: 0.5 para mínimo 0.5 m²">
+    </div>
+
+    <div class="text-center mt-4">
+      <button class="btn btn-success px-5" type="submit">💾 Guardar Producto</button>
+    </div>
+  </form>
+</main>
+
+<%- include('../partials/footer') %>

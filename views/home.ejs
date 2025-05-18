@@ -1,21 +1,6 @@
 <% /* views/home.ejs */ %>
 <% title = 'Panel Principal' %>
 
-<%
-  const shadows = ['shadow-offset-coral','shadow-offset-menta','shadow-offset-mostaza'];
-  const items = [
-    { url: '/clientes',           icon: 'bi-people-fill',       title: 'Clientes',           text: 'Gestiona tu lista' },
-    { url: '/clientes/nuevo',     icon: 'bi-person-plus',       title: 'Nuevo Cliente',      text: 'Agrega un contacto' },
-    { url: '/pedidos/nuevo',      icon: 'bi-bag-plus-fill',     title: 'Nuevo Pedido',       text: 'Crea un encargo' },
-    { url: '/pedidos/pendientes', icon: 'bi-hourglass-split',   title: 'Trabajos Encargados',text: 'Revisa en curso',     countKey: 'pendientes' },
-    { url: '/pedidos/revision',   icon: 'bi-search-heart-fill', title: 'En Revisión',        text: 'Corrige pedidos',     countKey: 'revision' },
-    { url: '/pedidos/impresiones',icon: 'bi-printer-fill',      title: 'Para Imprimir',      text: 'Descarga finales',    countKey: 'impresion' },
-    { url: '/pedidos/terminados', icon: 'bi-check2-all',        title: 'Terminados',         text: 'Listos para entrega', countKey: 'terminados' },
-    { url: '/pedidos/entregados', icon: 'bi-box-arrow-in-right',title: 'Entregados',         text: 'Historial entregas',  countKey: 'entregados' },
-    { url: '/pedidos/historial',  icon: 'bi-clock-history',     title: 'Historial',          text: 'Repite antiguos' }
-  ];
-%>
-
 <style>
   .counter-circle {
     position: absolute;
@@ -38,7 +23,7 @@
   <% items.forEach((item, i) => { %>
     <div class="col">
       <a href="<%= item.url %>" class="text-decoration-none position-relative">
-        <div class="card h-100 retro-card <%= shadows[i % shadows.length] %>">
+        <div class="card h-100 retro-card shadow-offset-<%= ['coral','menta','mostaza'][i % 3] %>">
           <div class="card-body d-flex flex-column align-items-center position-relative">
             <% if (item.countKey && counts?.[item.countKey] > 0) { %>
               <div class="counter-circle"><%= counts[item.countKey] %></div>
@@ -55,5 +40,5 @@
 </div>
 
 <% if (user && user.rol === 'Admin') { %>
-  <a href="/usuarios" class="btn btn-dark">⚙️ Gestión de Usuarios</a>
+  <a href="/usuarios" class="btn btn-dark mt-4">⚙️ Gestión de Usuarios</a>
 <% } %>

@@ -1,0 +1,40 @@
+<%- include('../partials/header', { title }) %> 
+
+<main class="container py-4">
+  <h2>Catálogo de Productos</h2>
+  <a href="/catalogo/nuevo" class="btn btn-success mb-3">+ Agregar Producto</a>
+
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Precio Base (€)</th>
+        <th>Mínimo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (Array.isArray(productos) && productos.length > 0) { %>
+        <% productos.forEach(p => { %>
+          <tr>
+            <td><%= p.nombre %></td>
+            <td><%= p.tipo %></td>
+            <td>€ <%= Number(p.precio_base).toFixed(2) %></td>
+            <td><%= p.minimo %></td>
+            <td>
+              <a href="/catalogo/editar/<%= p.id %>" class="btn btn-sm btn-warning me-1">✏️ Editar</a>
+              <form action="/catalogo/eliminar/<%= p.id %>" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de eliminar este producto?')">
+                <button type="submit" class="btn btn-sm btn-danger">🗑️ Eliminar</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr><td colspan="5" class="text-center">No hay productos aún.</td></tr>
+      <% } %>
+    </tbody>
+  </table>
+</main>
+
+<%- include('../partials/footer') %>

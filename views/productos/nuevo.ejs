@@ -1,0 +1,24 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h2>Nuevo Producto</h2>
+
+  <form action="/productos/nuevo" method="POST" class="border p-4 rounded bg-light">
+    <input type="text" name="nombre" placeholder="Nombre del producto" required class="form-control mb-2">
+    
+    <select name="tipo" class="form-control mb-2" required>
+      <option value="">Seleccionar tipo</option>
+      <option value="unidad">Por unidad</option>
+      <option value="metro_cuadrado">Por metro cuadrado</option>
+      <option value="hoja">Por hoja</option>
+    </select>
+
+    <input type="number" name="precio_base" step="0.01" placeholder="Precio base (€)" required class="form-control mb-2">
+    
+    <input type="number" name="minimo" step="0.1" placeholder="Cantidad mínima (opcional)" class="form-control mb-2">
+
+    <button class="btn btn-success">Guardar Producto</button>
+  </form>
+</main>
+
+<%- include('../partials/footer') %>

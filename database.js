@@ -19,6 +19,22 @@ try {
 } catch (err) {
   console.warn('Pragma no aplicado (DB bloqueada?):', err.message);
 }
+// ── PRESUPUESTOS ─────────────────────────────────────────────
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS presupuestos (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_id       INTEGER,
+    nombre_cliente   TEXT,
+    email_cliente    TEXT,
+    telefono_cliente TEXT,
+    detalle          TEXT,
+    precio_estimado  REAL,
+    archivo_imagen   TEXT,
+    producto_id      INTEGER,
+    usado            INTEGER DEFAULT 0,
+    fecha_creacion   TEXT DEFAULT (datetime('now'))
+  )
+`).run();
 
 // ── MATERIALS ──────────────────────────────────────────────────────────────
 db.prepare(`
@@ -140,6 +156,17 @@ db.prepare(`
     password  TEXT    NOT NULL,
     rol       TEXT    NOT NULL,
     permisos  TEXT    DEFAULT '[]'
+  )
+`).run();
+
+// ── CATÁLOGO DE PRODUCTOS ─────────────────────────────────────────────────────
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS catalogo_productos (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre       TEXT    NOT NULL,
+    tipo         TEXT    NOT NULL, -- 'unidad', 'metro_cuadrado', 'hoja'
+    precio_base  REAL    NOT NULL,
+    minimo       REAL    DEFAULT 1
   )
 `).run();
 

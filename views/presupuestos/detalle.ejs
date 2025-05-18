@@ -1,0 +1,29 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h2>Detalle del Presupuesto #<%= presupuesto.id %></h2>
+
+  <ul class="list-group">
+    <li class="list-group-item"><strong>Cliente:</strong> <%= presupuesto.nombre_cliente %></li>
+    <li class="list-group-item"><strong>Email:</strong> <%= presupuesto.email_cliente %></li>
+    <li class="list-group-item"><strong>Teléfono:</strong> <%= presupuesto.telefono_cliente || 'No proporcionado' %></li>
+    <li class="list-group-item"><strong>Fecha creación:</strong> <%= presupuesto.fecha_creacion %></li>
+    <li class="list-group-item"><strong>Estado:</strong> <%= presupuesto.estado %></li>
+    <li class="list-group-item"><strong>Precio Estimado:</strong> € <%= presupuesto.precio_estimado || 'Por definir' %></li>
+    <li class="list-group-item"><strong>Detalle:</strong> <%= presupuesto.detalle %></li>
+    <% if(presupuesto.archivo_imagen){ %>
+      <li class="list-group-item">
+        <strong>Archivo adjunto:</strong><br>
+        <img src="/uploads/<%= presupuesto.archivo_imagen %>" class="img-fluid mt-2" alt="Adjunto">
+      </li>
+    <% } %>
+  </ul>
+
+  <a href="/presupuestos" class="btn btn-secondary mt-3">← Volver al listado</a>
+</main>
+
+<a href="/presupuestos/<%= presupuesto.id %>/crear-pedido" class="btn btn-outline-primary">
+  🧾 Crear pedido desde este presupuesto
+</a>
+
+<%- include('../partials/footer') %>

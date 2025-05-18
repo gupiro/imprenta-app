@@ -6,9 +6,40 @@ const sharp           = require('sharp');               // Para procesamiento de
 const db              = require('../database');
 const upload          = require('../config/multer');
 const checkPermission = require('../middleware/permissions'); // control de permisos
+const pedidosController = require('../controllers/pedidosController'); // ✅ nuevo
 const archiver        = require('archiver');
 const path            = require('path');
 const pdf             = require('html-pdf');
+
+
+router.get('/desde-presupuesto/:id', checkPermission, (req, res) => {
+  const { id } = req.params;
+
+  const presupuesto = db.prepare(`
+    SELECT p.*, c.nombre AS producto_nombre, c.tipo, c.precio_base, c.minimo
+    FROM presupuestos p
+    LEFT JOIN catalogo_productos c ON p.producto_id = c.id
+    WHERE p.id = ?
+  `).get(id);
+
+  if (!presupuesto) {
+    req.flash('error', 'Presupuesto no encontrado');
+    return res.redirect('/presupuestos');
+  }
+
+  const clientes   = db.prepare('SELECT * FROM clients ORDER BY id ASC').all();
+  const materiales = db.prepare('SELECT nombre AS name, precio_base AS price, tipo AS tipoUnidad FROM catalogo_productos ORDER BY nombre ASC').all();
+
+  // Renderizar nuevo pedido con datos precargados
+  res.render('pedidos/nuevo', {
+    title: 'Nuevo Pedido desde Presupuesto',
+    clientes,
+    materiales,
+    presupuesto,
+    success: req.flash('success'),
+    error: req.flash('error')
+  });
+});
 
 // Asegurar rutas absolutas en URL-encoded
 router.use(express.urlencoded({ extended: false }));
@@ -21,19 +52,18 @@ if (!fs.existsSync(thumbsDir)) {
 }
 
 // 1) Formulario de Nuevo Pedido (view)
-// routes/pedidos.js
 router.get('/nuevo', checkPermission, (req, res) => {
-  const clientes   = db.prepare('SELECT * FROM clients ORDER BY id ASC').all();
-  const materiales = db.prepare('SELECT * FROM materials ORDER BY name ASC').all();
+  const clientes = db.prepare('SELECT * FROM clients ORDER BY id ASC').all();
+  const materiales = db.prepare('SELECT id, nombre AS name, tipo, precio_base AS price FROM catalogo_productos ORDER BY nombre ASC').all();
+
   res.render('pedidos/nuevo', {
-    title:       'Nuevo Pedido',
+    title: 'Nuevo Pedido',
     clientes,
-    materiales,            // <-- añadimos aquí
-    success:     req.flash('success'),
-    error:       req.flash('error')
+    materiales, // ahora toma los productos del catálogo
+    success: req.flash('success'),
+    error: req.flash('error')
   });
 });
-
 
 // ▶ 2) Crear Nuevo Pedido + Productos (create)
 router.post(
@@ -45,13 +75,17 @@ router.post(
     console.log('🆕 POST /pedidos/nuevo → body:', req.body, 'files:', req.files);
 
     // 2️⃣ Destructuring inicial
-    const {
-      clienteExistente, clienteInput,
-      telefonoNuevo,   direccionNuevo,
-      cuitNuevo,       emailNuevo,
-      precioTotalPedido, monto_entregado, medio_pago,
-      cantidad = []
-    } = req.body;
+const {
+  clienteExistente, clienteInput,
+  telefonoNuevo,   direccionNuevo,
+  cuitNuevo,       emailNuevo,
+  precioTotalPedido, monto_entregado, medio_pago,
+  cantidad = []
+} = req.body;
+
+// 👇 Añadí esto justo después del destructuring
+const presupuestoId = req.body.presupuesto_id || null;
+
 
     // —— 3️⃣ Obtener o crear cliente —— 
     let clientId = null;
@@ -105,11 +139,12 @@ router.post(
     const entregado = parseFloat(monto_entregado)     || 0;
     const restante  = precio - entregado;
     const fecha     = new Date().toISOString().slice(0,19).replace('T',' ');
-    const infoPed   = db.prepare(`
-      INSERT INTO pedidos
-        (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago)
-      VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?)
-    `).run(clientId, precio, fecha, entregado, restante, medio_pago);
+    const infoPed = db.prepare(`
+  INSERT INTO pedidos
+    (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id)
+  VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?, ?)
+`).run(clientId, precio, fecha, entregado, restante, medio_pago, presupuestoId);
+
     const pedidoId = infoPed.lastInsertRowid;
     console.log('👀 Pedido creado con pedidoId =', pedidoId);
 
@@ -183,13 +218,9 @@ router.get(
 router.get('/detalle/:id', checkPermission, (req, res) => {
   const { id } = req.params;
 
-  // ── 1) Marcar comentarios como leídos ─────────────────────────────
-  db.prepare('UPDATE revision_comments SET leido = 1 WHERE pedido_id = ?')
-    .run(id);
-  db.prepare('UPDATE pedidos SET unread_comments = 0 WHERE id = ?')
-    .run(id);
+  db.prepare('UPDATE revision_comments SET leido = 1 WHERE pedido_id = ?').run(id);
+  db.prepare('UPDATE pedidos SET unread_comments = 0 WHERE id = ?').run(id);
 
-  // ── 2) Cargar datos del pedido con nombre de cliente ───────────────
   const pedido = db.prepare(`
     SELECT p.*, c.name AS cliente_nombre
       FROM pedidos p
@@ -201,14 +232,12 @@ router.get('/detalle/:id', checkPermission, (req, res) => {
     return res.redirect('/pedidos/pendientes');
   }
 
-  // ── 3) Cargar productos y parsear su JSON de imágenes ─────────────
   const prodsRaw = db.prepare('SELECT * FROM productos WHERE pedido_id = ?').all(id);
   pedido.productos = prodsRaw.map(p => ({
     ...p,
     imagenes: JSON.parse(p.imagenes || '[]')
   }));
 
-  // ── 4) Cargar comentarios ─────────────────────────────────────────
   const comentarios = db.prepare(`
     SELECT comment, "user", fecha
       FROM revision_comments
@@ -216,46 +245,31 @@ router.get('/detalle/:id', checkPermission, (req, res) => {
      ORDER BY fecha ASC
   `).all(id);
 
-  // ── 5) Renderizar la vista ───────────────────────────────────────
+  const imagenesRevision = db.prepare(`
+    SELECT filename
+      FROM revision_images
+     WHERE pedido_id = ?
+     ORDER BY fecha ASC
+  `).all(id);
+
   res.render('pedidos/detalle', {
     title:    `Detalle Pedido #${pedido.id}`,
     pedido,
     comentarios,
+    imagenesRevision,
     success:  req.flash('success'),
     error:    req.flash('error')
   });
-});
+}); // 👈 ESTA LÍNEA FALTABA
 
 
-// 4.1) Agregar comentario de revisión (create)
-router.post('/:id/comentar', checkPermission, (req, res) => {
-  const { id } = req.params;
-  const { comentario } = req.body;
-  if (!comentario?.trim()) {
-    req.flash('error', 'El comentario no puede estar vacío.');
-    return res.redirect(`/pedidos/detalle/${id}`);
-  }
-
-  const usuario = req.session.user.username;
-  const fecha   = new Date().toISOString();
-
-  // Insertar comentario no leído
-  db.prepare(`
-    INSERT INTO revision_comments (pedido_id, comment, "user", fecha, leido)
-    VALUES (?, ?, ?, ?, 0)
-  `).run(id, comentario.trim(), usuario, fecha);
-
-  // Incrementar contador en pedidos
-  db.prepare(`
-    UPDATE pedidos
-       SET unread_comments = unread_comments + 1
-     WHERE id = ?
-  `).run(id);
-
-  req.flash('success', 'Comentario agregado correctamente.');
-  res.redirect('/pedidos/revision');
-});
-
+// 4.1) Agregar comentario con imágenes (create)
+router.post(
+  '/:id/comentar',
+  checkPermission,
+  upload.array('imagenes_comentario'),
+  pedidosController.comentarPedido
+);
 
 // 7) Listar pedidos EN_REVISIÓN (view)
 router.get('/revision', checkPermission, (req, res) => {
@@ -718,34 +732,8 @@ router.post(
   }
 );
 
-// 16) Ver ENTREGADOS (view)
-router.get(
-  '/entregados',
-  checkPermission,
-  (req, res) => {
-    const pedidos = db.prepare(`
-      SELECT p.*, c.name AS cliente_nombre, c.phone, c.email
-        FROM pedidos p
-   LEFT JOIN clients c ON p.client_id = c.id
-       WHERE p.estado = 'ENTREGADO'
-    ORDER BY p.fecha_entrega DESC
-    `).all();
-    pedidos.forEach(p=>{
-      try {
-        p.imagen = JSON.parse(p.revision_archivo||'[]')
-          .find(fn=>/\.(jpg|jpeg|png|gif)$/i.test(fn))||null;
-      } catch{ p.imagen=null; }
-      const prods = db.prepare('SELECT * FROM productos WHERE pedido_id = ?').all(p.id);
-      p.productos = prods.map(pr=>({ ...pr, imagenes: JSON.parse(pr.imagenes||'[]') }));
-    });
-    res.render('pedidos/entregados', {
-      title:   'Trabajos Entregados',
-      pedidos,
-      success: req.flash('success'),
-      error:   req.flash('error')
-    });
-  }
-);
+router.get('/entregados', checkPermission, pedidosController.verEntregados);
+
 
 // routes/pedidos.js
 
@@ -856,6 +844,137 @@ router.get('/historial/pdf', checkPermission, (req, res) => {
     });
   });
 });
+// ...última ruta (por ejemplo la 17.b que mencionabas)
 
+// 18) Eliminar pedido ENTREGADO
+router.post('/:id/eliminar-entregado', checkPermission, (req, res) => {
+  const { id } = req.params;
+
+  // Eliminamos archivos del pedido si existen
+  const pedido = db.prepare('SELECT revision_archivo FROM pedidos WHERE id = ?').get(id);
+  try {
+    const archivos = JSON.parse(pedido.revision_archivo || '[]');
+    archivos.forEach(nombre => {
+      const ruta = path.join(__dirname, '../public/uploads', nombre);
+      const thumb = path.join(__dirname, '../public/uploads/thumbs', nombre);
+      if (fs.existsSync(ruta)) fs.unlinkSync(ruta);
+      if (fs.existsSync(thumb)) fs.unlinkSync(thumb);
+    });
+  } catch (err) {
+    console.warn('No se pudieron eliminar los archivos del entregado:', err);
+  }
+
+  // Eliminamos productos y pedido
+  db.prepare('DELETE FROM productos WHERE pedido_id = ?').run(id);
+  db.prepare('DELETE FROM pedidos   WHERE id = ?').run(id);
+
+  req.flash('success', 'Pedido entregado eliminado correctamente');
+  res.redirect('/pedidos/entregados');
+});
+
+
+// CARGA CATÁLOGO DE PRODUCTOS PARA FORMULARIOS NUEVOS
+router.get('/nuevo-con-catalogo', checkPermission, (req, res) => {
+  const clientes = db.prepare('SELECT * FROM clients ORDER BY id ASC').all();
+  const productos_catalogo = db.prepare('SELECT * FROM catalogo_productos ORDER BY nombre ASC').all();
+
+  res.render('pedidos/nuevo_catalogo', {
+    title: 'Nuevo Pedido con Catálogo',
+    clientes,
+    productos_catalogo,
+    success: req.flash('success'),
+    error: req.flash('error')
+  });
+});
+
+// CREAR PEDIDO USANDO PRODUCTO DEL CATALOGO
+router.post('/nuevo-con-catalogo', checkPermission, upload.any(), (req, res) => {
+  const {
+    clienteExistente, clienteInput,
+    telefonoNuevo, direccionNuevo, cuitNuevo, emailNuevo,
+    producto_id, ancho, alto, cantidad, descripcion,
+    medio_pago, monto_entregado
+  } = req.body;
+
+  let clientId = null;
+
+  if (clienteExistente && clienteExistente !== 'undefined') {
+    const maybeId = parseInt(clienteExistente, 10);
+    if (!isNaN(maybeId)) clientId = maybeId;
+  }
+
+  if (!clientId && clienteInput && clienteInput.trim()) {
+    const name = clienteInput.trim();
+    const fila = db.prepare('SELECT id FROM clients WHERE name = ?').get(name);
+    if (fila) {
+      clientId = fila.id;
+    } else {
+      const insert = db.prepare(`
+        INSERT INTO clients (name, phone, address, cuit, email)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        name,
+        telefonoNuevo  || '',
+        direccionNuevo || '',
+        cuitNuevo      || '',
+        emailNuevo     || ''
+      );
+      clientId = insert.lastInsertRowid;
+    }
+  }
+
+  if (!clientId) {
+    req.flash('error','Debés seleccionar o ingresar un cliente.');
+    return res.redirect('/pedidos/nuevo-con-catalogo');
+  }
+
+  const producto = db.prepare('SELECT * FROM catalogo_productos WHERE id = ?').get(producto_id);
+  if (!producto) {
+    req.flash('error','Producto inválido.');
+    return res.redirect('/pedidos/nuevo-con-catalogo');
+  }
+
+  let precio = 0;
+  const base = producto.precio_base;
+  const min  = producto.minimo || 1;
+
+  if (producto.tipo === 'metro_cuadrado') {
+    const area = Math.max((parseFloat(ancho) || 0) * (parseFloat(alto) || 0), min);
+    precio = base * area;
+  } else {
+    const qty = Math.max(parseInt(cantidad) || 0, min);
+    precio = base * qty;
+  }
+
+  const entregado = parseFloat(monto_entregado) || 0;
+  const restante  = precio - entregado;
+  const fecha     = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+  const infoPed = db.prepare(`
+    INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago)
+    VALUES (?, ?, ?, 'PENDIENTE', ?, ?, ?)
+  `).run(clientId, precio, fecha, entregado, restante, medio_pago);
+
+  const pedidoId = infoPed.lastInsertRowid;
+  const imagenes = (req.files || []).map(f => f.filename);
+
+  db.prepare(`
+    INSERT INTO productos (pedido_id, material, ancho, alto, descuento, precio, descripcion, imagenes)
+    VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+  `).run(
+    pedidoId,
+    producto.nombre,
+    parseFloat(ancho) || 0,
+    parseFloat(alto) || 0,
+    precio,
+    descripcion || '',
+    JSON.stringify(imagenes)
+  );
+
+  req.flash('success','Pedido creado correctamente');
+  res.redirect('/pedidos/pendientes');
+});
+
+// 👇 NO SE TOCA NADA DE LO DEMÁS
 
 module.exports = router;

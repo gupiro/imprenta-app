@@ -1,0 +1,145 @@
+
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h2 class="mb-4">Solicitá tu Presupuesto</h2>
+
+  <% if (typeof mensaje !== 'undefined' && mensaje) { %>
+    <div class="alert alert-success">
+      <strong><%= mensaje %></strong>
+    </div>
+  <% } %>
+
+  <form action="/presupuestos/publico" method="POST" enctype="multipart/form-data" class="border p-4 rounded bg-light">
+    <div class="mb-3">
+      <label for="nombre_cliente" class="form-label">Nombre <span class="text-danger">*</span></label>
+      <input type="text" name="nombre_cliente" id="nombre_cliente" class="form-control" required placeholder="Tu nombre completo">
+    </div>
+
+    <div class="mb-3">
+      <label for="telefono_cliente" class="form-label">Teléfono <span class="text-danger">*</span></label>
+      <input type="text" name="telefono_cliente" id="telefono_cliente" class="form-control" required placeholder="Tu número de contacto">
+    </div>
+
+    <div class="mb-3">
+      <label for="email_cliente" class="form-label">Email (opcional)</label>
+      <input type="email" name="email_cliente" id="email_cliente" class="form-control" placeholder="Tu correo (si querés)">
+    </div>
+
+    <div class="mb-3">
+      <label for="detalle" class="form-label">Detalle general del trabajo</label>
+      <textarea name="detalle" id="detalle" class="form-control" required placeholder="Contanos qué necesitás"></textarea>
+    </div>
+
+    <hr>
+    <h5 class="text-primary fw-bold mb-3"><i class="bi bi-paperclip"></i> Imágenes y detalles</h5>
+
+    <div id="imagenes-container"></div>
+
+    <button type="button" class="btn btn-outline-secondary mb-3" onclick="agregarImagen()">➕ Agregar imagen</button>
+
+    <div class="mb-3">
+      <label><strong>Total estimado (€):</strong></label>
+      <input type="text" id="total_estimado" class="form-control" name="precio_estimado" readonly value="0">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enviar Solicitud</button>
+  </form>
+</main>
+
+<script>
+  const productos = <%- JSON.stringify(productos || []) %>;
+  let contador = 0;
+
+  function agregarImagen() {
+    contador++;
+    const cont = document.getElementById('imagenes-container');
+    const div = document.createElement('div');
+    div.className = 'border p-3 rounded mb-3';
+    div.innerHTML = `
+      <div class="mb-2 fw-bold">Imagen ${contador}</div>
+      <div class="mb-2">
+        <input type="file" name="imagenes[]" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label>Producto:</label>
+        <select name="producto_imagen[]" class="form-select" required onchange="mostrarCampos(this, ${contador})">
+          <option value="">Seleccioná un producto</option>
+          ${productos.map(p => `
+            <option value="${p.id}" data-tipo="${p.tipo}" data-precio="${p.precio_base}" data-minimo="${p.minimo}">
+              ${p.nombre} – €${p.precio_base.toFixed(2)}
+            </option>`).join('')}
+        </select>
+      </div>
+      <div id="campos_${contador}"></div>
+      <div class="mb-2">
+        <label>Detalle:</label>
+        <textarea name="detalle_imagen[]" class="form-control" placeholder="¿Qué necesitás con esta imagen?"></textarea>
+      </div>
+      <div class="mb-2">
+        <label>Precio estimado (€):</label>
+        <input type="number" name="precio_imagen[]" class="form-control precio-img" value="0" readonly>
+      </div>
+    `;
+    cont.appendChild(div);
+  }
+
+  function mostrarCampos(select, idx) {
+    const selected = select.selectedOptions[0];
+    const tipo = selected.dataset.tipo;
+    const precio = parseFloat(selected.dataset.precio || 0);
+    const minimo = parseFloat(selected.dataset.minimo || 1);
+    const div = document.getElementById('campos_' + idx);
+    div.innerHTML = '';
+
+    if (tipo === 'unidad' || tipo === 'hoja') {
+      div.innerHTML = `
+        <div class="mb-2">
+          <label>Cantidad:</label>
+          <input type="number" class="form-control" name="cantidad_imagen[]" value="${minimo}" min="${minimo}"
+                 onchange="calcularPrecioImagen(this, ${precio}, ${idx})">
+        </div>`;
+    } else if (tipo === 'metro_cuadrado') {
+      div.innerHTML = `
+        <div class="mb-2">
+          <label>Medidas (m):</label>
+          <div class="d-flex gap-2">
+            <input type="number" class="form-control" name="ancho_imagen[]" placeholder="Ancho" step="0.01" onchange="calcularPrecioImagen(this, ${precio}, ${idx})">
+            <input type="number" class="form-control" name="alto_imagen[]" placeholder="Alto" step="0.01" onchange="calcularPrecioImagen(this, ${precio}, ${idx})">
+          </div>
+          <small class="text-muted">Mínimo facturable: ${minimo} m²</small>
+        </div>`;
+    }
+  }
+
+  function calcularPrecioImagen(el, precioBase, idx) {
+    const wrapper = el.closest('.border');
+    const select = wrapper.querySelector('select[name="producto_imagen[]"]');
+    const tipo = select.selectedOptions[0].dataset.tipo;
+    const minimo = parseFloat(select.selectedOptions[0].dataset.minimo || 1);
+    let precio = 0;
+
+    if (tipo === 'unidad' || tipo === 'hoja') {
+      const qty = parseFloat(wrapper.querySelector('input[name="cantidad_imagen[]"]')?.value || 0);
+      precio = Math.max(qty, minimo) * precioBase;
+    } else if (tipo === 'metro_cuadrado') {
+      const ancho = parseFloat(wrapper.querySelector('input[name="ancho_imagen[]"]')?.value || 0);
+      const alto = parseFloat(wrapper.querySelector('input[name="alto_imagen[]"]')?.value || 0);
+      const area = Math.max(ancho * alto, minimo);
+      precio = area * precioBase;
+    }
+
+    wrapper.querySelector('.precio-img').value = precio.toFixed(2);
+    calcularTotalEstimado();
+  }
+
+  function calcularTotalEstimado() {
+    let total = 0;
+    document.querySelectorAll('.precio-img').forEach(inp => {
+      total += parseFloat(inp.value) || 0;
+    });
+    document.getElementById('total_estimado').value = total.toFixed(2);
+  }
+</script>
+
+<%- include('../partials/footer') %>

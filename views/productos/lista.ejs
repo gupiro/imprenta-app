@@ -1,0 +1,30 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h2>Listado de Productos</h2>
+
+  <a href="/productos/nuevo" class="btn btn-primary mb-3">+ Nuevo Producto</a>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Precio Base</th>
+        <th>Mínimo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% productos.forEach(p => { %>
+        <tr>
+          <td><%= p.nombre %></td>
+          <td><%= p.tipo %></td>
+          <td>€ <%= p.precio_base %></td>
+          <td><%= p.minimo %></td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+</main>
+
+<%- include('../partials/footer') %>

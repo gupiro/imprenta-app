@@ -1,0 +1,71 @@
+<%- include('../partials/header', { title }) %>
+
+<main class="container py-4">
+  <h2 class="mb-4">Listado de Presupuestos</h2>
+
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Cliente</th>
+        <th>Teléfono</th>
+        <th>Producto</th>
+        <th>Precio Estimado</th>
+        <th>Archivo</th>
+        <th>Detalle</th>
+        <th>Estado</th>
+        <th>Acciones</th> <!-- 🔹 Nueva columna -->
+      </tr>
+    </thead>
+    <tbody>
+      <% presupuestos.forEach(p => { %>
+        <tr><td>
+  <% if (p.usado) { %>
+    <span class="badge bg-success">✔ Pedido creado</span>
+  <% } else { %>
+    <a href="/presupuestos/<%= p.id %>/crear-pedido" class="btn btn-sm btn-outline-primary">
+      Crear Pedido
+    </a>
+  <% } %>
+</td>
+
+          <td><%= p.id %></td>
+          <td><%= p.nombre_cliente %></td>
+          <td><%= p.telefono_cliente || '-' %></td>
+          <td><%= p.producto_nombre || 'Sin producto' %></td>
+          <td>
+            <% if (p.precio_estimado) { %>
+              € <%= p.precio_estimado.toFixed(2) %>
+            <% } else { %>
+              -
+            <% } %>
+          </td>
+          <td>
+            <% if (p.archivo_imagen) { %>
+              <a href="/uploads/<%= p.archivo_imagen %>" target="_blank">Ver</a>
+            <% } else { %>
+              -
+            <% } %>
+          </td>
+          <td><%= p.detalle %></td>
+          <td>
+            <a href="/presupuestos/<%= p.id %>/crear-pedido" class="btn btn-sm btn-primary">
+              Crear Pedido
+            </a>
+          </td>
+        </tr><td>
+  <% if (p.usado) { %>
+    <span class="badge bg-success">✔ Pedido creado</span>
+  <% } else { %>
+    <a href="/presupuestos/<%= p.id %>/crear-pedido" class="btn btn-sm btn-outline-primary">
+      Crear Pedido
+    </a>
+  <% } %>
+</td>
+
+      <% }) %>
+    </tbody>
+  </table>
+</main>
+
+<%- include('../partials/footer') %>

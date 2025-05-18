@@ -11,13 +11,6 @@
     transform: translateY(-3px);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
   }
-  .btn-pagar {
-    transition: all 0.2s ease-in-out;
-  }
-  .btn-pagar:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
-  }
   .imagen-previa {
     max-width: 160px;
     max-height: 120px;
@@ -25,65 +18,90 @@
     border-radius: 6px;
     margin-right: 10px;
   }
+  @keyframes parpadeo {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .badge-nuevo {
+    animation: parpadeo 1.2s infinite;
+    font-size: 0.8rem;
+    padding: 0.3em 0.6em;
+  }
 </style>
 
 <h1 class="mb-4 text-center">📦 Trabajos Entregados</h1>
 
-<% if (pedidos && pedidos.length) { %>
-  <div class="d-flex flex-column gap-3">
-    <% pedidos.forEach(pedido => {
-      const saldo = Math.round(pedido.monto_restante || 0);
-      const fechaEntrega = pedido.fecha_entrega ? new Date(pedido.fecha_entrega) : null;
-      const fechaEntregaStr = fechaEntrega
-        ? fechaEntrega.toISOString().substring(0,10)
-        : 'Sin fecha';
-      const diasDesde = fechaEntrega
-        ? Math.floor((Date.now() - fechaEntrega.getTime()) / (1000*60*60*24))
-        : null;
-    %>
-      <div class="tarjeta-entregado p-3 shadow-sm">
-        <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
-          
-          <% if (pedido.imagen) { %>
-            <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>?quality=low" download>
-              <img 
-                src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>" 
-                class="imagen-previa" 
-                alt="Preview" 
-                loading="lazy"
-              >
-            </a>
-          <% } %>
+<% if (pedidosAgrupados && Object.keys(pedidosAgrupados).length > 0) { %>
+  <div class="accordion" id="accordionEntregados">
+    <% Object.entries(pedidosAgrupados).forEach(([fechaTexto, pedidos], i) => { %>
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-<%= i %>">
+          <button class="accordion-button <%= i !== 0 ? 'collapsed' : '' %>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<%= i %>" aria-expanded="<%= i === 0 ? 'true' : 'false' %>" aria-controls="collapse-<%= i %>">
+            🗓️ <%= fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1) %>
+          </button>
+        </h2>
+        <div id="collapse-<%= i %>" class="accordion-collapse collapse <%= i === 0 ? 'show' : '' %>" aria-labelledby="heading-<%= i %>" data-bs-parent="#accordionEntregados">
+          <div class="accordion-body">
+            <% pedidos.forEach(pedido => {
+              const saldo = Math.round(pedido.monto_restante || 0);
+              const fechaEntrega = pedido.fecha_entrega ? new Date(pedido.fecha_entrega) : new Date();
+              const fechaEntregaStr = fechaEntrega.toISOString().substring(0, 10);
+              const diasDesde = Math.floor((Date.now() - fechaEntrega.getTime()) / (1000*60*60*24));
+            %>
+              <div class="tarjeta-entregado p-3 shadow-sm mb-3">
+                <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
 
-          <div class="flex-grow-1">
-            <h5 class="mb-1 text-primary">📌 <%= pedido.cliente_nombre %></h5>
-            <div class="small">
-              📞 <strong>Teléfono:</strong> <%= pedido.telefono || 'No disponible' %><br>
-              ✉️ <strong>Email:</strong> <%= pedido.email || 'No disponible' %><br>
-              💵 <strong>Precio:</strong> $<%= Math.round(pedido.precio||0) %><br>
-              💸 <strong>Saldo:</strong> $<%= saldo %><br>
-              📅 <strong>Entregado:</strong> <%= fechaEntregaStr %>
-              <% if (diasDesde !== null) { %>(hace <%= diasDesde %> días)<% } %>
-            </div>
-          </div>
+                  <% if (pedido.imagen) { %>
+                    <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>?quality=low" download>
+                      <img 
+                        src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>" 
+                        class="imagen-previa" 
+                        alt="Preview" 
+                        loading="lazy"
+                      >
+                    </a>
+                  <% } %>
 
-          <div class="text-end">
-            <% if (saldo > 0) { %>
-              <div class="alert alert-warning p-2 mb-2">⚠️ Saldo pendiente</div>
-              <button class="btn btn-outline-success btn-sm mb-2" onclick="mostrarFormulario('<%= pedido.id %>')">
-                💵 Pagar saldo
-              </button>
-              <form id="form-<%= pedido.id %>" action="/pedidos/<%= pedido.id %>/completar-pago"
-                    method="POST" class="d-none mt-2">
-                <div class="input-group input-group-sm">
-                  <input type="number" name="monto_extra" class="form-control"
-                         min="0.01" max="<%= saldo %>" step="0.01" required>
-                  <button type="submit" class="btn btn-success">Confirmar</button>
+                  <div class="flex-grow-1">
+                    <h5 class="mb-1 text-primary">
+                      📌 <%= pedido.cliente_nombre %>
+                      <% if (pedido.visto_entregado === 0) { %>
+                        <span class="badge bg-warning text-dark ms-2 badge-nuevo">🆕 Nuevo</span>
+                      <% } %>
+                    </h5>
+                    <div class="small">
+                      📞 <strong>Teléfono:</strong> <%= pedido.telefono || 'No disponible' %><br>
+                      ✉️ <strong>Email:</strong> <%= pedido.email || 'No disponible' %><br>
+                      💵 <strong>Precio:</strong> $<%= Math.round(pedido.precio||0) %><br>
+                      💸 <strong>Saldo:</strong> $<%= saldo %><br>
+                      📅 <strong>Entregado:</strong> <%= fechaEntregaStr %>
+                      <% if (diasDesde !== null) { %>(hace <%= diasDesde %> días)<% } %>
+                    </div>
+                  </div>
+
+                  <div class="text-end">
+                    <% if (saldo > 0) { %>
+                      <div class="alert alert-warning p-2 mb-2">⚠️ Saldo pendiente</div>
+                      <button class="btn btn-outline-success btn-sm mb-2" onclick="mostrarFormulario('<%= pedido.id %>')">
+                        💵 Pagar saldo
+                      </button>
+                      <form id="form-<%= pedido.id %>" action="/pedidos/<%= pedido.id %>/completar-pago" method="POST" class="d-none mt-2">
+                        <div class="input-group input-group-sm">
+                          <input type="number" name="monto_extra" class="form-control" min="0.01" max="<%= saldo %>" step="0.01" required>
+                          <button type="submit" class="btn btn-success">Confirmar</button>
+                        </div>
+                      </form>
+                    <% } else { %>
+                      <div class="alert alert-success p-2 mt-3">✅ Totalmente pagado</div>
+                    <% } %>
+
+                    <form action="/pedidos/<%= pedido.id %>/eliminar-entregado" method="POST" class="mt-2" onsubmit="return confirm('¿Estás seguro de eliminar este pedido entregado?')">
+                      <button type="submit" class="btn btn-danger btn-sm">🗑️ Eliminar</button>
+                    </form>
+                  </div>
                 </div>
-              </form>
-            <% } else { %>
-              <div class="alert alert-success p-2 mt-3">✅ Totalmente pagado</div>
-            <% } %>
+              </div>
+            <% }) %>
           </div>
         </div>
       </div>
@@ -104,5 +122,7 @@
     if (form) form.classList.remove('d-none');
   }
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 
 <%- include('../partials/footer') %>

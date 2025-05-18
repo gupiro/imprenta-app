@@ -1,6 +1,6 @@
 <% title = 'Nuevo Pedido'; %>
 <%- include('../partials/header') %>
-
+<% const desdePresupuesto = typeof presupuesto !== 'undefined'; %>
 <main class="container py-5">
   <h1 class="text-center mb-4">➕ Nuevo Pedido 📄</h1>
 
@@ -39,28 +39,30 @@
     </div>
 
     <!-- Campos para un cliente nuevo -->
-    <div id="nuevoClienteFields" class="col-12" style="display:none;">
-      <div class="row g-3">
-        <div class="col-md-3">
-          <label for="telefonoNuevo" class="form-label">Teléfono</label>
-          <input type="text" id="telefonoNuevo" name="telefonoNuevo" class="form-control">
-        </div>
-        <div class="col-md-3">
-          <label for="direccionNuevo" class="form-label">Dirección</label>
-          <input type="text" id="direccionNuevo" name="direccionNuevo" class="form-control">
-        </div>
-        <div class="col-md-3">
-          <label for="cuitNuevo" class="form-label">CUIT</label>
-          <input type="text" id="cuitNuevo" name="cuitNuevo" class="form-control">
-        </div>
-        <div class="col-md-3">
-          <label for="emailNuevo" class="form-label">Email</label>
-          <input type="email" id="emailNuevo" name="emailNuevo" class="form-control">
-        </div>
-      </div>
+<div id="nuevoClienteFields" class="col-12" style="display:none;">
+  <div class="row g-3">
+    <div class="col-md-3">
+      <label for="telefonoNuevo" class="form-label">Teléfono</label>
+      <input type="text" id="telefonoNuevo" name="telefonoNuevo" class="form-control"
+             value="<%= typeof presupuesto !== 'undefined' ? presupuesto.telefono_cliente : '' %>">
     </div>
+    <div class="col-md-3">
+      <label for="direccionNuevo" class="form-label">Dirección</label>
+      <input type="text" id="direccionNuevo" name="direccionNuevo" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label for="cuitNuevo" class="form-label">CUIT</label>
+      <input type="text" id="cuitNuevo" name="cuitNuevo" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label for="emailNuevo" class="form-label">Email</label>
+      <input type="email" id="emailNuevo" name="emailNuevo" class="form-control"
+             value="<%= typeof presupuesto !== 'undefined' ? presupuesto.email_cliente : '' %>">
+    </div>
+  </div>
+</div>
 
-    <hr class="my-4"/>
+<hr class="my-4"/>
 
     <!-- 2) Productos -->
     <h4 class="text-primary">Productos:</h4>
@@ -93,6 +95,9 @@
     <div class="col-12 text-center mt-4">
       <button type="submit" class="btn btn-danger px-5">💾 Guardar Pedido</button>
     </div>
+<% if (typeof presupuestoId !== 'undefined') { %>
+  <input type="hidden" name="presupuesto_id" value="<%= presupuestoId %>">
+<% } %>
   </form>
 
   <div class="text-center mt-4">
@@ -155,6 +160,12 @@
   }
   toggleNuevo(true);
 
+  // Mostrar automáticamente los campos si venís desde un presupuesto
+<% if (typeof presupuesto !== 'undefined') { %>
+  toggleNuevo(true);
+<% } %>
+
+
   // ───── Gestión de Productos ─────
   totalInput.addEventListener('input', () => { manualTotal = true; });
 
@@ -164,14 +175,14 @@
 
     // Opciones de materiales
     const opciones = materialesData.map(m =>
-      `<option
-         value="${m.name}"
-         data-price="${m.price}"
-         data-tipounidad="${m.tipoUnidad}"
-       >
-         ${m.name} — $${m.price.toFixed(2)} / ${m.tipoUnidad==='m2'?'m²':'ud'}
-       </option>`
-    ).join('');
+  `<option
+     value="${m.name}"
+     data-price="${m.price}"
+     data-tipounidad="${m.tipo}"
+   >
+     ${m.name} — $${m.price.toFixed(2)} / ${m.tipo === 'metro_cuadrado' ? 'm²' : 'ud'}
+   </option>`
+).join('');
 
     const card = document.createElement('div');
     card.className = 'producto-card mb-4 p-3 border rounded';
@@ -343,9 +354,71 @@ document.addEventListener('click', e => {
   const dz = e.target.closest('.dropzone');
   if (dz) {
     const inputName = dz.dataset.input;
-    document.querySelector(`input[name="${inputName}"]`).click();
+    const input = document.querySelector(`input[name="${inputName}"]`);
+    const id = input.id.split('_')[1];
+
+    // Guardamos una copia de los archivos actuales
+    const prevFiles = Array.from(input.files);
+
+    // Creamos un nuevo input temporal
+    const tempInput = document.createElement('input');
+    tempInput.type = 'file';
+    tempInput.accept = 'image/*';
+    tempInput.multiple = true;
+    tempInput.style.display = 'none';
+
+    document.body.appendChild(tempInput);
+
+    tempInput.addEventListener('change', () => {
+      const dt = new DataTransfer();
+      prevFiles.forEach(f => dt.items.add(f));
+      Array.from(tempInput.files).forEach(f => {
+        if (f.type.startsWith('image/')) dt.items.add(f);
+      });
+
+      input.files = dt.files;
+      showFiles(id);
+      document.body.removeChild(tempInput);
+    });
+
+    tempInput.click();
   }
 });
 
+<% if (typeof presupuesto !== 'undefined') { %>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  // Mostrar campos del cliente nuevo
+  toggleNuevo(true);
+
+  // Agregar un producto automáticamente
+  agregarProducto();
+  const tarjeta  = document.getElementsByClassName('producto-card')[contadorProductos - 1];
+  const select   = tarjeta.querySelector(`select[name="material[]"]`);
+  const desc     = tarjeta.querySelector(`textarea[name="descripcion[]"]`);
+  const cantidad = tarjeta.querySelector(`input[name="cantidad[]"]`);
+  const ancho    = tarjeta.querySelector(`input[name="ancho[]"]`);
+  const alto     = tarjeta.querySelector(`input[name="alto[]"]`);
+
+  // Seleccionar el producto en la lista
+  for (let opt of select.options) {
+    if (opt.text.includes("<%= presupuesto.producto_nombre %>")) {
+      opt.selected = true;
+      break;
+    }
+  }
+
+  <% if (presupuesto.tipo === 'metro_cuadrado') { %>
+    ancho.value = 1;
+    alto.value = 1;
+  <% } else if (presupuesto.tipo === 'unidad' || presupuesto.tipo === 'hoja') { %>
+    cantidad.value = <%= presupuesto.minimo %>;
+  <% } %>
+
+  desc.value = `<%= presupuesto.detalle.replace(/\r?\n/g, '') %>`;
+  calcularPrecio(contadorProductos);
+});
+</script>
+<% } %>
 
 </script>

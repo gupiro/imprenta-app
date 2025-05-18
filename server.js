@@ -7,7 +7,7 @@ const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
 const sharp          = require('sharp');
 
-const db             = require('./database');
+const db             = require('./config/db');
 const authRouter     = require('./routes/auth');
 const clientesRouter = require('./routes/clientes');
 const pedidosRouter  = require('./routes/pedidos');
@@ -169,17 +169,44 @@ app.use('/pedidos',     permitirRoles('Admin','Atención','Impresor'), checkPerm
 app.use('/usuarios',    permitirRoles('Admin'),                       checkPermission, usuariosRouter);
 app.use('/materiales',  permitirRoles('Admin','Atención'),            checkPermission, materialesRouter);
 
-// 10. Home con contadores
 app.get('/', (req, res) => {
   const counts = {
     pendientes: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'").get().c,
     revision: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_REVISIÓN'").get().c,
     impresion: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO_IMPRESION'").get().c,
     terminados: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'TERMINADO'").get().c,
-    entregados: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'").get().c
+    entregados: 0,
+    presupuestos: db.prepare("SELECT COUNT(*) AS c FROM presupuestos WHERE usado IS NULL OR usado = 0").get().c
   };
-  res.render('home', { title: 'Panel Principal', counts });
+
+  const items = [
+    { url: '/clientes',           icon: 'bi-people-fill',       title: 'Clientes',           text: 'Gestiona tu lista',          countKey: null },
+    { url: '/clientes/nuevo',     icon: 'bi-person-plus-fill',  title: 'Nuevo Cliente',      text: 'Agrega un contacto',         countKey: null },
+    { url: '/pedidos/nuevo',      icon: 'bi-bag-plus-fill',     title: 'Nuevo Pedido',       text: 'Crea un encargo',            countKey: null },
+    { url: '/presupuestos',       icon: 'bi-calculator',        title: 'Presupuestos',       text: 'Control de estimaciones',    countKey: 'presupuestos' },
+    { url: '/presupuestos/publico',icon: 'bi-globe',            title: 'Formulario Público', text: 'Simulador para clientes',    countKey: null },
+    { url: '/catalogo',           icon: 'bi-card-list',         title: 'Catálogo de Productos', text: 'Precios por tipo',        countKey: null },
+    { url: '/productos',          icon: 'bi-tags-fill',         title: 'Editar Productos',    text: 'Carga base de datos',        countKey: null },
+    { url: '/pedidos/pendientes', icon: 'bi-hourglass-split',   title: 'Trabajos Encargados',text: 'Revisa en curso',            countKey: 'pendientes' },
+    { url: '/pedidos/revision',   icon: 'bi-search-heart-fill', title: 'En Revisión',        text: 'Corrige pedidos',            countKey: 'revision' },
+    { url: '/pedidos/impresiones',icon: 'bi-printer-fill',      title: 'Para Imprimir',      text: 'Descarga finales',           countKey: 'impresion' },
+    { url: '/pedidos/terminados', icon: 'bi-check2-all',        title: 'Terminados',         text: 'Listos para entrega',        countKey: 'terminados' },
+    { url: '/pedidos/entregados', icon: 'bi-box-arrow-in-right',title: 'Entregados',         text: 'Historial entregas',         countKey: 'entregados' },
+    { url: '/pedidos/historial',  icon: 'bi-clock-history',     title: 'Historial',          text: 'Repite antiguos',            countKey: null }
+  ];
+
+  res.render('home', { title: 'Panel Principal', counts, items });
 });
+
+
+const presupuestosRoutes = require('./routes/presupuestos');
+app.use('/presupuestos', presupuestosRoutes);
+
+const productosRouter = require('./routes/productos');
+app.use('/productos', productosRouter);
+
+const catalogoRouter = require('./routes/catalogo');
+app.use('/catalogo', catalogoRouter);
 
 // 11. 404
 app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
@@ -187,3 +214,4 @@ app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrad
 // 12. Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+

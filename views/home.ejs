@@ -286,6 +286,7 @@
   <% if (!isEmpleado) { %>
   <div class="row g-3 mb-4">
     <!-- TOP DEUDORES - DESPLEGABLE -->
+    <% if (!isRecepcionista) { %>
     <div class="col-lg-6">
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-danger text-white" style="cursor: pointer;" onclick="toggleDeudores()">
@@ -321,8 +322,10 @@
         </div>
       </div>
     </div>
+    <% } %>
 
     <!-- STOCK BAJO - DESPLEGABLE -->
+    <% if (!isRecepcionista) { %>
     <div class="col-lg-6">
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-warning text-dark" style="cursor: pointer;" onclick="toggleStock()">
@@ -360,8 +363,10 @@
         </div>
       </div>
     </div>
+    <% } %>
 
     <!-- DEUDAS VENCIDAS -->
+    <% if (!isRecepcionista) { %>
     <div class="col-lg-6">
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-danger text-white" style="cursor: pointer;" onclick="toggleDeudasVencidas()">
@@ -404,8 +409,10 @@
         </div>
       </div>
     </div>
+    <% } %>
 
     <!-- DEUDAS PRÓXIMAS A VENCER -->
+    <% if (!isRecepcionista) { %>
     <div class="col-lg-6">
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-warning text-dark" style="cursor: pointer;" onclick="toggleDeudasProximas()">
@@ -448,6 +455,7 @@
         </div>
       </div>
     </div>
+    <% } %>
   </div>
   <% } %>
 

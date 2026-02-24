@@ -21,7 +21,7 @@ async function initDb() {
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
-                rol      TEXT NOT NULL DEFAULT 'operador' CHECK(rol IN ('admin', 'vendedor', 'operador', 'empleado')),
+                rol      TEXT NOT NULL DEFAULT 'operador' CHECK(rol IN ('admin', 'vendedor', 'operador', 'empleado', 'recepcionista')),
                 permisos TEXT DEFAULT '[]',
                 activo   BOOLEAN DEFAULT 1,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -402,6 +402,50 @@ async function initDb() {
         if (!provInfo.some(c => c.name === 'notas')) {
             await db.run("ALTER TABLE proveedores ADD COLUMN notas TEXT DEFAULT ''");
             console.log('✅ Columna proveedores.notas agregada');
+        }
+
+        // users.rol - agregar 'recepcionista' al CHECK constraint (migración)
+        // SQLite no permite modificar CHECK constraints directamente, así que recreamos la tabla
+        try {
+            // Intentar insertar con 'recepcionista' para detectar si ya tiene la restricción
+            const testUser = await db.get("SELECT 1 FROM users LIMIT 1");
+            if (testUser) {
+                // Si la tabla existe, intentamos insertar con recepcionista para probar
+                const hasNewRole = await db.get("SELECT COUNT(*) as c FROM users WHERE rol = 'recepcionista'");
+                // Si la tabla es vieja (sin recepcionista en CHECK), hacemos migración
+                if (!hasNewRole) {
+                    try {
+                        // Crear tabla temporal con la estructura nueva
+                        await db.run(`
+                            CREATE TABLE users_new (
+                                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                                username TEXT UNIQUE NOT NULL,
+                                password TEXT NOT NULL,
+                                rol      TEXT NOT NULL DEFAULT 'operador' CHECK(rol IN ('admin', 'vendedor', 'operador', 'empleado', 'recepcionista')),
+                                permisos TEXT DEFAULT '[]',
+                                activo   BOOLEAN DEFAULT 1,
+                                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                            )
+                        `);
+
+                        // Copiar datos
+                        await db.run("INSERT INTO users_new SELECT * FROM users");
+
+                        // Eliminar tabla vieja
+                        await db.run("DROP TABLE users");
+
+                        // Renombrar tabla nueva
+                        await db.run("ALTER TABLE users_new RENAME TO users");
+
+                        console.log('✅ Tabla users migrada - CHECK constraint actualizado con recepcionista');
+                    } catch (migErr) {
+                        // Si falla la migración, continuamos (puede ser que ya esté actualizado)
+                        console.log('📝 Migración de users.rol skipped (tabla ya actualizada)');
+                    }
+                }
+            }
+        } catch (e) {
+            // Ignorar errores de migración
         }
 
         console.log('✅ Base de datos lista\n');

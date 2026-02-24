@@ -10,7 +10,13 @@
       "Bash(pkill:*)",
       "Bash(taskkill:*)",
       "Bash(node:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(git restore:*)",
+      "Bash(while read dir)",
+      "Bash(do rm -rf \"$dir\")",
+      "Bash(done)",
+      "Bash(find:*)",
+      "Bash(git add:*)"
     ]
   }
 }

@@ -1,5 +1,0 @@
-services:
-  - type: web
-    name: imprenta-app
-    buildCommand: npm install --build-from-source
-    startCommand: node server.js

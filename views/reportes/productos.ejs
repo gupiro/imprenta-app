@@ -137,7 +137,8 @@
                 <tbody>
                   <%
                     let ultimaClase = null;
-                    productosVentas.forEach(p => {
+                    for (let i = 0; i < productosVentas.length; i++) {
+                      const p = productosVentas[i];
                       if (ultimaClase && ultimaClase !== p.clase) {
                   %>
                       <tr style="border-top: 2px solid #e0e0e0;"></tr>
@@ -154,10 +155,11 @@
                       <td>
                         <div class="progress" style="height: 20px;">
                           <div class="progress-bar <%
-                            if (p.clase === 'A') { %>bg-success<% }
-                            else if (p.clase === 'B') { %>bg-warning<% }
-                            else { %>bg-danger<% }
-                          %>"
+                            let bgColor = 'bg-secondary';
+                            if (p.clase === 'A') bgColor = 'bg-success';
+                            else if (p.clase === 'B') bgColor = 'bg-warning';
+                            else if (p.clase === 'C') bgColor = 'bg-danger';
+                          %><%= bgColor %>"
                             style="width: <%= p.porcentaje_acumulado %>%"
                             role="progressbar">
                             <%= p.porcentaje_acumulado.toFixed(0) %>%
@@ -176,7 +178,7 @@
                     </tr>
                   <%
                       ultimaClase = p.clase;
-                    });
+                    }
                   %>
                 </tbody>
               </table>

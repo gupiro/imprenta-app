@@ -180,13 +180,9 @@ async function startServer() {
     // CAJA DIARIA
     // ────────────────────────────────────────────────────────────────────
 
-    app.use('/caja-diaria',
-        authMiddleware.isAuthenticated,
-        permitirRoles('admin','vendedor','empleado','recepcionista'),
-        async (req, res, next) => {
-            return cajaController.mostrarCajaDiaria(req, res);
-        }
-    );
+    // ⚠️ IMPORTANTE: Rutas POST primero, luego el GET (app.use)
+    // Si app.use() va primero, intercepta todos los requests y no deja llegar a POST
+
     app.post('/caja-diaria/agregar',
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista'),
@@ -199,6 +195,14 @@ async function startServer() {
         permitirRoles('admin'),
         async (req, res, next) => {
             return cajaController.eliminarMovimiento(req, res);
+        }
+    );
+
+    app.use('/caja-diaria',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin','vendedor','empleado','recepcionista'),
+        async (req, res, next) => {
+            return cajaController.mostrarCajaDiaria(req, res);
         }
     );
 

@@ -6,9 +6,10 @@ const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
 
-const swaggerUi       = require('swagger-ui-express');
-const YAML            = require('yamljs');
-const swaggerDocument = YAML.load(path.join(__dirname, 'spec/openapi.yaml'));
+// Swagger UI deshabilitado (archivo openapi.yaml removido)
+// const swaggerUi       = require('swagger-ui-express');
+// const YAML            = require('yamljs');
+// const swaggerDocument = YAML.load(path.join(__dirname, 'spec/openapi.yaml'));
 
 const initDbPromise      = require('./config/db');
 const initCajaController = require('./controllers/cajaController');
@@ -81,7 +82,8 @@ app.use((req, res, next) => {
 // DOCUMENTACIÓN Y ARCHIVOS ESTÁTICOS
 // ════════════════════════════════════════════════════════════════
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Swagger UI deshabilitado
+// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });

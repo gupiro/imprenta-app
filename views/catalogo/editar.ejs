@@ -15,10 +15,17 @@
         <div class="card-body p-4">
           <form action="/catalogo/editar/<%= producto.id %>" method="POST">
             
-            <div class="mb-4">
-              <label for="nombre" class="form-label fw-bold">Nombre del Producto *</label>
-              <input type="text" id="nombre" name="nombre" class="form-control" required 
-                     value="<%= producto.nombre %>" placeholder="Ej: Lona estándar">
+            <div class="row">
+              <div class="col-md-8 mb-4">
+                <label for="nombre" class="form-label fw-bold">Nombre del Producto *</label>
+                <input type="text" id="nombre" name="nombre" class="form-control" required
+                       value="<%= producto.nombre %>" placeholder="Ej: Lona estándar">
+              </div>
+              <div class="col-md-4 mb-4">
+                <label for="codigo" class="form-label fw-bold">Código *</label>
+                <input type="text" id="codigo" name="codigo" class="form-control" required
+                       value="<%= producto.codigo %>" placeholder="Ej: 001-T">
+              </div>
             </div>
 
             <div class="row">

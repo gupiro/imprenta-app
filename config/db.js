@@ -410,6 +410,13 @@ async function initDb() {
         // porque SQLite permite INSERT/UPDATE sin validar CHECK si la tabla ya existe
         // Los nuevos usuarios pueden tener cualquier rol a través de la aplicación
 
+        // presupuestos.precio_extra (migración)
+        const presupuestosInfo = await db.all("PRAGMA table_info(presupuestos)");
+        if (!presupuestosInfo.some(c => c.name === 'precio_extra')) {
+            await db.run("ALTER TABLE presupuestos ADD COLUMN precio_extra REAL DEFAULT 0");
+            console.log('✅ Columna presupuestos.precio_extra agregada');
+        }
+
         console.log('✅ Base de datos lista\n');
         return db;
 

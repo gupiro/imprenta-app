@@ -121,12 +121,29 @@
   </div>
 <% } %>
 
+<!-- DETALLE Y ACLARACIONES -->
+<% if (presupuesto.detalle) { %>
+  <div class="card mb-4">
+    <div class="card-header bg-info text-white">
+      <h6 class="mb-0">📝 Detalle y Aclaraciones</h6>
+    </div>
+    <div class="card-body">
+      <p><%= presupuesto.detalle %></p>
+    </div>
+  </div>
+<% } %>
+
 <!-- TOTAL Y TÉRMINOS -->
 <div class="card mb-4">
   <div class="card-body">
     <div class="row">
       <div class="col-md-6"></div>
       <div class="col-md-6 text-end">
+        <% if (presupuesto.precio_extra && presupuesto.precio_extra > 0) { %>
+          <h6>Items: $<%= (presupuesto.precio_estimado - presupuesto.precio_extra).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h6>
+          <h6>Precio Extra: +$<%= presupuesto.precio_extra.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h6>
+          <hr>
+        <% } %>
         <h5>Precio Estimado:</h5>
         <h3 class="text-success">$<%= presupuesto.precio_estimado ? Math.round(presupuesto.precio_estimado).toLocaleString('es-AR') : '0.00' %></h3>
       </div>

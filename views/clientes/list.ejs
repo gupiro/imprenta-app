@@ -85,12 +85,11 @@
                     📲
                   </a>
                 <% } %>
-                <form action="/clientes/eliminar/<%= client.id %>" method="POST" class="d-inline"
-                      onsubmit="return confirm('¿Seguro que querés eliminar a <%= client.name %>?')">
-                  <button type="submit" class="btn btn-danger" title="Eliminar">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </form>
+                <button type="button" class="btn btn-danger" title="Eliminar"
+                        data-bs-toggle="modal" data-bs-target="#modalEliminarCliente"
+                        onclick="document.getElementById('clienteIdEliminar').value = '<%= client.id %>'; document.getElementById('clienteNombreEliminar').textContent = '<%= client.name %>'">
+                  <i class="bi bi-trash"></i>
+                </button>
               </div>
             </td>
           </tr>
@@ -151,6 +150,42 @@
   <% } %>
 </main>
 
+<!-- Modal: Eliminar Cliente -->
+<div class="modal fade" id="modalEliminarCliente" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-exclamation-triangle"></i> Eliminar Cliente
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">
+          ¿Seguro que querés eliminar a <strong id="clienteNombreEliminar"></strong>?
+        </p>
+        <p class="text-danger small mb-3">
+          ⚠️ Esta acción no se puede deshacer.
+        </p>
+        <form id="formEliminarCliente" action="" method="POST" class="needs-validation">
+          <div class="mb-3">
+            <label for="claveEliminar" class="form-label fw-bold">Ingresa la clave para confirmar:</label>
+            <input type="password" id="claveEliminar" name="clave" class="form-control" required
+                   placeholder="Clave de seguridad">
+            <small class="text-muted">Ingresa: <code>admin</code></small>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" onclick="confirmarEliminarCliente()">
+          <i class="bi bi-trash"></i> Eliminar Cliente
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.getElementById('buscarCliente').addEventListener('input', function () {
     const filtro = this.value.trim().toLowerCase();
@@ -165,10 +200,35 @@
           nextRows.push(currentRow);
           currentRow = currentRow.nextElementSibling;
         }
-        
+
         row.style.display = matches ? '' : 'none';
         nextRows.forEach(r => r.style.display = matches ? '' : 'none');
       }
     });
   });
+
+  // Hidden fields para almacenar ID y nombre del cliente a eliminar
+  const clienteIdInput = document.createElement('input');
+  clienteIdInput.type = 'hidden';
+  clienteIdInput.id = 'clienteIdEliminar';
+  document.body.appendChild(clienteIdInput);
+
+  function confirmarEliminarCliente() {
+    const clave = document.getElementById('claveEliminar').value;
+    const clienteId = document.getElementById('clienteIdEliminar').value;
+
+    if (!clave) {
+      alert('Por favor ingresa la clave para confirmar');
+      return;
+    }
+
+    if (!clienteId) {
+      alert('Error: No se pudo identificar el cliente');
+      return;
+    }
+
+    const form = document.getElementById('formEliminarCliente');
+    form.action = '/clientes/eliminar/' + clienteId;
+    form.submit();
+  }
 </script>

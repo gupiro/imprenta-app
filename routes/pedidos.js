@@ -90,6 +90,7 @@ module.exports = (db) => {
       const altos = [].concat(req.body.alto || []).map(v => parseFloat(v) || 0);
       const preciosArr = [].concat(req.body.precio || []).map(v => parseFloat(v) || 0);
       const descripciones = [].concat(req.body.descripcion || []);
+      const cantidades = [].concat(req.body.cantidad || []).map(v => parseFloat(v) || 1);
 
       for (let i = 0; i < materiales.length; i++) {
         const mat = materiales[i];
@@ -97,7 +98,8 @@ module.exports = (db) => {
         // 💡 preciosArr[i] ya contiene el precio FINAL (cantidad * unitario - descuento)
         // NO multiplicar por qty nuevamente
         const precioFinal = preciosArr[i] || 0;
-        await db.run('INSERT INTO productos (pedido_id, material, ancho, alto, descuento, precio, descripcion, imagenes) VALUES (?, ?, ?, ?, 0, ?, ?, ?)', pedidoId, mat, anchos[i], altos[i], precioFinal, descripciones[i] || 'Sin descripción', JSON.stringify(imgs));
+        const cantidad = cantidades[i] || 1;
+        await db.run('INSERT INTO productos (pedido_id, material, ancho, alto, cantidad, descuento, precio, descripcion, imagenes) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)', pedidoId, mat, anchos[i], altos[i], cantidad, precioFinal, descripciones[i] || 'Sin descripción', JSON.stringify(imgs));
       }
 
       req.flash('success', 'Pedido creado correctamente');

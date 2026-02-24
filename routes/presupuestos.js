@@ -52,7 +52,7 @@ module.exports = (db) => {
   // ✅ NUEVA RUTA: Actualizar presupuesto (POST)
   router.post('/:id/editar', checkPermission, upload.single('archivo_imagen'), async (req, res) => {
     const id = req.params.id;
-    const { cliente_id, nombre_cliente, email_cliente, telefono_cliente, descripcion = [], producto_id = [], cantidad = [], precio_unitario = [], descuento_item = [] } = req.body;
+    const { cliente_id, nombre_cliente, email_cliente, telefono_cliente, detalle = '', precio_extra = '0', descripcion = [], producto_id = [], cantidad = [], precio_unitario = [], descuento_item = [] } = req.body;
 
     try {
       const presupuesto = await db.get('SELECT * FROM presupuestos WHERE id = ?', id);
@@ -82,6 +82,10 @@ module.exports = (db) => {
         }
       }
 
+      // Agregar precio extra
+      const precioExtraVal = parseFloat(precio_extra) || 0;
+      totalPresupuesto += precioExtraVal;
+
       // Actualizar presupuesto
       await db.run(`
         UPDATE presupuestos SET
@@ -89,9 +93,11 @@ module.exports = (db) => {
           nombre_cliente = ?,
           email_cliente = ?,
           telefono_cliente = ?,
-          precio_estimado = ?
+          precio_estimado = ?,
+          detalle = ?,
+          precio_extra = ?
         WHERE id = ?
-      `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, id);
+      `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id);
 
       // ELIMINAR items viejos
       await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);

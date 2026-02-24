@@ -88,15 +88,38 @@
       </div>
     </div>
 
+    <!-- DETALLE Y ACLARACIONES -->
+    <div class="card mb-4">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">📝 Detalle y Aclaraciones</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label fw-bold">Notas / Aclaraciones (opcional)</label>
+            <textarea name="detalle" class="form-control" rows="3" placeholder="Ej: Incluye diseño, espacio para logo, etc."><%= presupuesto.detalle || '' %></textarea>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">Precio Extra ($)</label>
+            <input type="number" name="precio_extra" class="form-control" step="0.01" value="<%= presupuesto.precio_extra || 0 %>" min="0" onchange="calcularSubtotal()" placeholder="0.00">
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- TOTAL -->
     <div class="card mb-4 bg-light">
       <div class="card-body">
         <div class="row text-center">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <h6 class="text-muted">Descuento Total</h6>
             <h3 class="text-warning">-$<span id="descuentoTotal">0.00</span></h3>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
+            <h6 class="text-muted">Precio Extra</h6>
+            <h3 class="text-info">+$<span id="precioExtraDisplay">0.00</span></h3>
+          </div>
+          <div class="col-md-4">
             <h6 class="text-muted">TOTAL</h6>
             <h3 class="text-success">$<span id="totalFinal"><%= (presupuesto.precio_estimado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span></h3>
           </div>
@@ -165,20 +188,25 @@
   function calcularSubtotal() {
     let totalFinal = 0;
     let descuentoTotal = 0;
-    
+
     document.querySelectorAll('.itemCard').forEach(card => {
       const cantidad = parseFloat(card.querySelector('.cantidad').value) || 0;
       const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || 0;
       const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
-      
+
       const subtotal = (cantidad * precioUnitario) - descuento;
       card.querySelector('.subtotalDisplay').value = '$' + subtotal.toFixed(2);
-      
+
       totalFinal += subtotal;
       descuentoTotal += descuento;
     });
-    
+
+    // Agregar precio extra
+    const precioExtra = parseFloat(document.querySelector('input[name="precio_extra"]')?.value) || 0;
+    totalFinal += precioExtra;
+
     document.getElementById('descuentoTotal').textContent = descuentoTotal.toFixed(2);
+    document.getElementById('precioExtraDisplay').textContent = precioExtra.toFixed(2);
     document.getElementById('totalFinal').textContent = totalFinal.toFixed(2);
   }
 

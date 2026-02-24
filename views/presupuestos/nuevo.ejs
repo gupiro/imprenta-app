@@ -67,15 +67,38 @@
       </div>
     </div>
 
-    <!-- SECCIÓN 3: RESUMEN -->
+    <!-- SECCIÓN 3: DETALLE Y ACLARACIONES -->
+    <div class="card mb-4">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">📝 Detalle y Aclaraciones</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-8 mb-3">
+            <label class="form-label">Notas / Aclaraciones (opcional)</label>
+            <textarea name="detalle" class="form-control" rows="3" placeholder="Ej: Incluye diseño, espacio para logo, etc."></textarea>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Precio Extra ($)</label>
+            <input type="number" name="precio_extra" class="form-control" step="0.01" value="0" min="0" onchange="calcularTotales()" placeholder="0.00">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 4: RESUMEN -->
     <div class="card mb-4 bg-light">
       <div class="card-body">
         <div class="row text-center">
-          <div class="col-md-6">
+          <div class="col-md-4">
             <h6 class="text-muted">Descuento Total</h6>
             <h3 class="text-warning">-$<span id="descuentoTotal">0.00</span></h3>
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
+            <h6 class="text-muted">Precio Extra</h6>
+            <h3 class="text-info">+$<span id="precioExtraDisplay">0.00</span></h3>
+          </div>
+          <div class="col-md-4">
             <h6 class="text-muted">TOTAL</h6>
             <h3 class="text-success">$<span id="totalFinal">0.00</span></h3>
           </div>
@@ -95,7 +118,6 @@
 
 <script>
   let itemCounter = 0;
-  const productosData = <%- JSON.stringify(productos || []) %>;
 
   function cargarClienteExistente() {
     const select = document.getElementById('cliente_id');
@@ -114,17 +136,19 @@
         <div class="card-body">
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label">Producto</label>
-              <select name="producto_id[]" class="form-select productoSelect" data-item="${itemCounter}" onchange="cambiarProducto(${itemCounter})">
-                <option value="">-- Seleccionar producto --</option>
-                <% if (productos && productos.length) { %>
-                  <% productos.forEach(p => { %>
-                    <option value="<%= p.id %>" data-precio="<%= p.precio_base %>" data-tipo="<%= p.tipo %>" data-minimo="<%= p.minimo %>" data-nombre="<%= p.nombre %>">
-                      <%= p.nombre %> ($<%= p.precio_base %> - <%= p.tipo === 'lona' ? 'm²' : 'unidad' %>)
-                    </option>
-                  <% }) %>
-                <% } %>
-              </select>
+              <label class="form-label">Buscar Producto (nombre/código)</label>
+              <div class="position-relative">
+                <input type="text"
+                  class="form-control productoInput"
+                  placeholder="Ej: Lona estándar o 001-T"
+                  data-item="${itemCounter}"
+                  onkeyup="buscarProductos(${itemCounter})"
+                  autocomplete="off">
+                <input type="hidden" name="producto_id[]" class="productoIdHidden">
+                <div class="dropdown-menu w-100 position-absolute"
+                  style="display:none; top:100%; left:0; z-index:1000; max-height:200px; overflow-y:auto;"
+                  id="dropdown_${itemCounter}"></div>
+              </div>
             </div>
             <div class="col-md-6">
               <label class="form-label">Descripción *</label>
@@ -162,20 +186,52 @@
     document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', html);
   }
 
-  function cambiarProducto(itemNum) {
+  async function buscarProductos(itemNum) {
     const card = document.getElementById(`item_${itemNum}`);
-    const select = card.querySelector('.productoSelect');
-    const opt = select.options[select.selectedIndex];
-    
-    if (!opt || !opt.value) return;
+    const input = card.querySelector('.productoInput');
+    const dropdown = document.getElementById(`dropdown_${itemNum}`);
+    const query = input.value.trim();
 
-    const tipo = opt.dataset.tipo;
-    const precio = parseFloat(opt.dataset.precio) || 0;
-    const minimo = parseFloat(opt.dataset.minimo) || 1;
-    const nombreProducto = opt.dataset.nombre;
+    if (query.length < 1) {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/autocomplete/productos?q=${encodeURIComponent(query)}`);
+      const productos = await response.json();
+
+      if (productos.length === 0) {
+        dropdown.innerHTML = '<div class="dropdown-item text-muted">No hay productos encontrados</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      dropdown.innerHTML = productos.map(p => `
+        <button type="button" class="dropdown-item"
+          onclick="seleccionarProducto(${itemNum}, ${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio}, '${p.tipo}', '${p.unidad}')">
+          <strong>[${p.codigo}]</strong> ${p.nombre}<br>
+          <small class="text-muted">$${p.precio} - ${p.unidad}</small>
+        </button>
+      `).join('');
+      dropdown.style.display = 'block';
+    } catch (err) {
+      console.error('Error buscando productos:', err);
+    }
+  }
+
+  function seleccionarProducto(itemNum, productoId, nombre, precio, tipo, unidad) {
+    const card = document.getElementById(`item_${itemNum}`);
+    const input = card.querySelector('.productoInput');
+    const hiddenId = card.querySelector('.productoIdHidden');
+    const dropdown = document.getElementById(`dropdown_${itemNum}`);
+
+    input.value = nombre;
+    hiddenId.value = productoId;
+    dropdown.style.display = 'none';
 
     // Establecer descripción con el nombre del producto
-    card.querySelector('.descripcion').value = nombreProducto;
+    card.querySelector('.descripcion').value = nombre;
 
     // Establecer precio unitario
     card.querySelector('.precioUnitario').value = precio.toFixed(2);
@@ -202,63 +258,74 @@
     } else {
       dinamicos.innerHTML = `
         <div class="col-12">
-          <p class="text-muted small"><strong>📦 Tipo:</strong> Unidad</p>
+          <p class="text-muted small"><strong>📦 Tipo:</strong> ${unidad}</p>
         </div>
       `;
     }
 
-    card.querySelector('.cantidad').value = minimo;
+    card.querySelector('.cantidad').value = '1';
     calcularSubtotal(itemNum);
   }
 
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.position-relative')) {
+      document.querySelectorAll('.dropdown-menu').forEach(d => d.style.display = 'none');
+    }
+  });
+
   function calcularSubtotal(itemNum) {
     const card = document.getElementById(`item_${itemNum}`);
-    const select = card.querySelector('.productoSelect');
-    const opt = select.options[select.selectedIndex];
-    
-    if (!opt || !opt.value) return;
+    const hiddenId = card.querySelector('.productoIdHidden');
 
-    const tipo = opt.dataset.tipo;
-    const precioBase = parseFloat(opt.dataset.precio) || 0;
-    const minimo = parseFloat(opt.dataset.minimo) || 1;
-    
+    if (!hiddenId || !hiddenId.value) return;
+
+    // Obtener el tipo desde el texto dinámico o la descripción
+    const dinamicos = document.getElementById(`camposDinamicos_${itemNum}`);
+    const esMarcaLona = dinamicos.textContent.includes('Metro Cuadrado');
+
     let cantidad = 1;
-    
-    if (tipo === 'lona') {
+
+    if (esMarcaLona) {
       const ancho = parseFloat(card.querySelector('.ancho')?.value) || 0;
       const alto = parseFloat(card.querySelector('.alto')?.value) || 0;
-      cantidad = Math.max(ancho * alto, minimo);
+      cantidad = Math.max(ancho * alto, 1);
     } else {
-      cantidad = Math.max(parseFloat(card.querySelector('.cantidad').value) || 0, minimo);
+      cantidad = Math.max(parseFloat(card.querySelector('.cantidad').value) || 1, 1);
     }
 
-    const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || precioBase;
+    const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || 0;
     const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
-    
+
     const subtotal = (cantidad * precioUnitario) - descuento;
-    
+
     card.querySelector('.cantidad').value = cantidad.toFixed(2);
     card.querySelector('.precioUnitario').value = precioUnitario.toFixed(2);
     card.querySelector('.subtotalItem').value = '$' + subtotal.toFixed(2);
-    
+
     calcularTotales();
   }
 
   function calcularTotales() {
     let totalFinal = 0;
     let descuentoTotal = 0;
-    
+
     document.querySelectorAll('.itemCard').forEach(card => {
       const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || 0;
       const cantidad = parseFloat(card.querySelector('.cantidad').value) || 0;
       const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
-      
+
       const subtotal = (cantidad * precioUnitario) - descuento;
       totalFinal += subtotal;
       descuentoTotal += descuento;
     });
-    
+
+    // Agregar precio extra
+    const precioExtra = parseFloat(document.querySelector('input[name="precio_extra"]')?.value) || 0;
+    totalFinal += precioExtra;
+
     document.getElementById('descuentoTotal').textContent = descuentoTotal.toFixed(2);
+    document.getElementById('precioExtraDisplay').textContent = precioExtra.toFixed(2);
     document.getElementById('totalFinal').textContent = totalFinal.toFixed(2);
   }
 

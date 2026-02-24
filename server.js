@@ -61,7 +61,7 @@ app.use((req, res, next) => {
 
     const allPages = [
         { name: 'home',          label: 'Inicio',       url: '/',              icon: 'bi-house-fill',     roles: ['admin','vendedor','operador','empleado','recepcionista'] },
-        { name: 'clientes',      label: 'Clientes',     url: '/clientes',      icon: 'bi-people-fill',    roles: ['admin','vendedor'] },
+        { name: 'clientes',      label: 'Clientes',     url: '/clientes',      icon: 'bi-people-fill',    roles: ['admin','vendedor','recepcionista'] },
         { name: 'pedidos',       label: 'Pedidos',      url: '/pedidos',       icon: 'bi-kanban-fill',    roles: ['admin','vendedor','operador','empleado','recepcionista'] },
         { name: 'presupuestos',  label: 'Presupuestos', url: '/presupuestos',  icon: 'bi-calculator',     roles: ['admin','vendedor','empleado','recepcionista'] },
         { name: 'catalogo',      label: 'Catálogo',     url: '/catalogo',      icon: 'bi-card-list',      roles: ['admin','vendedor','operador','empleado','recepcionista'] },
@@ -164,7 +164,7 @@ async function startServer() {
     // ────────────────────────────────────────────────────────────────────
 
     app.use('/dashboard', authMiddleware.isAuthenticated, permitirRoles('admin','vendedor'), dashboardRouterConfigured);
-    app.use('/clientes',     permitirRoles('admin','vendedor'),            clientesRouterConfigured);
+    app.use('/clientes',     permitirRoles('admin','vendedor','recepcionista'), clientesRouterConfigured);
     app.use('/pedidos',      permitirRoles('admin','vendedor','operador','empleado','recepcionista'), pedidosRouterConfigured);
     app.use('/usuarios',     permitirRoles('admin'),                       usuariosRouterConfigured);
     app.use('/presupuestos', permitirRoles('admin','vendedor','empleado','recepcionista'), presupuestosRouterConfigured);

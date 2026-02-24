@@ -32,6 +32,8 @@ module.exports = (db) => {
                 email_cliente,
                 telefono_cliente,
                 archivo_imagen,
+                detalle = '',
+                precio_extra = '0',
                 descripcion = [],
                 producto_id = [],
                 cantidad = [],
@@ -81,14 +83,18 @@ module.exports = (db) => {
                 }
             }
 
+            // Agregar precio extra
+            const precioExtraVal = parseFloat(precio_extra) || 0;
+            totalPresupuesto += precioExtraVal;
+
             // Crear presupuesto
             const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
             const presupuestoResult = await db.run(`
                 INSERT INTO presupuestos (
                     cliente_id, nombre_cliente, email_cliente, telefono_cliente,
-                    precio_estimado, estado, fecha_creacion
-                ) VALUES (?, ?, ?, ?, ?, 'PENDIENTE', ?)
-            `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, fecha);
+                    precio_estimado, detalle, precio_extra, estado, fecha_creacion
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?)
+            `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, fecha);
 
             const presupuestoId = presupuestoResult.lastID;
 

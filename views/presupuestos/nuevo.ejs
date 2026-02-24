@@ -18,17 +18,16 @@
       <div class="card-body">
         <div class="row">
           <div class="col-md-6 mb-3">
-            <label class="form-label">Cliente Existente (opcional)</label>
-            <select name="cliente_id" id="cliente_id" class="form-select" onchange="cargarClienteExistente()">
-              <option value="">-- Seleccionar cliente --</option>
-              <% if (clientes && clientes.length) { %>
-                <% clientes.forEach(c => { %>
-                  <option value="<%= c.id %>" data-name="<%= c.name %>" data-phone="<%= c.phone || '' %>" data-email="<%= c.email || '' %>">
-                    <%= c.name %> - <%= c.phone || 'Sin tel' %>
-                  </option>
-                <% }) %>
-              <% } %>
-            </select>
+            <label class="form-label">Buscar Cliente Existente (nombre o DNI)</label>
+            <div class="position-relative">
+              <input type="text" id="buscarClienteInput" class="form-control"
+                     placeholder="Ej: Juan García o 20-12345678-1"
+                     autocomplete="off" oninput="buscarClientes()">
+              <input type="hidden" name="cliente_id" id="cliente_id">
+              <div id="dropdownClientes" class="dropdown-menu w-100 position-absolute"
+                   style="display:none; top:100%; left:0; z-index:1000; max-height:200px; overflow-y:auto;"></div>
+            </div>
+            <small class="text-muted">Escribe para buscar, o dejá vacío para cliente nuevo</small>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Nombre del Cliente *</label>
@@ -337,5 +336,54 @@
   // Agregar primer item al cargar
   document.addEventListener('DOMContentLoaded', function() {
     agregarItem();
+  });
+
+  // ========== AUTOCOMPLETE DE CLIENTES ==========
+  async function buscarClientes() {
+    const query = document.getElementById('buscarClienteInput').value.trim();
+    const dropdown = document.getElementById('dropdownClientes');
+
+    if (query.length < 2) {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/autocomplete/clientes?q=${encodeURIComponent(query)}`);
+      const clientes = await res.json();
+
+      if (!clientes.length) {
+        dropdown.innerHTML = '<div class="dropdown-item text-muted">No se encontraron clientes</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      dropdown.innerHTML = clientes.map(c => `
+        <button type="button" class="dropdown-item"
+          onclick="seleccionarCliente(${c.id}, '${c.name.replace(/'/g, "\\'")}', '${(c.phone || '').replace(/'/g, "\\'")}', '${(c.email || '').replace(/'/g, "\\'")}')" style="text-align: left;">
+          <strong>${c.name}</strong><br>
+          <small class="text-muted">${c.cuit ? 'CUIT: ' + c.cuit + ' | ' : ''}${c.phone || 'Sin tel'}</small>
+        </button>
+      `).join('');
+      dropdown.style.display = 'block';
+    } catch (err) {
+      console.error('Error buscando clientes:', err);
+    }
+  }
+
+  function seleccionarCliente(id, nombre, telefono, email) {
+    document.getElementById('cliente_id').value = id;
+    document.getElementById('buscarClienteInput').value = nombre;
+    document.getElementById('nombre_cliente').value = nombre;
+    document.getElementById('telefono_cliente').value = telefono;
+    document.getElementById('email_cliente').value = email;
+    document.getElementById('dropdownClientes').style.display = 'none';
+  }
+
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#buscarClienteInput') && !e.target.closest('#dropdownClientes')) {
+      document.getElementById('dropdownClientes').style.display = 'none';
+    }
   });
 </script>

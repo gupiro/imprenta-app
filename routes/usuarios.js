@@ -40,7 +40,7 @@ module.exports = (db) => { // Recibe 'db' como argumento
         // Hashear y guardar (rol en minúsculas para coincidir con permissions)
         const hash = await bcrypt.hash(password, 10);
         const rolNormalizado = (rol || '').toLowerCase().trim();
-        const rolesValidos = ['admin', 'vendedor', 'operador', 'empleado'];
+        const rolesValidos = ['admin', 'vendedor', 'operador', 'empleado', 'recepcionista'];
         const rolFinal = rolesValidos.includes(rolNormalizado) ? rolNormalizado : 'operador';
 
         await db.run(
@@ -57,7 +57,7 @@ module.exports = (db) => { // Recibe 'db' como argumento
             const { id } = req.params;
             const { rol } = req.body;
 
-            const rolesValidos = ['admin', 'vendedor', 'operador', 'empleado'];
+            const rolesValidos = ['admin', 'vendedor', 'operador', 'empleado', 'recepcionista'];
             if (!rolesValidos.includes(rol)) {
                 req.flash('error', 'Rol inválido.');
                 return res.redirect('/usuarios');
@@ -102,6 +102,86 @@ module.exports = (db) => { // Recibe 'db' como argumento
             // Eliminar usuario
             await db.run('DELETE FROM users WHERE id = ?', id);
             req.flash('success', `Usuario ${usuario.username} eliminado correctamente.`);
+            res.redirect('/usuarios');
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error: ' + err.message);
+            res.redirect('/usuarios');
+        }
+    });
+
+    // 3.1.6 Formulario editar usuario
+    router.get('/editar/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const usuario = await db.get('SELECT id, username, rol FROM users WHERE id = ?', id);
+            if (!usuario) {
+                req.flash('error', 'Usuario no encontrado.');
+                return res.redirect('/usuarios');
+            }
+            res.render('usuarios/editar', { title: 'Editar Usuario', usuario });
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error: ' + err.message);
+            res.redirect('/usuarios');
+        }
+    });
+
+    // 3.1.7 Procesar edición de usuario
+    router.post('/editar/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { username, password, rol } = req.body;
+            const errors = [];
+
+            // Validar que el usuario existe
+            const usuario = await db.get('SELECT id, username FROM users WHERE id = ?', id);
+            if (!usuario) {
+                req.flash('error', 'Usuario no encontrado.');
+                return res.redirect('/usuarios');
+            }
+
+            // Validar username
+            if (!username || username.trim().length === 0) {
+                errors.push('El usuario (nombre) es obligatorio.');
+            }
+
+            // Validar rol
+            const rolesValidos = ['admin', 'vendedor', 'operador', 'empleado', 'recepcionista'];
+            if (!rol || !rolesValidos.includes(rol)) {
+                errors.push('Rol inválido.');
+            }
+
+            // Si se proporciona contraseña, validarla
+            if (password && password.length > 0 && password.length < 4) {
+                errors.push('La contraseña debe tener al menos 4 caracteres (o dejar en blanco para no cambiar).');
+            }
+
+            if (errors.length) {
+                req.flash('error', errors);
+                return res.redirect(`/usuarios/editar/${id}`);
+            }
+
+            // Verificar que el nuevo username no exista (si cambió)
+            if (username.trim() !== usuario.username) {
+                const existingUser = await db.get('SELECT 1 FROM users WHERE username = ? AND id != ?', [username.trim(), id]);
+                if (existingUser) {
+                    req.flash('error', 'Ya existe otro usuario con ese nombre.');
+                    return res.redirect(`/usuarios/editar/${id}`);
+                }
+            }
+
+            // Actualizar usuario
+            if (password && password.length > 0) {
+                // Cambiar password
+                const hash = await bcrypt.hash(password, 10);
+                await db.run('UPDATE users SET username = ?, password = ?, rol = ? WHERE id = ?', [username.trim(), hash, rol, id]);
+            } else {
+                // No cambiar password
+                await db.run('UPDATE users SET username = ?, rol = ? WHERE id = ?', [username.trim(), rol, id]);
+            }
+
+            req.flash('success', `Usuario ${username} actualizado correctamente.`);
             res.redirect('/usuarios');
         } catch (err) {
             console.error('Error:', err);

@@ -944,21 +944,9 @@ module.exports = (db) => {
 
     router.get('/reporte-pdf', checkPermission, async (req, res) => {
         try {
-            const PDFDocument = require('pdfkit');
-            const doc = new PDFDocument();
-            const filename = `reporte-deudas-${new Date().toISOString().slice(0, 10)}.pdf`;
+            const puppeteer = require('puppeteer');
 
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-
-            doc.pipe(res);
-
-            // Título
-            doc.fontSize(20).font('Helvetica-Bold').text('REPORTE DE DEUDAS', { align: 'center' });
-            doc.fontSize(10).font('Helvetica').text(`Generado el ${new Date().toLocaleDateString('es-AR')}`, { align: 'center' });
-            doc.moveDown();
-
-            // Totales
+            // Obtener totales
             const totalTarjetas = (await db.get(`
                 SELECT COALESCE(SUM(saldo_adeudado), 0) AS total FROM deudas_tarjetas WHERE estado = 'activa'
             `))?.total || 0;
@@ -977,55 +965,205 @@ module.exports = (db) => {
 
             const deudaTotal = totalTarjetas + totalCheques + totalPrestamos + totalProveedores;
 
-            // Resumen
-            doc.fontSize(12).font('Helvetica-Bold').text('RESUMEN DE DEUDAS');
-            doc.fontSize(10).font('Helvetica');
-            doc.text(`Tarjetas de Crédito: $${totalTarjetas.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
-            doc.text(`Cheques Diferidos: $${totalCheques.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
-            doc.text(`Préstamos: $${totalPrestamos.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
-            doc.text(`Proveedores: $${totalProveedores.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
-            doc.fontSize(12).font('Helvetica-Bold').text(`TOTAL: $${deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
-            doc.moveDown();
+            // Obtener datos
+            const tarjetas = await db.all('SELECT * FROM deudas_tarjetas WHERE estado = "activa" ORDER BY nombre_tarjeta') || [];
+            const cheques = await db.all('SELECT * FROM deudas_cheques WHERE estado = "pendiente" ORDER BY fecha_vencimiento') || [];
+            const prestamos = await db.all('SELECT * FROM deudas_prestamos WHERE estado = "activo" ORDER BY descripcion') || [];
+            const deudas_prov = await db.all(`
+                SELECT d.*, p.nombre AS proveedor_nombre
+                FROM deudas_proveedores d
+                LEFT JOIN proveedores p ON d.proveedor_id = p.id
+                WHERE d.estado != 'pagado'
+                ORDER BY d.fecha_vencimiento ASC
+            `) || [];
 
-            // Tarjetas
-            doc.fontSize(12).font('Helvetica-Bold').text('TARJETAS DE CRÉDITO');
-            const tarjetas = await db.all('SELECT * FROM deudas_tarjetas WHERE estado = "activa" ORDER BY nombre_tarjeta');
-            if (tarjetas.length > 0) {
-                doc.fontSize(9).font('Helvetica');
-                tarjetas.forEach(t => {
-                    doc.text(`${t.nombre_tarjeta}: $${t.saldo_adeudado.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
-                });
-            } else {
-                doc.text('Sin tarjetas registradas');
-            }
-            doc.moveDown();
+            const fecha = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            const hora = new Date().toLocaleTimeString('es-AR');
 
-            // Cheques
-            doc.fontSize(12).font('Helvetica-Bold').text('CHEQUES PENDIENTES');
-            const cheques = await db.all('SELECT * FROM deudas_cheques WHERE estado = "pendiente" ORDER BY fecha_vencimiento');
-            if (cheques.length > 0) {
-                doc.fontSize(9).font('Helvetica');
-                cheques.forEach(ch => {
-                    doc.text(`Cheque #${ch.numero_cheque} - ${ch.beneficiario}: $${ch.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})} (Vence: ${new Date(ch.fecha_vencimiento).toLocaleDateString('es-AR')})`);
-                });
-            } else {
-                doc.text('Sin cheques pendientes');
-            }
-            doc.moveDown();
+            // Generar HTML
+            const html = `
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        body { font-family: Arial, sans-serif; color: #333; line-height: 1.4; }
+                        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+                        .header { text-align: center; border-bottom: 3px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; }
+                        .header h1 { margin: 0; font-size: 28px; color: #2c3e50; }
+                        .header p { margin: 5px 0; font-size: 12px; color: #666; }
+                        .resumen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+                        .resumen-card { border: 1px solid #ddd; padding: 10px; border-radius: 4px; text-align: center; }
+                        .resumen-card.total { grid-column: 1 / -1; background: #2c3e50; color: white; font-weight: bold; font-size: 16px; }
+                        .resumen-card label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; text-transform: uppercase; }
+                        .resumen-card.total label { color: #ecf0f1; }
+                        .resumen-card .valor { font-size: 18px; font-weight: bold; color: #2c3e50; }
+                        .resumen-card.total .valor { color: #fff; }
+                        .section { margin-bottom: 25px; page-break-inside: avoid; }
+                        .section-title { background: #34495e; color: white; padding: 8px 12px; font-weight: bold; font-size: 12px; margin-bottom: 10px; border-radius: 3px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                        th { background: #ecf0f1; border: 1px solid #bdc3c7; padding: 6px; text-align: left; font-weight: bold; }
+                        td { border: 1px solid #bdc3c7; padding: 6px; }
+                        tr:nth-child(even) { background: #f8f9fa; }
+                        .empty { text-align: center; color: #999; font-style: italic; padding: 10px; }
+                        .text-right { text-align: right; }
+                        .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+                        .badge-success { background: #d4edda; color: #155724; }
+                        .badge-warning { background: #fff3cd; color: #856404; }
+                        .badge-danger { background: #f8d7da; color: #721c24; }
+                        .badge-info { background: #d1ecf1; color: #0c5460; }
+                        .footer { margin-top: 30px; padding-top: 10px; border-top: 1px solid #ddd; text-align: right; font-size: 10px; color: #999; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>REPORTE DE DEUDAS</h1>
+                            <p>Generado el ${fecha} a las ${hora}</p>
+                            <p>Imprenta El Gráfico - Gestión Financiera</p>
+                        </div>
 
-            // Préstamos
-            doc.fontSize(12).font('Helvetica-Bold').text('PRÉSTAMOS ACTIVOS');
-            const prestamos = await db.all('SELECT * FROM deudas_prestamos WHERE estado = "activo" ORDER BY descripcion');
-            if (prestamos.length > 0) {
-                doc.fontSize(9).font('Helvetica');
-                prestamos.forEach(p => {
-                    doc.text(`${p.descripcion} (${p.entidad}): $${p.monto_pendiente.toLocaleString('es-AR', {minimumFractionDigits: 2})} pendiente`);
-                });
-            } else {
-                doc.text('Sin préstamos activos');
-            }
+                        <div class="resumen">
+                            <div class="resumen-card">
+                                <label>Tarjetas de Crédito</label>
+                                <div class="valor">$${totalTarjetas.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            <div class="resumen-card">
+                                <label>Cheques Pendientes</label>
+                                <div class="valor">$${totalCheques.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            <div class="resumen-card">
+                                <label>Préstamos Activos</label>
+                                <div class="valor">$${totalPrestamos.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            <div class="resumen-card">
+                                <label>Deudas Proveedores</label>
+                                <div class="valor">$${totalProveedores.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            <div class="resumen-card total">
+                                <label>DEUDA TOTAL CONSOLIDADA</label>
+                                <div class="valor">$${deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                        </div>
 
-            doc.end();
+                        <!-- TARJETAS -->
+                        <div class="section">
+                            <div class="section-title">💳 TARJETAS DE CRÉDITO (${tarjetas.length})</div>
+                            ${tarjetas.length > 0 ? `
+                                <table>
+                                    <tr>
+                                        <th>Tarjeta</th>
+                                        <th>Límite</th>
+                                        <th>Saldo Adeudado</th>
+                                        <th>Disponible</th>
+                                    </tr>
+                                    ${tarjetas.map(t => `
+                                        <tr>
+                                            <td><strong>${t.nombre_tarjeta}</strong></td>
+                                            <td class="text-right">$${(t.limite_credito || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                            <td class="text-right"><strong>$${(t.saldo_adeudado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong></td>
+                                            <td class="text-right">$${((t.limite_credito || 0) - (t.saldo_adeudado || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                            ` : '<div class="empty">Sin tarjetas registradas</div>'}
+                        </div>
+
+                        <!-- CHEQUES -->
+                        <div class="section">
+                            <div class="section-title">📝 CHEQUES DIFERIDOS (${cheques.length})</div>
+                            ${cheques.length > 0 ? `
+                                <table>
+                                    <tr>
+                                        <th>Cheque #</th>
+                                        <th>Beneficiario</th>
+                                        <th>Banco</th>
+                                        <th>Monto</th>
+                                        <th>Vencimiento</th>
+                                    </tr>
+                                    ${cheques.map(ch => `
+                                        <tr>
+                                            <td><strong>${ch.numero_cheque}</strong></td>
+                                            <td>${ch.beneficiario}</td>
+                                            <td>${ch.banco}</td>
+                                            <td class="text-right">$${ch.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                            <td>${new Date(ch.fecha_vencimiento).toLocaleDateString('es-AR')}</td>
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                            ` : '<div class="empty">Sin cheques pendientes</div>'}
+                        </div>
+
+                        <!-- PRÉSTAMOS -->
+                        <div class="section">
+                            <div class="section-title">🏦 PRÉSTAMOS ACTIVOS (${prestamos.length})</div>
+                            ${prestamos.length > 0 ? `
+                                <table>
+                                    <tr>
+                                        <th>Descripción</th>
+                                        <th>Entidad</th>
+                                        <th>Pendiente</th>
+                                        <th>Cuota Mensual</th>
+                                        <th>Cuotas</th>
+                                    </tr>
+                                    ${prestamos.map(p => `
+                                        <tr>
+                                            <td><strong>${p.descripcion}</strong></td>
+                                            <td>${p.entidad}</td>
+                                            <td class="text-right">$${(p.monto_pendiente || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                            <td class="text-right">$${(p.cuota_mensual || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                            <td class="text-right">${p.cuotas_pagadas || 0}/${p.cuotas_totales || 0}</td>
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                            ` : '<div class="empty">Sin préstamos activos</div>'}
+                        </div>
+
+                        <!-- DEUDAS PROVEEDORES -->
+                        <div class="section">
+                            <div class="section-title">🏪 DEUDAS CON PROVEEDORES (${deudas_prov.length})</div>
+                            ${deudas_prov.length > 0 ? `
+                                <table>
+                                    <tr>
+                                        <th>Proveedor</th>
+                                        <th>Concepto</th>
+                                        <th>Total</th>
+                                        <th>Pagado</th>
+                                        <th>Pendiente</th>
+                                    </tr>
+                                    ${deudas_prov.map(d => `
+                                        <tr>
+                                            <td><strong>${d.proveedor_nombre || 'S/P'}</strong></td>
+                                            <td>${d.concepto}</td>
+                                            <td class="text-right">$${(d.monto_total || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                            <td class="text-right">$${(d.monto_pagado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+                                            <td class="text-right"><strong>$${((d.monto_total || 0) - (d.monto_pagado || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2})}</strong></td>
+                                        </tr>
+                                    `).join('')}
+                                </table>
+                            ` : '<div class="empty">Sin deudas de proveedores</div>'}
+                        </div>
+
+                        <div class="footer">
+                            <p>Este es un documento confidencial generado automáticamente por el sistema de gestión de Imprenta El Gráfico.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Generar PDF con Puppeteer
+            const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+            const page = await browser.newPage();
+            await page.setContent(html, { waitUntil: 'networkidle0' });
+            const pdf = await page.pdf({ format: 'A4', margin: { top: 15, right: 15, bottom: 15, left: 15 } });
+            await browser.close();
+
+            // Enviar PDF
+            const filename = `reporte-deudas-${new Date().toISOString().slice(0, 10)}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.send(pdf);
         } catch (err) {
             console.error('Error:', err);
             req.flash('error', 'Error al generar PDF: ' + err.message);

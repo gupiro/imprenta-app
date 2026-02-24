@@ -26,9 +26,15 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
       background-color: #f5f6fa;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      scroll-behavior: auto;
+    }
+
+    body {
+      overflow-y: auto;
+      position: relative;
     }
 
     /* ═══════════════════════════════════════════════════════════════
@@ -222,8 +228,16 @@
 
     main.container {
       max-width: 1400px;
-      margin-top: 2rem;
-      margin-bottom: 3rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      overflow: visible;
+    }
+
+    /* Prevenir scroll en páginas específicas */
+    main.container > div {
+      overflow: hidden;
     }
 
     .alert {
@@ -239,11 +253,11 @@
     footer {
       background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
       color: rgba(255, 255, 255, 0.8);
-      padding: 2rem 0;
-      margin-top: 4rem;
+      padding: 1rem 0;
+      margin-top: 0.5rem;
       border-top: 3px solid var(--secondary-color);
       text-align: center;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
     }
 
     footer a {
@@ -485,6 +499,39 @@
         }
       });
     });
+
+    // ═══════════════════════════════════════════════════════════════
+    // PREVENIR AUTO-SCROLL AL CARGAR LA PÁGINA
+    // ═══════════════════════════════════════════════════════════════
+    (function() {
+      // Forzar scroll a top al cargar
+      window.addEventListener('load', function() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+
+      // También al inicio del DOM
+      window.scrollTo(0, 0);
+
+      // Prevenir que los gráficos causen scroll
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 100);
+      });
+
+      // Si hay clicks en elementos, mantener en top
+      let lastScrollTop = 0;
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50 && lastScrollTop === 0) {
+          window.scrollTo(0, 0);
+        }
+        lastScrollTop = window.scrollY <= 0 ? 0 : window.scrollY;
+      }, { passive: true });
+    })();
   </script>
 
 </body>

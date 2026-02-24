@@ -60,15 +60,15 @@ app.use((req, res, next) => {
     const rol = res.locals.user?.rol || null;
 
     const allPages = [
-        { name: 'home',          label: 'Inicio',       url: '/',              icon: 'bi-house-fill',     roles: ['admin','vendedor','operador','empleado'] },
+        { name: 'home',          label: 'Inicio',       url: '/',              icon: 'bi-house-fill',     roles: ['admin','vendedor','operador','empleado','recepcionista'] },
         { name: 'clientes',      label: 'Clientes',     url: '/clientes',      icon: 'bi-people-fill',    roles: ['admin','vendedor'] },
-        { name: 'pedidos',       label: 'Pedidos',      url: '/pedidos',       icon: 'bi-kanban-fill',    roles: ['admin','vendedor','operador','empleado'] },
-        { name: 'presupuestos',  label: 'Presupuestos', url: '/presupuestos',  icon: 'bi-calculator',     roles: ['admin','vendedor','empleado'] },
-        { name: 'catalogo',      label: 'Catálogo',     url: '/catalogo',      icon: 'bi-card-list',      roles: ['admin','vendedor','operador','empleado'] },
+        { name: 'pedidos',       label: 'Pedidos',      url: '/pedidos',       icon: 'bi-kanban-fill',    roles: ['admin','vendedor','operador','empleado','recepcionista'] },
+        { name: 'presupuestos',  label: 'Presupuestos', url: '/presupuestos',  icon: 'bi-calculator',     roles: ['admin','vendedor','empleado','recepcionista'] },
+        { name: 'catalogo',      label: 'Catálogo',     url: '/catalogo',      icon: 'bi-card-list',      roles: ['admin','vendedor','operador','empleado','recepcionista'] },
         { name: 'proveedores',   label: 'Proveedores',  url: '/proveedores',   icon: 'bi-truck',          roles: ['admin'] },
         { name: 'stock',         label: 'Stock',        url: '/stock',         icon: 'bi-boxes',          roles: ['admin'] },
         { name: 'gastos',        label: 'Gastos',       url: '/gastos',        icon: 'bi-receipt',        roles: ['admin'] },
-        { name: 'caja-diaria',   label: 'Caja',         url: '/caja-diaria',   icon: 'bi-cash-coin',      roles: ['admin','vendedor','empleado'] },
+        { name: 'caja-diaria',   label: 'Caja',         url: '/caja-diaria',   icon: 'bi-cash-coin',      roles: ['admin','vendedor','empleado','recepcionista'] },
         { name: 'reportes',      label: 'Reportes',     url: '/reportes',      icon: 'bi-bar-chart-fill', roles: ['admin'] },
         { name: 'usuarios',      label: 'Usuarios',     url: '/usuarios',      icon: 'bi-gear-fill',      roles: ['admin'] },
     ];
@@ -165,10 +165,10 @@ async function startServer() {
 
     app.use('/dashboard', authMiddleware.isAuthenticated, dashboardRouterConfigured);
     app.use('/clientes',     permitirRoles('admin','vendedor'),            clientesRouterConfigured);
-    app.use('/pedidos',      permitirRoles('admin','vendedor','operador','empleado'), pedidosRouterConfigured);
+    app.use('/pedidos',      permitirRoles('admin','vendedor','operador','empleado','recepcionista'), pedidosRouterConfigured);
     app.use('/usuarios',     permitirRoles('admin'),                       usuariosRouterConfigured);
-    app.use('/presupuestos', permitirRoles('admin','vendedor','empleado'),            presupuestosRouterConfigured);
-    app.use('/catalogo',     permitirRoles('admin','vendedor','operador','empleado'), catalogoRouterConfigured);
+    app.use('/presupuestos', permitirRoles('admin','vendedor','empleado','recepcionista'), presupuestosRouterConfigured);
+    app.use('/catalogo',     permitirRoles('admin','vendedor','operador','empleado','recepcionista'), catalogoRouterConfigured);
     app.use('/productos',    permitirRoles('admin','vendedor'),            productosRouterConfigured);
     app.use('/proveedores',  permitirRoles('admin'),                       proveedoresRouterConfigured);
     app.use('/stock',        permitirRoles('admin'),                       stockRouterConfigured);
@@ -182,14 +182,14 @@ async function startServer() {
 
     app.use('/caja-diaria',
         authMiddleware.isAuthenticated,
-        permitirRoles('admin','vendedor','empleado'),
+        permitirRoles('admin','vendedor','empleado','recepcionista'),
         async (req, res, next) => {
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );
     app.post('/caja-diaria/agregar',
         authMiddleware.isAuthenticated,
-        permitirRoles('admin','vendedor','empleado'),
+        permitirRoles('admin','vendedor','empleado','recepcionista'),
         async (req, res, next) => {
             return cajaController.agregarMovimiento(req, res);
         }

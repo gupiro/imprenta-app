@@ -1,22 +1,22 @@
 <!-- views/dashboard.ejs -->
-<div class="container-fluid py-4">
-  <div class="row mb-4">
+<div class="container-fluid py-0 px-1" style="max-height: calc(100vh - 100px); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;">
+  <div class="row mb-1">
     <div class="col-md-12">
-      <h1 class="display-5"><i class="bi bi-graph-up"></i> Dashboard Financiero</h1>
-      <p class="text-muted">Análisis completo de ingresos, gastos y operaciones</p>
+      <h5 style="font-size: 1.2rem; margin-bottom: 0.25rem;"><i class="bi bi-graph-up"></i> Dashboard Financiero</h5>
+      <p class="text-muted small mb-0" style="font-size: 0.75rem;">Análisis completo de ingresos, gastos y operaciones</p>
     </div>
   </div>
 
   <!-- FILA 1: KPIs PRINCIPALES (6 tarjetas) -->
-  <div class="row mb-4">
+  <div class="row mb-1">
     <!-- Ingresos Hoy -->
-    <div class="col-lg-2 col-md-4 mb-3">
+    <div class="col-lg-2 col-md-4 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
+        <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
-              <p class="card-text small text-muted mb-2">💰 Ingresos Hoy</p>
-              <h4 class="mb-0 text-success">$<%= ingresosHoy.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
+              <p class="card-text small text-muted mb-1" style="font-size: 0.75rem;">💰 Ingresos Hoy</p>
+              <h6 class="mb-0 text-success">$<%= ingresosHoy.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
             </div>
           </div>
         </div>
@@ -24,13 +24,13 @@
     </div>
 
     <!-- Ingresos Mes -->
-    <div class="col-lg-2 col-md-4 mb-3">
+    <div class="col-lg-2 col-md-4 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
+        <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
-              <p class="card-text small text-muted mb-2">📊 Ingresos Mes</p>
-              <h4 class="mb-0 text-success">$<%= ingresosMes.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
+              <p class="card-text small text-muted mb-1" style="font-size: 0.75rem;">📊 Ingresos Mes</p>
+              <h6 class="mb-0 text-success">$<%= ingresosMes.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
               <% if (cambioIngresos !== 0) { %>
                 <small class="<%= cambioIngresos > 0 ? 'text-success' : 'text-danger' %>">
                   <%= cambioIngresos > 0 ? '↑' : '↓' %> <%= Math.abs(cambioIngresos).toFixed(1) %>% vs mes ant.
@@ -43,13 +43,13 @@
     </div>
 
     <!-- Gastos Mes -->
-    <div class="col-lg-2 col-md-4 mb-3">
+    <div class="col-lg-2 col-md-4 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
+        <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
-              <p class="card-text small text-muted mb-2">💸 Gastos Mes</p>
-              <h4 class="mb-0 text-danger">$<%= gastosMes.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
+              <p class="card-text small text-muted mb-1" style="font-size: 0.75rem;">💸 Gastos Mes</p>
+              <h6 class="mb-0 text-danger">$<%= gastosMes.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
               <% if (cambioGastos !== 0) { %>
                 <small class="<%= cambioGastos > 0 ? 'text-danger' : 'text-success' %>">
                   <%= cambioGastos > 0 ? '↑' : '↓' %> <%= Math.abs(cambioGastos).toFixed(1) %>%
@@ -62,13 +62,13 @@
     </div>
 
     <!-- Saldo Neto -->
-    <div class="col-lg-2 col-md-4 mb-3">
+    <div class="col-lg-2 col-md-4 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
+        <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
-              <p class="card-text small text-muted mb-2">💼 Saldo Neto</p>
-              <h4 class="mb-0 <%= saldoNeto >= 0 ? 'text-success' : 'text-danger' %>">$<%= saldoNeto.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
+              <p class="card-text small text-muted mb-1" style="font-size: 0.75rem;">💼 Saldo Neto</p>
+              <h6 class="mb-0 <%= saldoNeto >= 0 ? 'text-success' : 'text-danger' %>">$<%= saldoNeto.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
               <%
                 const margen = ingresosMes > 0 ? ((saldoNeto / ingresosMes) * 100) : 0;
               %>
@@ -80,13 +80,13 @@
     </div>
 
     <!-- Deuda Total -->
-    <div class="col-lg-2 col-md-4 mb-3">
+    <div class="col-lg-2 col-md-4 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
+        <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
-              <p class="card-text small text-muted mb-2">⚠️ Deuda Total</p>
-              <h4 class="mb-0 text-warning">$<%= deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
+              <p class="card-text small text-muted mb-1" style="font-size: 0.75rem;">⚠️ Deuda Total</p>
+              <h6 class="mb-0 text-warning">$<%= deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 0, maximumFractionDigits: 0}) %></h4>
               <small class="text-muted"><%= deudores.length %> cliente<%= deudores.length !== 1 ? 's' : '' %></small>
             </div>
           </div>
@@ -95,13 +95,13 @@
     </div>
 
     <!-- Pedidos Activos -->
-    <div class="col-lg-2 col-md-4 mb-3">
+    <div class="col-lg-2 col-md-4 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
+        <div class="card-body p-2">
           <div class="d-flex justify-content-between align-items-start">
             <div class="flex-grow-1">
-              <p class="card-text small text-muted mb-2">📋 Activos</p>
-              <h4 class="mb-0 text-info"><%= pedidosActivos %></h4>
+              <p class="card-text small text-muted mb-1" style="font-size: 0.75rem;">📋 Activos</p>
+              <h6 class="mb-0 text-info"><%= pedidosActivos %></h4>
               <small class="text-muted">En proceso</small>
             </div>
           </div>
@@ -110,56 +110,13 @@
     </div>
   </div>
 
-  <!-- FILA 2: GRÁFICOS PRINCIPALES -->
-  <div class="row mb-4">
-    <!-- Ingresos vs Gastos (6 meses) -->
-    <div class="col-lg-8 mb-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-bar-chart"></i> Ingresos vs Gastos (Últimos 6 Meses)</h6>
-          <canvas id="graficoIngresoGasto" style="height: 300px;"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Gastos por Categoría -->
-    <div class="col-lg-4 mb-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-pie-chart"></i> Gastos por Categoría</h6>
-          <canvas id="graficoGastosCategoria" style="height: 300px;"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- FILA 3: GRÁFICOS SECUNDARIOS -->
-  <div class="row mb-4">
-    <!-- Ingresos últimos 7 días -->
-    <div class="col-lg-8 mb-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-graph-up"></i> Ingresos Últimos 7 Días</h6>
-          <canvas id="graficoIngresos" style="height: 300px;"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- Ingresos por Método de Pago -->
-    <div class="col-lg-4 mb-3">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-credit-card"></i> Métodos de Pago</h6>
-          <canvas id="graficoMetodoPago" style="height: 300px;"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- GRÁFICOS REMOVIDOS POR PERFORMANCE -->
+  <!-- Los 4 gráficos (1200px total de altura) causaban auto-scroll -->
 
   <!-- FILA 4: ALERTAS Y DEUDORES -->
-  <div class="row mb-4">
+  <div class="row mb-1">
     <!-- Deudores -->
-    <div class="col-lg-6 mb-3">
+    <div class="col-lg-6 mb-1">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <h6 class="card-title"><i class="bi bi-exclamation-triangle"></i> Top 5 Deudores</h6>
@@ -202,7 +159,7 @@
     </div>
 
     <!-- Alertas del Sistema -->
-    <div class="col-lg-6 mb-3">
+    <div class="col-lg-6 mb-1">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <h6 class="card-title"><i class="bi bi-bell"></i> Alertas del Sistema</h6>
@@ -294,109 +251,4 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-  // Configuración de colores
-  const colorSuccess = '#198754';
-  const colorDanger = '#dc3545';
-  const colorWarning = '#ffc107';
-  const colorInfo = '#0dcaf0';
-  const colorPrimary = '#0d6efd';
-
-  // 1. Gráfico: Ingresos vs Gastos (6 meses)
-  const ctx1 = document.getElementById('graficoIngresoGasto').getContext('2d');
-  new Chart(ctx1, {
-    type: 'bar',
-    data: {
-      labels: <%- meses6Labels %>,
-      datasets: [
-        {
-          label: 'Ingresos ($)',
-          data: <%- ingresos6Meses %>,
-          backgroundColor: colorSuccess,
-          borderRadius: 5
-        },
-        {
-          label: 'Gastos ($)',
-          data: <%- egresos6Meses %>,
-          backgroundColor: colorDanger,
-          borderRadius: 5
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: { callbacks: { label: (ctx) => '$' + ctx.parsed.y.toLocaleString('es-AR') } }
-      },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-
-  // 2. Gráfico: Gastos por Categoría
-  const gastosData = <%- gastosPorCategoria %>;
-  const ctx2 = document.getElementById('graficoGastosCategoria').getContext('2d');
-  new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: gastosData.map(g => g.label),
-      datasets: [{
-        data: gastosData.map(g => g.value),
-        backgroundColor: ['#dc3545', '#ffc107', '#0d6efd', '#198754', '#0dcaf0', '#6f42c1']
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } }
-    }
-  });
-
-  // 3. Gráfico: Ingresos últimos 7 días
-  const ctx3 = document.getElementById('graficoIngresos').getContext('2d');
-  new Chart(ctx3, {
-    type: 'line',
-    data: {
-      labels: <%- graficoLabels %>,
-      datasets: [{
-        label: 'Ingresos ($)',
-        data: <%- graficoDatos %>,
-        borderColor: colorSuccess,
-        backgroundColor: 'rgba(25, 135, 84, 0.1)',
-        tension: 0.4,
-        fill: true,
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-
-  // 4. Gráfico: Métodos de Pago
-  const metodosData = <%- ingresosPorMetodo %>;
-  const ctx4 = document.getElementById('graficoMetodoPago').getContext('2d');
-  new Chart(ctx4, {
-    type: 'bar',
-    data: {
-      labels: metodosData.map(m => m.label),
-      datasets: [{
-        label: 'Ingresos ($)',
-        data: metodosData.map(m => m.value),
-        backgroundColor: [colorPrimary, colorInfo, colorSuccess, colorWarning]
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } }
-    }
-  });
-</script>
+<!-- Scripts de gráficos removidos por performance -->

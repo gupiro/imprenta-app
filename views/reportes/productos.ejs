@@ -1,137 +1,100 @@
 <!-- views/reportes/productos.ejs -->
-<div class="container-fluid py-4">
-  <div class="row mb-4">
+<div class="container-fluid py-0 px-1" style="max-height: calc(100vh - 100px); display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden;">
+  <div class="row mb-1">
     <div class="col-md-12">
-      <h1 class="display-6"><i class="bi bi-bar-chart-steps"></i> Análisis ABC de Productos</h1>
-      <p class="text-muted">Identificar qué productos generan 80% de ingresos (Regla de Pareto)</p>
+      <h5 class="mb-0" style="font-size: 1rem;"><i class="bi bi-bar-chart-steps"></i> Análisis ABC de Productos</h5>
+      <p class="text-muted small mb-0" style="font-size: 0.75rem;">Identificar qué productos generan 80% de ingresos</p>
     </div>
   </div>
 
   <!-- SELECTOR DE PERÍODO -->
-  <div class="row mb-4">
+  <div class="row mb-2">
     <div class="col-md-12">
-      <div class="btn-group w-100" role="group">
-        <a href="?periodo=mes" class="btn btn-outline-primary <%= periodo === 'mes' ? 'active' : '' %>">
-          <i class="bi bi-calendar3"></i> Mes
+      <div class="btn-group w-100" role="group" style="gap: 2px;">
+        <a href="?periodo=mes" class="btn btn-sm btn-outline-primary <%= periodo === 'mes' ? 'active' : '' %>">
+          Mes
         </a>
-        <a href="?periodo=trimestre" class="btn btn-outline-primary <%= periodo === 'trimestre' ? 'active' : '' %>">
-          <i class="bi bi-calendar-month"></i> Trimestre
+        <a href="?periodo=trimestre" class="btn btn-sm btn-outline-primary <%= periodo === 'trimestre' ? 'active' : '' %>">
+          Trimestre
         </a>
-        <a href="?periodo=semestre" class="btn btn-outline-primary <%= periodo === 'semestre' ? 'active' : '' %>">
-          <i class="bi bi-calendar-range"></i> Semestre
+        <a href="?periodo=semestre" class="btn btn-sm btn-outline-primary <%= periodo === 'semestre' ? 'active' : '' %>">
+          Semestre
         </a>
-        <a href="?periodo=año" class="btn btn-outline-primary <%= periodo === 'año' ? 'active' : '' %>">
-          <i class="bi bi-calendar2"></i> Año
+        <a href="?periodo=año" class="btn btn-sm btn-outline-primary <%= periodo === 'año' ? 'active' : '' %>">
+          Año
         </a>
-        <a href="?periodo=todo" class="btn btn-outline-primary <%= periodo === 'todo' ? 'active' : '' %>">
-          <i class="bi bi-clock-history"></i> Todo
+        <a href="?periodo=todo" class="btn btn-sm btn-outline-primary <%= periodo === 'todo' ? 'active' : '' %>">
+          Todo
         </a>
       </div>
     </div>
   </div>
 
   <!-- RESUMEN ABC -->
-  <div class="row mb-4">
-    <div class="col-lg-3 mb-3">
+  <div class="row mb-1">
+    <div class="col-lg-3 mb-1">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <p class="card-text small text-muted mb-2">📊 Total Productos</p>
-              <h4 class="mb-0"><%= productosVentas.length %></h4>
-            </div>
-          </div>
+        <div class="card-body p-1">
+          <p class="card-text text-muted mb-0" style="font-size: 0.7rem;">Total Productos</p>
+          <h6 class="mb-0" style="font-size: 1rem;"><%= productosVentas.length %></h6>
         </div>
       </div>
     </div>
 
-    <div class="col-lg-3 mb-3">
+    <div class="col-lg-3 mb-1">
       <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754;">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <p class="card-text small text-muted mb-2">🟢 Clase A (80%)</p>
-              <h4 class="mb-0 text-success"><%= conteoA %> productos</h4>
-              <small class="text-success">Enfoque máximo</small>
-            </div>
-          </div>
+        <div class="card-body p-1">
+          <p class="card-text text-muted mb-0" style="font-size: 0.7rem;">🟢 Clase A</p>
+          <h6 class="mb-0 text-success" style="font-size: 1rem;"><%= conteoA %></h6>
         </div>
       </div>
     </div>
 
-    <div class="col-lg-3 mb-3">
+    <div class="col-lg-3 mb-1">
       <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #ffc107;">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <p class="card-text small text-muted mb-2">🟡 Clase B (15%)</p>
-              <h4 class="mb-0 text-warning"><%= conteoB %> productos</h4>
-              <small class="text-warning">Mantener</small>
-            </div>
-          </div>
+        <div class="card-body p-1">
+          <p class="card-text text-muted mb-0" style="font-size: 0.7rem;">🟡 Clase B</p>
+          <h6 class="mb-0 text-warning" style="font-size: 1rem;"><%= conteoB %></h6>
         </div>
       </div>
     </div>
 
-    <div class="col-lg-3 mb-3">
+    <div class="col-lg-3 mb-1">
       <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #dc3545;">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <p class="card-text small text-muted mb-2">🔴 Clase C (5%)</p>
-              <h4 class="mb-0 text-danger"><%= conteoC %> productos</h4>
-              <small class="text-danger">Revisar</small>
-            </div>
-          </div>
+        <div class="card-body p-1">
+          <p class="card-text text-muted mb-0" style="font-size: 0.7rem;">🔴 Clase C</p>
+          <h6 class="mb-0 text-danger" style="font-size: 1rem;"><%= conteoC %></h6>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- GRÁFICOS -->
-  <div class="row mb-4">
-    <div class="col-lg-8 mb-3">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-bar-chart"></i> Top 10 Productos por Ventas</h6>
-          <canvas id="graficoTop10" style="height: 300px;"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-lg-4 mb-3">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-pie-chart"></i> Ingresos por Clase ABC</h6>
-          <canvas id="graficoClases" style="height: 300px;"></canvas>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- GRÁFICOS REMOVIDOS POR PERFORMANCE -->
+  <!-- Gráficos causaban auto-scroll al cargar dinámicamente -->
 
   <!-- TABLA COMPLETA -->
   <div class="row">
     <div class="col-md-12">
       <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h6 class="card-title"><i class="bi bi-table"></i> Listado Completo ABC</h6>
+        <div class="card-body p-1">
+          <h6 class="card-title mb-1" style="font-size: 0.75rem;">Listado ABC</h6>
           <% if (productosVentas.length === 0) { %>
-            <div class="alert alert-info mb-0">
-              <i class="bi bi-info-circle"></i> Sin datos aún en este período. Crea pedidos para ver el análisis.
+            <div class="alert alert-info mb-0" style="font-size: 0.75rem; padding: 0.3rem;">
+              Sin datos aún. Crea pedidos para ver el análisis.
             </div>
           <% } else { %>
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+              <table class="table table-hover mb-0 sm" style="font-size: 0.75rem;">
                 <thead class="table-light">
                   <tr>
-                    <th style="width: 50px;">#</th>
-                    <th>Producto</th>
-                    <th style="width: 100px;">Pedidos</th>
-                    <th style="width: 100px;">Unidades</th>
-                    <th style="width: 120px;">Ventas ($)</th>
-                    <th style="width: 80px;">% Total</th>
-                    <th style="width: 100px;">% Acum.</th>
-                    <th style="width: 80px;">Clase</th>
+                    <th style="width: 40px; padding: 0.2rem;">Rank</th>
+                    <th style="padding: 0.2rem;">Producto</th>
+                    <th style="width: 70px; padding: 0.2rem;">Pedidos</th>
+                    <th style="width: 80px; padding: 0.2rem;">Unid.</th>
+                    <th style="width: 100px; padding: 0.2rem;">Ventas</th>
+                    <th style="width: 60px; padding: 0.2rem;">%</th>
+                    <th style="width: 80px; padding: 0.2rem;">% Acum.</th>
+                    <th style="width: 60px; padding: 0.2rem;">Clase</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -146,33 +109,33 @@
                       }
                   %>
                     <tr>
-                      <td><strong><%= p.rank %></strong></td>
-                      <td><strong><%= p.producto %></strong></td>
-                      <td><span class="badge bg-info"><%= p.pedidos_count %></span></td>
-                      <td><%= p.unidades_vendidas %></td>
-                      <td><strong>$<%= (p.ventas_totales || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %></strong></td>
-                      <td><%= p.porcentaje.toFixed(1) %>%</td>
-                      <td>
-                        <div class="progress" style="height: 20px;">
+                      <td style="padding: 0.2rem;"><strong><%= p.rank %></strong></td>
+                      <td style="padding: 0.2rem;"><%= p.producto %></td>
+                      <td style="padding: 0.2rem;"><span class="badge bg-info" style="font-size: 0.65rem;"><%= p.pedidos_count %></span></td>
+                      <td style="padding: 0.2rem;"><%= p.unidades_vendidas %></td>
+                      <td style="padding: 0.2rem;"><strong>$<%= (p.ventas_totales || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %></strong></td>
+                      <td style="padding: 0.2rem;"><%= p.porcentaje.toFixed(1) %>%</td>
+                      <td style="padding: 0.2rem;">
+                        <div class="progress" style="height: 14px;">
                           <div class="progress-bar <%
                             let bgColor = 'bg-secondary';
                             if (p.clase === 'A') bgColor = 'bg-success';
                             else if (p.clase === 'B') bgColor = 'bg-warning';
                             else if (p.clase === 'C') bgColor = 'bg-danger';
                           %><%= bgColor %>"
-                            style="width: <%= p.porcentaje_acumulado %>%"
+                            style="width: <%= p.porcentaje_acumulado %>%; font-size: 0.6rem;"
                             role="progressbar">
                             <%= p.porcentaje_acumulado.toFixed(0) %>%
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td style="padding: 0.2rem;">
                         <% if (p.clase === 'A') { %>
-                          <span class="badge bg-success">🟢 A</span>
+                          <span class="badge bg-success" style="font-size: 0.6rem;">A</span>
                         <% } else if (p.clase === 'B') { %>
-                          <span class="badge bg-warning text-dark">🟡 B</span>
+                          <span class="badge bg-warning text-dark" style="font-size: 0.6rem;">B</span>
                         <% } else { %>
-                          <span class="badge bg-danger">🔴 C</span>
+                          <span class="badge bg-danger" style="font-size: 0.6rem;">C</span>
                         <% } %>
                       </td>
                     </tr>
@@ -190,60 +153,18 @@
   </div>
 
   <!-- INFO -->
-  <div class="row mt-4">
+  <div class="row mt-2">
     <div class="col-md-12">
-      <div class="alert alert-light border">
-        <h6><i class="bi bi-lightbulb"></i> Interpretación del Análisis ABC</h6>
-        <ul class="mb-0 small">
-          <li><strong>Clase A (80%):</strong> Estos productos generan el 80% de tus ingresos. Enfócate en mantenerlos, mejorar su disponibilidad y expandir su venta.</li>
-          <li><strong>Clase B (15%):</strong> Productos medianos. Son importantes pero no requieren el mismo nivel de enfoque que los A.</li>
-          <li><strong>Clase C (5%):</strong> Bajo rendimiento. Considera si valen la pena mantener en catálogo o si hay oportunidad de mejorar su venta.</li>
+      <div class="alert alert-light border p-2" style="font-size: 0.8rem;">
+        <strong style="font-size: 0.85rem;"><i class="bi bi-lightbulb"></i> Interpretación</strong>
+        <ul class="mb-0" style="margin-left: 1.5rem;">
+          <li><strong>A:</strong> 80% ingresos - Enfoque máximo</li>
+          <li><strong>B:</strong> 15% ingresos - Mantener</li>
+          <li><strong>C:</strong> 5% ingresos - Revisar</li>
         </ul>
       </div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script>
-  // Gráfico: Top 10 productos
-  const ctx1 = document.getElementById('graficoTop10').getContext('2d');
-  new Chart(ctx1, {
-    type: 'bar',
-    data: {
-      labels: <%- top10Labels %>,
-      datasets: [{
-        label: 'Ventas ($)',
-        data: <%- top10Datos %>,
-        backgroundColor: '#0d6efd',
-        borderRadius: 5
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } }
-    }
-  });
-
-  // Gráfico: Clases ABC
-  const clasesData = <%- ingresosPorClase %>;
-  const ctx2 = document.getElementById('graficoClases').getContext('2d');
-  new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: clasesData.map(d => d.label),
-      datasets: [{
-        data: clasesData.map(d => d.value),
-        backgroundColor: clasesData.map(d => d.color)
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom' } }
-    }
-  });
-</script>
+<!-- Scripts de gráficos removidos por performance -->

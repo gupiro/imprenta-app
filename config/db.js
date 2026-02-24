@@ -256,6 +256,101 @@ async function initDb() {
         `);
 
         // ════════════════════════════════════════════════════════════════
+        // TABLA: DEUDAS - TARJETAS DE CRÉDITO
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS deudas_tarjetas (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre_tarjeta      TEXT NOT NULL,
+                limite_credito      REAL DEFAULT 0,
+                saldo_adeudado      REAL DEFAULT 0,
+                fecha_cierre        INTEGER,
+                fecha_vencimiento   INTEGER,
+                monto_minimo        REAL DEFAULT 0,
+                estado              TEXT DEFAULT 'activa' CHECK(estado IN ('activa', 'inactiva')),
+                notas               TEXT,
+                created_at          TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: DEUDAS - CHEQUES DIFERIDOS EMITIDOS
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS deudas_cheques (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                numero_cheque       TEXT NOT NULL,
+                banco               TEXT NOT NULL,
+                beneficiario        TEXT NOT NULL,
+                monto               REAL NOT NULL,
+                fecha_emision       TEXT NOT NULL,
+                fecha_vencimiento   TEXT NOT NULL,
+                estado              TEXT DEFAULT 'pendiente' CHECK(estado IN ('pendiente', 'cobrado', 'rechazado')),
+                proveedor_id        INTEGER REFERENCES proveedores(id),
+                notas               TEXT,
+                created_at          TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: DEUDAS - PRÉSTAMOS
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS deudas_prestamos (
+                id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+                descripcion             TEXT NOT NULL,
+                entidad                 TEXT NOT NULL,
+                monto_original          REAL NOT NULL,
+                monto_pendiente         REAL NOT NULL,
+                cuota_mensual           REAL DEFAULT 0,
+                fecha_primer_vencimiento TEXT,
+                dia_vencimiento_mensual INTEGER,
+                cuotas_totales          INTEGER DEFAULT 0,
+                cuotas_pagadas          INTEGER DEFAULT 0,
+                tasa_interes            REAL DEFAULT 0,
+                estado                  TEXT DEFAULT 'activo' CHECK(estado IN ('activo', 'cancelado')),
+                notas                   TEXT,
+                created_at              TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: DEUDAS - PROVEEDORES
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS deudas_proveedores (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                proveedor_id      INTEGER REFERENCES proveedores(id),
+                concepto          TEXT NOT NULL,
+                monto_total       REAL NOT NULL,
+                monto_pagado      REAL DEFAULT 0,
+                fecha_deuda       TEXT NOT NULL,
+                fecha_vencimiento TEXT,
+                estado            TEXT DEFAULT 'pendiente' CHECK(estado IN ('pendiente', 'pagado_parcial', 'pagado')),
+                notas             TEXT,
+                created_at        TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: DEUDAS - HISTORIAL DE PAGOS
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS deudas_pagos (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo_deuda  TEXT NOT NULL CHECK(tipo_deuda IN ('tarjeta', 'cheque', 'prestamo', 'proveedor')),
+                deuda_id    INTEGER NOT NULL,
+                monto       REAL NOT NULL,
+                fecha       TEXT NOT NULL,
+                metodo_pago TEXT,
+                notas       TEXT,
+                usuario_id  INTEGER REFERENCES users(id),
+                caja_id     INTEGER REFERENCES movimientos_caja(id),
+                created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
         // DATOS INICIALES
         // ════════════════════════════════════════════════════════════════
 

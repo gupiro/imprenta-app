@@ -1,0 +1,321 @@
+<!-- views/deudas/proveedores-deuda.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-building"></i> Deudas con Proveedores</h1>
+      <p class="text-muted">Gestión de cuentas por pagar a proveedores</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaDeuda">
+        <i class="bi bi-plus-circle"></i> Nueva Deuda
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">💳 Total Pendiente</p>
+          <h4 class="mb-0 text-danger">$<%= totalPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">⏳ Sin Pagar</p>
+          <h4 class="mb-0 text-warning"><%= deudas.filter(d => d.estado === 'pendiente').length %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">✅ Pagadas</p>
+          <h4 class="mb-0 text-success"><%= deudas.filter(d => d.estado === 'pagado').length %></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE DEUDAS -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <% if (deudas.length === 0) { %>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> No hay deudas registradas. ¡Crea una nueva!
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Proveedor</th>
+                    <th>Concepto</th>
+                    <th style="width: 100px;">Monto Total</th>
+                    <th style="width: 100px;">Pagado</th>
+                    <th style="width: 120px;">% Pagado</th>
+                    <th style="width: 100px;">Vencimiento</th>
+                    <th style="width: 80px;">Estado</th>
+                    <th style="width: 130px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% deudas.forEach(d => {
+                    const pendiente = d.monto_total - d.monto_pagado;
+                    const porcentajePagado = (d.monto_pagado / d.monto_total) * 100;
+                    let colorEstado = 'danger';
+                    if (d.estado === 'pagado') colorEstado = 'success';
+                    else if (d.estado === 'pagado_parcial') colorEstado = 'warning';
+                  %>
+                    <tr>
+                      <td><strong><%= d.proveedor_nombre || 'Sin asignar' %></strong></td>
+                      <td><%= d.concepto %></td>
+                      <td>$<%= d.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td>
+                        <strong class="text-success">
+                          $<%= d.monto_pagado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                        </strong>
+                      </td>
+                      <td>
+                        <div class="progress" style="height: 20px;">
+                          <div class="progress-bar bg-success" style="width: <%= porcentajePagado %>%">
+                            <%= porcentajePagado.toFixed(0) %>%
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <% if (d.fecha_vencimiento) { %>
+                          <%= new Date(d.fecha_vencimiento).toLocaleDateString('es-AR') %>
+                        <% } else { %>
+                          <small class="text-muted">-</small>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (d.estado === 'pagado') { %>
+                          <span class="badge bg-success">Pagado</span>
+                        <% } else if (d.estado === 'pagado_parcial') { %>
+                          <span class="badge bg-warning text-dark">Parcial</span>
+                        <% } else { %>
+                          <span class="badge bg-danger">Pendiente</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (d.estado !== 'pagado') { %>
+                          <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalPagar"
+                                  onclick="setDeudaPago(<%= d.id %>)">
+                            <i class="bi bi-cash"></i> Pagar
+                          </button>
+                        <% } %>
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar"
+                                onclick="preLlenarEditar(<%= JSON.stringify(d) %>)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="POST" action="/deudas/proveedores-deuda/<%= d.id %>/eliminar" style="display: inline;"
+                              onsubmit="return confirm('¿Eliminar deuda?');">
+                          <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA DEUDA -->
+<div class="modal fade" id="modalNuevaDeuda" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva Deuda con Proveedor</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/deudas/proveedores-deuda">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Proveedor</label>
+              <select name="proveedor_id" class="form-select">
+                <option value="">Seleccionar...</option>
+                <% proveedores.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.nombre %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Concepto *</label>
+              <input type="text" name="concepto" class="form-control" placeholder="ej: Compra de tinta y papeles" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Total *</label>
+              <input type="number" name="monto_total" class="form-control" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Pagado</label>
+              <input type="number" name="monto_pagado" class="form-control" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de la Deuda *</label>
+              <input type="date" name="fecha_deuda" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input type="date" name="fecha_vencimiento" class="form-control">
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear Deuda</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR DEUDA -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar Deuda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditar">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Proveedor</label>
+              <select name="proveedor_id" id="edit_proveedor" class="form-select">
+                <option value="">Seleccionar...</option>
+                <% proveedores.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.nombre %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Concepto</label>
+              <input type="text" id="edit_concepto" name="concepto" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Total</label>
+              <input type="number" id="edit_total" name="monto_total" class="form-control" step="0.01" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Pagado</label>
+              <input type="number" id="edit_pagado" name="monto_pagado" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de la Deuda</label>
+              <input type="date" id="edit_fecha_deuda" name="fecha_deuda" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input type="date" id="edit_fecha_vencimiento" name="fecha_vencimiento" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Estado</label>
+              <select name="estado" id="edit_estado" class="form-select">
+                <option value="pendiente">Pendiente</option>
+                <option value="pagado_parcial">Pagado Parcial</option>
+                <option value="pagado">Pagado</option>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea id="edit_notas" name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAR -->
+<div class="modal fade" id="modalPagar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Registrar Pago</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formPagar">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Monto a Pagar *</label>
+            <input type="number" name="monto" class="form-control" step="0.01" placeholder="0.00" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" name="fecha" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Método de Pago</label>
+            <select name="metodo_pago" class="form-select">
+              <option value="">Seleccionar...</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="cheque">Cheque</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notas</label>
+            <textarea name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar Pago</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setDeudaPago(id) {
+    document.getElementById('formPagar').action = `/deudas/proveedores-deuda/${id}/pagar`;
+  }
+
+  function preLlenarEditar(deuda) {
+    document.getElementById('edit_proveedor').value = deuda.proveedor_id || '';
+    document.getElementById('edit_concepto').value = deuda.concepto;
+    document.getElementById('edit_total').value = deuda.monto_total;
+    document.getElementById('edit_pagado').value = deuda.monto_pagado;
+    document.getElementById('edit_fecha_deuda').value = deuda.fecha_deuda;
+    document.getElementById('edit_fecha_vencimiento').value = deuda.fecha_vencimiento || '';
+    document.getElementById('edit_estado').value = deuda.estado;
+    document.getElementById('edit_notas').value = deuda.notas || '';
+    document.getElementById('formEditar').action = `/deudas/proveedores-deuda/${deuda.id}/editar`;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+      if (!input.value) input.value = today;
+    });
+  });
+</script>

@@ -1,0 +1,309 @@
+<!-- views/deudas/tarjetas.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-credit-card"></i> Tarjetas de Crédito</h1>
+      <p class="text-muted">Gestión de saldos adeudados y límites de crédito</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaTarjeta">
+        <i class="bi bi-plus-circle"></i> Nueva Tarjeta
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="row mb-4">
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">💳 Total Adeudado</p>
+          <h4 class="mb-0 text-danger">$<%= totalActivas.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">🔢 Cantidad</p>
+          <h4 class="mb-0"><%= tarjetas.length %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">✅ Activas</p>
+          <h4 class="mb-0 text-success"><%= tarjetas.filter(t => t.estado === 'activa').length %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">❌ Inactivas</p>
+          <h4 class="mb-0 text-secondary"><%= tarjetas.filter(t => t.estado === 'inactiva').length %></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE TARJETAS -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <% if (tarjetas.length === 0) { %>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> No hay tarjetas registradas. ¡Crea una nueva!
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Tarjeta</th>
+                    <th style="width: 100px;">Límite</th>
+                    <th style="width: 120px;">Adeudado</th>
+                    <th style="width: 100px;">% Uso</th>
+                    <th style="width: 80px;">Cierre</th>
+                    <th style="width: 80px;">Vence</th>
+                    <th style="width: 80px;">Estado</th>
+                    <th style="width: 120px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% tarjetas.forEach(t => {
+                    const porcentajeUso = t.limite_credito > 0 ? ((t.saldo_adeudado / t.limite_credito) * 100) : 0;
+                    const colorUso = porcentajeUso >= 80 ? 'danger' : (porcentajeUso >= 50 ? 'warning' : 'success');
+                  %>
+                    <tr>
+                      <td><strong><%= t.nombre_tarjeta %></strong></td>
+                      <td>$<%= t.limite_credito.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+                      <td>
+                        <strong class="text-danger">
+                          $<%= t.saldo_adeudado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                        </strong>
+                      </td>
+                      <td>
+                        <div class="progress" style="height: 20px;">
+                          <div class="progress-bar bg-<%= colorUso %>" style="width: <%= porcentajeUso %>%">
+                            <%= porcentajeUso.toFixed(0) %>%
+                          </div>
+                        </div>
+                      </td>
+                      <td><small><%= t.fecha_cierre || '-' %></small></td>
+                      <td><small><%= t.fecha_vencimiento || '-' %></small></td>
+                      <td>
+                        <% if (t.estado === 'activa') { %>
+                          <span class="badge bg-success">Activa</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">Inactiva</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalPagar"
+                                onclick="setTarjetaPago(<%= t.id %>)">
+                          <i class="bi bi-cash"></i> Pagar
+                        </button>
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar"
+                                onclick="preLlenarEditar(<%= JSON.stringify(t) %>)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="POST" action="/deudas/tarjetas/<%= t.id %>/eliminar" style="display: inline;"
+                              onsubmit="return confirm('¿Eliminar tarjeta?');">
+                          <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA TARJETA -->
+<div class="modal fade" id="modalNuevaTarjeta" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nueva Tarjeta de Crédito</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/deudas/tarjetas">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Nombre de la Tarjeta *</label>
+              <input type="text" name="nombre_tarjeta" class="form-control" placeholder="ej: Visa Santander" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Límite de Crédito</label>
+              <input type="number" name="limite_credito" class="form-control" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Saldo Adeudado</label>
+              <input type="number" name="saldo_adeudado" class="form-control" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Mínimo</label>
+              <input type="number" name="monto_minimo" class="form-control" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Cierre (del mes)</label>
+              <input type="number" name="fecha_cierre" class="form-control" min="1" max="31" placeholder="ej: 15">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Vencimiento (del mes)</label>
+              <input type="number" name="fecha_vencimiento" class="form-control" min="1" max="31" placeholder="ej: 25">
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea name="notas" class="form-control" rows="2" placeholder="Observaciones adicionales..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear Tarjeta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR TARJETA -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar Tarjeta</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditar">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Nombre de la Tarjeta</label>
+              <input type="text" id="edit_nombre" name="nombre_tarjeta" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Límite de Crédito</label>
+              <input type="number" id="edit_limite" name="limite_credito" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Saldo Adeudado</label>
+              <input type="number" id="edit_saldo" name="saldo_adeudado" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Mínimo</label>
+              <input type="number" id="edit_minimo" name="monto_minimo" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Cierre</label>
+              <input type="number" id="edit_cierre" name="fecha_cierre" class="form-control" min="1" max="31">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Vencimiento</label>
+              <input type="number" id="edit_vence" name="fecha_vencimiento" class="form-control" min="1" max="31">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Estado</label>
+              <select name="estado" id="edit_estado" class="form-select">
+                <option value="activa">Activa</option>
+                <option value="inactiva">Inactiva</option>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea id="edit_notas" name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAR -->
+<div class="modal fade" id="modalPagar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Registrar Pago</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formPagar">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Monto a Pagar *</label>
+            <input type="number" name="monto" class="form-control" step="0.01" placeholder="0.00" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" name="fecha" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Método de Pago</label>
+            <select name="metodo_pago" class="form-select">
+              <option value="">Seleccionar...</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="cheque">Cheque</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notas</label>
+            <textarea name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar Pago</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  let tarjetaPagoId = null;
+
+  function setTarjetaPago(id) {
+    tarjetaPagoId = id;
+    document.getElementById('formPagar').action = `/deudas/tarjetas/${id}/pagar`;
+  }
+
+  function preLlenarEditar(tarjeta) {
+    document.getElementById('edit_nombre').value = tarjeta.nombre_tarjeta;
+    document.getElementById('edit_limite').value = tarjeta.limite_credito;
+    document.getElementById('edit_saldo').value = tarjeta.saldo_adeudado;
+    document.getElementById('edit_minimo').value = tarjeta.monto_minimo;
+    document.getElementById('edit_cierre').value = tarjeta.fecha_cierre || '';
+    document.getElementById('edit_vence').value = tarjeta.fecha_vencimiento || '';
+    document.getElementById('edit_estado').value = tarjeta.estado;
+    document.getElementById('edit_notas').value = tarjeta.notas || '';
+    document.getElementById('formEditar').action = `/deudas/tarjetas/${tarjeta.id}/editar`;
+  }
+
+  // Establecer fecha actual por defecto
+  document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+      if (!input.value) input.value = today;
+    });
+  });
+</script>

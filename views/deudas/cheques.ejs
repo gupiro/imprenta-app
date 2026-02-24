@@ -1,0 +1,314 @@
+<!-- views/deudas/cheques.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-file-earmark-check"></i> Cheques Diferidos</h1>
+      <p class="text-muted">Gestión de cheques emitidos pendientes y vencidos</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevoCheque">
+        <i class="bi bi-plus-circle"></i> Nuevo Cheque
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">⏳ Pendientes</p>
+          <h4 class="mb-0 text-warning"><%= proximos %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">🔴 Vencidos</p>
+          <h4 class="mb-0 text-danger"><%= vencidos %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">📝 Total</p>
+          <h4 class="mb-0"><%= cheques.length %></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE CHEQUES -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <% if (cheques.length === 0) { %>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> No hay cheques registrados. ¡Crea uno nuevo!
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 80px;">Cheque #</th>
+                    <th>Banco</th>
+                    <th>Beneficiario</th>
+                    <th style="width: 120px;">Monto</th>
+                    <th style="width: 100px;">Vencimiento</th>
+                    <th style="width: 100px;">Proveedor</th>
+                    <th style="width: 80px;">Estado</th>
+                    <th style="width: 120px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% cheques.forEach(ch => {
+                    const hoy = new Date();
+                    hoy.setHours(0,0,0,0);
+                    const vencDate = new Date(ch.fecha_vencimiento);
+                    vencDate.setHours(0,0,0,0);
+                    const esVencido = ch.estado === 'pendiente' && vencDate < hoy;
+                  %>
+                    <tr class="<%= esVencido ? 'table-danger' : '' %>">
+                      <td><strong><%= ch.numero_cheque %></strong></td>
+                      <td><%= ch.banco %></td>
+                      <td><%= ch.beneficiario %></td>
+                      <td>$<%= ch.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td><%= new Date(ch.fecha_vencimiento).toLocaleDateString('es-AR') %></td>
+                      <td><small><%= ch.proveedor_nombre || 'Sin asignar' %></small></td>
+                      <td>
+                        <% if (ch.estado === 'pendiente') { %>
+                          <% if (esVencido) { %>
+                            <span class="badge bg-danger">Vencido</span>
+                          <% } else { %>
+                            <span class="badge bg-warning text-dark">Pendiente</span>
+                          <% } %>
+                        <% } else if (ch.estado === 'cobrado') { %>
+                          <span class="badge bg-success">Cobrado</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">Rechazado</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (ch.estado === 'pendiente') { %>
+                          <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalPagar"
+                                  onclick="setChequePago(<%= ch.id %>)">
+                            <i class="bi bi-check-circle"></i> Cobrado
+                          </button>
+                        <% } %>
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar"
+                                onclick="preLlenarEditar(<%= JSON.stringify(ch) %>)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="POST" action="/deudas/cheques/<%= ch.id %>/eliminar" style="display: inline;"
+                              onsubmit="return confirm('¿Eliminar cheque?');">
+                          <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO CHEQUE -->
+<div class="modal fade" id="modalNuevoCheque" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuevo Cheque Diferido</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/deudas/cheques">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Número de Cheque *</label>
+              <input type="text" name="numero_cheque" class="form-control" placeholder="ej: 001234" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Banco *</label>
+              <input type="text" name="banco" class="form-control" placeholder="ej: Santander" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Beneficiario *</label>
+              <input type="text" name="beneficiario" class="form-control" placeholder="Quien recibe el cheque" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto *</label>
+              <input type="number" name="monto" class="form-control" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de Emisión *</label>
+              <input type="date" name="fecha_emision" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de Vencimiento *</label>
+              <input type="date" name="fecha_vencimiento" class="form-control" required>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Proveedor (opcional)</label>
+              <select name="proveedor_id" class="form-select">
+                <option value="">Seleccionar...</option>
+                <% proveedores.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.nombre %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear Cheque</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR CHEQUE -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar Cheque</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditar">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Número de Cheque</label>
+              <input type="text" id="edit_numero" name="numero_cheque" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Banco</label>
+              <input type="text" id="edit_banco" name="banco" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Beneficiario</label>
+              <input type="text" id="edit_beneficiario" name="beneficiario" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto</label>
+              <input type="number" id="edit_monto" name="monto" class="form-control" step="0.01" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de Emisión</label>
+              <input type="date" id="edit_emision" name="fecha_emision" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input type="date" id="edit_vencimiento" name="fecha_vencimiento" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Estado</label>
+              <select name="estado" id="edit_estado" class="form-select">
+                <option value="pendiente">Pendiente</option>
+                <option value="cobrado">Cobrado</option>
+                <option value="rechazado">Rechazado</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Proveedor</label>
+              <select name="proveedor_id" id="edit_proveedor" class="form-select">
+                <option value="">Seleccionar...</option>
+                <% proveedores.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.nombre %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea id="edit_notas" name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAR (Marcar Cobrado) -->
+<div class="modal fade" id="modalPagar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Marcar Cheque como Cobrado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formPagar">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Fecha de Cobro</label>
+            <input type="date" name="fecha" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Método de Pago</label>
+            <select name="metodo_pago" class="form-select">
+              <option value="">Seleccionar...</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="deposito">Depósito Bancario</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notas</label>
+            <textarea name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Marcar Cobrado</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setChequePago(id) {
+    document.getElementById('formPagar').action = `/deudas/cheques/${id}/pagar`;
+  }
+
+  function preLlenarEditar(cheque) {
+    document.getElementById('edit_numero').value = cheque.numero_cheque;
+    document.getElementById('edit_banco').value = cheque.banco;
+    document.getElementById('edit_beneficiario').value = cheque.beneficiario;
+    document.getElementById('edit_monto').value = cheque.monto;
+    document.getElementById('edit_emision').value = cheque.fecha_emision;
+    document.getElementById('edit_vencimiento').value = cheque.fecha_vencimiento;
+    document.getElementById('edit_estado').value = cheque.estado;
+    document.getElementById('edit_proveedor').value = cheque.proveedor_id || '';
+    document.getElementById('edit_notas').value = cheque.notas || '';
+    document.getElementById('formEditar').action = `/deudas/cheques/${cheque.id}/editar`;
+  }
+
+  // Establecer fechas por defecto
+  document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+      if (!input.value) input.value = today;
+    });
+  });
+</script>

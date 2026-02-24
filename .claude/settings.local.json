@@ -16,7 +16,8 @@
       "Bash(do rm -rf \"$dir\")",
       "Bash(done)",
       "Bash(find:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

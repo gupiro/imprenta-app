@@ -1,0 +1,336 @@
+<!-- views/deudas/prestamos.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-bank"></i> Préstamos</h1>
+      <p class="text-muted">Gestión de préstamos bancarios y cuotas</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevoPrestamo">
+        <i class="bi bi-plus-circle"></i> Nuevo Préstamo
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">💰 Total Adeudado</p>
+          <h4 class="mb-0 text-danger">$<%= totalActivos.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">✅ Activos</p>
+          <h4 class="mb-0 text-success"><%= prestamos.filter(p => p.estado === 'activo').length %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">✔️ Cancelados</p>
+          <h4 class="mb-0 text-secondary"><%= prestamos.filter(p => p.estado === 'cancelado').length %></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE PRÉSTAMOS -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <% if (prestamos.length === 0) { %>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> No hay préstamos registrados. ¡Crea uno nuevo!
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Descripción</th>
+                    <th style="width: 100px;">Entidad</th>
+                    <th style="width: 100px;">Original</th>
+                    <th style="width: 100px;">Pendiente</th>
+                    <th style="width: 80px;">Cuota</th>
+                    <th style="width: 100px;">Cuotas Pagadas</th>
+                    <th style="width: 80px;">Estado</th>
+                    <th style="width: 140px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% prestamos.forEach(pr => {
+                    const porcentajePagado = pr.cuotas_totales > 0 ? ((pr.cuotas_pagadas / pr.cuotas_totales) * 100) : 0;
+                  %>
+                    <tr>
+                      <td><strong><%= pr.descripcion %></strong></td>
+                      <td><small><%= pr.entidad %></small></td>
+                      <td>$<%= pr.monto_original.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td>
+                        <strong class="text-danger">
+                          $<%= pr.monto_pendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                        </strong>
+                      </td>
+                      <td>
+                        <small>$<%= pr.cuota_mensual.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></small>
+                      </td>
+                      <td>
+                        <% if (pr.cuotas_totales > 0) { %>
+                          <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" style="width: <%= porcentajePagado %>%">
+                              <%= pr.cuotas_pagadas %>/<%= pr.cuotas_totales %>
+                            </div>
+                          </div>
+                        <% } else { %>
+                          <small>-</small>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (pr.estado === 'activo') { %>
+                          <span class="badge bg-success">Activo</span>
+                        <% } else { %>
+                          <span class="badge bg-secondary">Cancelado</span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (pr.estado === 'activo') { %>
+                          <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalPagar"
+                                  onclick="setPrestamosPago(<%= pr.id %>)">
+                            <i class="bi bi-cash"></i> Cuota
+                          </button>
+                        <% } %>
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar"
+                                onclick="preLlenarEditar(<%= JSON.stringify(pr) %>)">
+                          <i class="bi bi-pencil"></i>
+                        </button>
+                        <form method="POST" action="/deudas/prestamos/<%= pr.id %>/eliminar" style="display: inline;"
+                              onsubmit="return confirm('¿Eliminar préstamo?');">
+                          <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO PRÉSTAMO -->
+<div class="modal fade" id="modalNuevoPrestamo" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Nuevo Préstamo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/deudas/prestamos">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Descripción *</label>
+              <input type="text" name="descripcion" class="form-control" placeholder="ej: Préstamo para capital de trabajo" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Entidad *</label>
+              <input type="text" name="entidad" class="form-control" placeholder="ej: Banco Santander" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Original *</label>
+              <input type="number" name="monto_original" class="form-control" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Pendiente *</label>
+              <input type="number" name="monto_pendiente" class="form-control" step="0.01" placeholder="0.00" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Cuota Mensual</label>
+              <input type="number" name="cuota_mensual" class="form-control" step="0.01" placeholder="0.00">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Total de Cuotas</label>
+              <input type="number" name="cuotas_totales" class="form-control" placeholder="ej: 24">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Tasa de Interés (%)</label>
+              <input type="number" name="tasa_interes" class="form-control" step="0.01" placeholder="ej: 15.5">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Vencimiento Mensual</label>
+              <input type="number" name="dia_vencimiento_mensual" class="form-control" min="1" max="31" placeholder="ej: 25">
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Fecha Primer Vencimiento</label>
+              <input type="date" name="fecha_primer_vencimiento" class="form-control">
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Crear Préstamo</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PRÉSTAMO -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar Préstamo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formEditar">
+        <div class="modal-body">
+          <div class="row">
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Descripción</label>
+              <input type="text" id="edit_descripcion" name="descripcion" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Entidad</label>
+              <input type="text" id="edit_entidad" name="entidad" class="form-control" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Original</label>
+              <input type="number" id="edit_original" name="monto_original" class="form-control" step="0.01" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Pendiente</label>
+              <input type="number" id="edit_pendiente" name="monto_pendiente" class="form-control" step="0.01" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Cuota Mensual</label>
+              <input type="number" id="edit_cuota" name="cuota_mensual" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Total de Cuotas</label>
+              <input type="number" id="edit_cuotas_totales" name="cuotas_totales" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Cuotas Pagadas</label>
+              <input type="number" id="edit_cuotas_pagadas" name="cuotas_pagadas" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Tasa de Interés (%)</label>
+              <input type="number" id="edit_tasa" name="tasa_interes" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día Vencimiento Mensual</label>
+              <input type="number" id="edit_dia" name="dia_vencimiento_mensual" class="form-control" min="1" max="31">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Fecha Primer Vencimiento</label>
+              <input type="date" id="edit_fecha" name="fecha_primer_vencimiento" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Estado</label>
+              <select name="estado" id="edit_estado" class="form-select">
+                <option value="activo">Activo</option>
+                <option value="cancelado">Cancelado</option>
+              </select>
+            </div>
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Notas</label>
+              <textarea id="edit_notas" name="notas" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PAGAR CUOTA -->
+<div class="modal fade" id="modalPagar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Registrar Pago de Cuota</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="formPagar">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Monto a Pagar *</label>
+            <input type="number" name="monto" class="form-control" step="0.01" placeholder="0.00" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha</label>
+            <input type="date" name="fecha" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Método de Pago</label>
+            <select name="metodo_pago" class="form-select">
+              <option value="">Seleccionar...</option>
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="cheque">Cheque</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Notas</label>
+            <textarea name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">Registrar Pago</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setPrestamosPago(id) {
+    document.getElementById('formPagar').action = `/deudas/prestamos/${id}/pagar`;
+  }
+
+  function preLlenarEditar(prestamo) {
+    document.getElementById('edit_descripcion').value = prestamo.descripcion;
+    document.getElementById('edit_entidad').value = prestamo.entidad;
+    document.getElementById('edit_original').value = prestamo.monto_original;
+    document.getElementById('edit_pendiente').value = prestamo.monto_pendiente;
+    document.getElementById('edit_cuota').value = prestamo.cuota_mensual;
+    document.getElementById('edit_cuotas_totales').value = prestamo.cuotas_totales;
+    document.getElementById('edit_cuotas_pagadas').value = prestamo.cuotas_pagadas;
+    document.getElementById('edit_tasa').value = prestamo.tasa_interes;
+    document.getElementById('edit_dia').value = prestamo.dia_vencimiento_mensual || '';
+    document.getElementById('edit_fecha').value = prestamo.fecha_primer_vencimiento || '';
+    document.getElementById('edit_estado').value = prestamo.estado;
+    document.getElementById('edit_notas').value = prestamo.notas || '';
+    document.getElementById('formEditar').action = `/deudas/prestamos/${prestamo.id}/editar`;
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+      if (!input.value) input.value = today;
+    });
+  });
+</script>

@@ -132,6 +132,7 @@ async function startServer() {
     const gastosRouterConfigured       = require('./routes/gastos')(dbInstance);
     const reportesRouterConfigured     = require('./routes/reportes')(dbInstance);
     const dashboardRouterConfigured    = require('./routes/dashboard')(dbInstance);
+    const deudasRouterConfigured       = require('./routes/deudas')(dbInstance);
 
     // ────────────────────────────────────────────────────────────────────
     // APIS INTERNAS (Autocomplete, etc)
@@ -173,6 +174,7 @@ async function startServer() {
     app.use('/stock',        permitirRoles('admin'),                       stockRouterConfigured);
     app.use('/gastos',       permitirRoles('admin'),                       gastosRouterConfigured);
     app.use('/reportes',     permitirRoles('admin','vendedor'),                       reportesRouterConfigured);
+    app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA
@@ -251,15 +253,54 @@ async function startServer() {
                 ORDER BY p.fecha DESC LIMIT 10
             `) || [];
 
+            // Deudas vencidas (solo admin puede verlas)
+            let deudasVencidas = [];
+            if (req.session.user?.rol === 'admin') {
+                deudasVencidas = await dbInstance.all(`
+                    SELECT 'cheque' AS tipo, numero_cheque AS descripcion, monto, fecha_vencimiento
+                    FROM deudas_cheques
+                    WHERE estado = 'pendiente' AND date(fecha_vencimiento) < date('now')
+                    UNION ALL
+                    SELECT 'proveedor', concepto, (monto_total - monto_pagado), fecha_vencimiento
+                    FROM deudas_proveedores
+                    WHERE estado != 'pagado' AND fecha_vencimiento IS NOT NULL
+                      AND date(fecha_vencimiento) < date('now')
+                    ORDER BY fecha_vencimiento ASC
+                    LIMIT 5
+                `) || [];
+            }
+
+            // Deudas próximas (próximos 7 días)
+            let deudasProximas = [];
+            if (req.session.user?.rol === 'admin') {
+                deudasProximas = await dbInstance.all(`
+                    SELECT 'cheque' AS tipo, numero_cheque AS descripcion, monto, fecha_vencimiento
+                    FROM deudas_cheques
+                    WHERE estado = 'pendiente'
+                      AND date(fecha_vencimiento) >= date('now')
+                      AND date(fecha_vencimiento) <= date('now', '+7 days')
+                    UNION ALL
+                    SELECT 'proveedor', concepto, (monto_total - monto_pagado), fecha_vencimiento
+                    FROM deudas_proveedores
+                    WHERE estado != 'pagado' AND fecha_vencimiento IS NOT NULL
+                      AND date(fecha_vencimiento) >= date('now')
+                      AND date(fecha_vencimiento) <= date('now', '+7 days')
+                    ORDER BY fecha_vencimiento ASC
+                    LIMIT 5
+                `) || [];
+            }
+
             const isEmpleado = req.session.user?.rol === 'empleado';
             res.render('home', {
                 title: 'Panel Principal',
-                counts, 
-                ingresosHoy, 
+                counts,
+                ingresosHoy,
                 ingresosMes,
-                deudores, 
-                stockBajo, 
+                deudores,
+                stockBajo,
                 ultimosPedidos,
+                deudasVencidas,
+                deudasProximas,
                 isEmpleado
             });
         } catch (err) {

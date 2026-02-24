@@ -1,0 +1,454 @@
+<!-- views/deudas/index.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <h1 class="display-6"><i class="bi bi-cash-stack"></i> Gestión de Deudas</h1>
+      <p class="text-muted">Control centralizado de pasivos financieros: tarjetas, cheques, préstamos y proveedores</p>
+    </div>
+  </div>
+
+  <!-- TOTALES POR TIPO DE DEUDA -->
+  <div class="row mb-4">
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #dc3545;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="card-text small text-muted mb-2">💳 Tarjetas Activas</p>
+              <h4 class="mb-0 text-danger">$<%= totalTarjetas.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+              <small class="text-danger"><%= conteoTarjetas %> tarjeta(s)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #ffc107;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="card-text small text-muted mb-2">📝 Cheques Pendientes</p>
+              <h4 class="mb-0 text-warning">$<%= totalCheques.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+              <small class="text-warning"><%= conteoCheques %> cheque(s)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0dcaf0;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="card-text small text-muted mb-2">🏦 Préstamos Activos</p>
+              <h4 class="mb-0 text-info">$<%= totalPrestamos.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+              <small class="text-info"><%= conteoPrestamos %> préstamo(s)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3 mb-3">
+      <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="card-text small text-muted mb-2">🏪 Deudas Proveedores</p>
+              <h4 class="mb-0 text-success">$<%= totalProveedores.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+              <small class="text-success"><%= conteoProveedores %> deuda(s)</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEUDA TOTAL CONSOLIDADA -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-lg h-100" style="border-left: 6px solid #6f42c1;">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div>
+              <p class="card-text small text-muted mb-1">DEUDA TOTAL CONSOLIDADA</p>
+              <h2 class="mb-0 text-primary">$<%= deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h2>
+            </div>
+            <div class="ms-auto">
+              <i class="bi bi-exclamation-triangle text-warning" style="font-size: 3rem;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTONES DE ACCESO RÁPIDO -->
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/deudas/tarjetas'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-credit-card" style="font-size: 2rem; color: #dc3545;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Tarjetas de Crédito</h5>
+              <p class="card-text text-muted mb-0">Gestionar saldos adeudados</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/deudas/cheques'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-file-earmark-check" style="font-size: 2rem; color: #ffc107;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Cheques Diferidos</h5>
+              <p class="card-text text-muted mb-0">Seguimiento de cheques emitidos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/deudas/prestamos'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-bank" style="font-size: 2rem; color: #0dcaf0;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Préstamos</h5>
+              <p class="card-text text-muted mb-0">Control de cuotas y saldos</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/deudas/proveedores-deuda'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-building" style="font-size: 2rem; color: #198754;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Deudas Proveedores</h5>
+              <p class="card-text text-muted mb-0">Cuentas por pagar a proveedores</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-3"><i class="bi bi-pie-chart"></i> Deuda por Tipo</h6>
+          <canvas id="graficoDeudaTipo" style="height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4 mb-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-3"><i class="bi bi-graph-up"></i> Pagos (6 Meses)</h6>
+          <canvas id="graficoPagos6Meses" style="height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUSCADOR Y FILTROS -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="text" id="buscarDeudas" class="form-control" placeholder="Buscar tarjetas, cheques, préstamos, proveedores...">
+        <select id="filtroTipo" class="form-select" style="max-width: 150px;">
+          <option value="todos">Todos</option>
+          <option value="tarjetas">Tarjetas</option>
+          <option value="cheques">Cheques</option>
+          <option value="prestamos">Préstamos</option>
+          <option value="proveedores">Proveedores</option>
+        </select>
+      </div>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="/deudas/reporte-pdf" class="btn btn-danger">
+        <i class="bi bi-file-pdf"></i> Descargar PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- RESULTADOS DE BÚSQUEDA (oculto por defecto) -->
+  <div id="resultadosBusqueda" style="display: none;">
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-body">
+            <h6 class="card-title mb-3">Resultados de Búsqueda</h6>
+            <div id="listaResultados"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VENCIMIENTOS PRÓXIMOS (30 DÍAS) -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title mb-3"><i class="bi bi-calendar-event"></i> Vencimientos Próximos (30 días)</h6>
+          <% if (vencimientosProximos.length === 0) { %>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> Sin vencimientos próximos en los próximos 30 días.
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 100px;">Tipo</th>
+                    <th>Descripción</th>
+                    <th style="width: 120px;">Monto</th>
+                    <th style="width: 120px;">Vencimiento</th>
+                    <th style="width: 100px;">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% vencimientosProximos.forEach(v => {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const vencDate = new Date(v.fecha_vencimiento);
+                    vencDate.setHours(0,0,0,0);
+                    const diasDifference = Math.floor((vencDate - today) / (1000 * 60 * 60 * 24));
+                    const vencido = diasDifference < 0;
+                    const proximo = diasDifference <= 7 && !vencido;
+                  %>
+                    <tr>
+                      <td>
+                        <% if (v.tipo === 'cheque') { %>
+                          <span class="badge bg-warning text-dark">📝 Cheque</span>
+                        <% } else if (v.tipo === 'proveedor') { %>
+                          <span class="badge bg-success">🏪 Proveedor</span>
+                        <% } %>
+                      </td>
+                      <td><strong><%= v.descripcion %></strong></td>
+                      <td>$<%= v.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td><%= new Date(v.fecha_vencimiento).toLocaleDateString('es-AR') %></td>
+                      <td>
+                        <% if (vencido) { %>
+                          <span class="badge bg-danger">🔴 Vencido</span>
+                        <% } else if (proximo) { %>
+                          <span class="badge bg-warning text-dark">⚠️ Próximo</span>
+                        <% } else { %>
+                          <span class="badge bg-success">✅ Normal</span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  // ════════════════════════════════════════════════════════════════
+  // GRÁFICOS
+  // ════════════════════════════════════════════════════════════════
+
+  async function cargarGraficos() {
+    try {
+      const response = await fetch('/deudas/graficos/deudas');
+      const data = await response.json();
+
+      if (data.error) {
+        console.error('Error:', data.error);
+        return;
+      }
+
+      // Gráfico 1: Deuda por Tipo (Pastel)
+      const ctx1 = document.getElementById('graficoDeudaTipo').getContext('2d');
+      new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+          labels: data.deudaPorTipo.map(d => d.label),
+          datasets: [{
+            data: data.deudaPorTipo.map(d => d.value),
+            backgroundColor: data.deudaPorTipo.map(d => d.color),
+            borderColor: '#fff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed;
+                  return context.label + ': $' + value.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Gráfico 2: Pagos últimos 6 meses (Línea)
+      const ctx2 = document.getElementById('graficoPagos6Meses').getContext('2d');
+      new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: data.pagosPor6Meses.map(p => p.mes),
+          datasets: [{
+            label: 'Pagos',
+            data: data.pagosPor6Meses.map(p => p.monto),
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 5,
+            pointBackgroundColor: '#0d6efd'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '$' + value.toLocaleString('es-AR');
+                }
+              }
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Error cargando gráficos:', err);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // BÚSQUEDA Y FILTROS
+  // ════════════════════════════════════════════════════════════════
+
+  let timerBusqueda;
+
+  document.getElementById('buscarDeudas').addEventListener('keyup', function() {
+    clearTimeout(timerBusqueda);
+    const q = this.value;
+    const tipo = document.getElementById('filtroTipo').value;
+
+    if (q.length < 2) {
+      document.getElementById('resultadosBusqueda').style.display = 'none';
+      return;
+    }
+
+    timerBusqueda = setTimeout(async () => {
+      try {
+        const response = await fetch(`/deudas/buscar?q=${encodeURIComponent(q)}&tipo=${tipo}`);
+        const resultados = await response.json();
+
+        if (resultados.error) {
+          console.error('Error:', resultados.error);
+          return;
+        }
+
+        mostrarResultados(resultados);
+      } catch (err) {
+        console.error('Error en búsqueda:', err);
+      }
+    }, 500);
+  });
+
+  document.getElementById('filtroTipo').addEventListener('change', function() {
+    const q = document.getElementById('buscarDeudas').value;
+    if (q.length >= 2) {
+      document.getElementById('buscarDeudas').dispatchEvent(new Event('keyup'));
+    }
+  });
+
+  function mostrarResultados(resultados) {
+    const contenedor = document.getElementById('listaResultados');
+
+    if (resultados.length === 0) {
+      contenedor.innerHTML = '<p class="text-muted">Sin resultados</p>';
+      document.getElementById('resultadosBusqueda').style.display = 'block';
+      return;
+    }
+
+    let html = '<div class="list-group">';
+    resultados.forEach(r => {
+      let badge = '';
+      let color = 'primary';
+      if (r.tipo === 'tarjeta') {
+        badge = 'Tarjeta';
+        color = 'danger';
+      } else if (r.tipo === 'cheque') {
+        badge = 'Cheque';
+        color = 'warning';
+      } else if (r.tipo === 'prestamo') {
+        badge = 'Préstamo';
+        color = 'info';
+      } else {
+        badge = 'Proveedor';
+        color = 'success';
+      }
+
+      const url = r.tipo === 'tarjeta' ? `/deudas/tarjetas#card-${r.id}` :
+                  r.tipo === 'cheque' ? `/deudas/cheques#card-${r.id}` :
+                  r.tipo === 'prestamo' ? `/deudas/prestamos#card-${r.id}` :
+                  `/deudas/proveedores-deuda#card-${r.id}`;
+
+      html += `
+        <a href="${url}" class="list-group-item list-group-item-action">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">
+              <span class="badge bg-${color} me-2">${badge}</span>
+              ${r.nombre}
+            </h6>
+            <small>$${r.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})}</small>
+          </div>
+          <p class="mb-1"><small class="text-muted">${r.estado}</small></p>
+        </a>
+      `;
+    });
+    html += '</div>';
+    contenedor.innerHTML = html;
+    document.getElementById('resultadosBusqueda').style.display = 'block';
+  }
+
+  // Cargar gráficos al iniciar
+  document.addEventListener('DOMContentLoaded', cargarGraficos);
+</script>

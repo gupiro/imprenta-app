@@ -358,6 +358,94 @@
         </div>
       </div>
     </div>
+
+    <!-- DEUDAS VENCIDAS -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-danger text-white" style="cursor: pointer;" onclick="toggleDeudasVencidas()">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-cash-stack"></i> 🔴 DEUDAS VENCIDAS</h6>
+            <i class="bi bi-chevron-down" id="iconDeudasVencidas"></i>
+          </div>
+        </div>
+        <div class="card-body p-0" id="contenedorDeudasVencidas" style="max-height: 400px; overflow-y: auto;">
+          <% if (deudasVencidas && deudasVencidas.length > 0) { %>
+            <div class="list-group list-group-flush">
+              <% deudasVencidas.forEach((d, idx) => { %>
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="mb-1">
+                        <span class="badge bg-danger"><%= idx + 1 %></span>
+                        <% if (d.tipo === 'cheque') { %>
+                          Cheque #<%= d.descripcion %>
+                        <% } else { %>
+                          <%= d.descripcion %>
+                        <% } %>
+                      </h6>
+                      <small class="text-muted">Vencido desde <%= new Date(d.fecha_vencimiento).toLocaleDateString('es-AR') %></small>
+                    </div>
+                    <span class="badge bg-danger fs-6">$<%= d.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                  </div>
+                  <a href="/deudas" class="btn btn-sm btn-danger">
+                    <i class="bi bi-cash-coin"></i> Gestionar
+                  </a>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+              <p class="text-success mt-2 mb-0"><strong>✓ Sin deudas vencidas</strong></p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEUDAS PRÓXIMAS A VENCER -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-warning text-dark" style="cursor: pointer;" onclick="toggleDeudasProximas()">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-cash-stack"></i> ⚠️ PRÓXIMAS A VENCER</h6>
+            <i class="bi bi-chevron-down" id="iconDeudasProximas"></i>
+          </div>
+        </div>
+        <div class="card-body p-0" id="contenedorDeudasProximas" style="max-height: 400px; overflow-y: auto;">
+          <% if (deudasProximas && deudasProximas.length > 0) { %>
+            <div class="list-group list-group-flush">
+              <% deudasProximas.forEach((d, idx) => { %>
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="mb-1">
+                        <span class="badge bg-warning text-dark"><%= idx + 1 %></span>
+                        <% if (d.tipo === 'cheque') { %>
+                          Cheque #<%= d.descripcion %>
+                        <% } else { %>
+                          <%= d.descripcion %>
+                        <% } %>
+                      </h6>
+                      <small class="text-muted">Vence el <%= new Date(d.fecha_vencimiento).toLocaleDateString('es-AR') %></small>
+                    </div>
+                    <span class="badge bg-warning text-dark fs-6">$<%= d.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                  </div>
+                  <a href="/deudas" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-cash-coin"></i> Pagar
+                  </a>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+              <p class="text-success mt-2 mb-0"><strong>✓ Todas al día</strong></p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
   </div>
   <% } %>
 
@@ -465,6 +553,43 @@ function toggleStock() {
   stockExpandido = !stockExpandido;
 
   if (stockExpandido) {
+    contenedor.style.maxHeight = '10000px';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    contenedor.style.maxHeight = '0px';
+    icon.style.transform = 'rotate(0deg)';
+  }
+
+  contenedor.style.transition = 'max-height 0.3s ease';
+}
+
+let deudasVencidasExpandido = false;
+let deudasProximasExpandido = false;
+
+function toggleDeudasVencidas() {
+  const contenedor = document.getElementById('contenedorDeudasVencidas');
+  const icon = document.getElementById('iconDeudasVencidas');
+
+  deudasVencidasExpandido = !deudasVencidasExpandido;
+
+  if (deudasVencidasExpandido) {
+    contenedor.style.maxHeight = '10000px';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    contenedor.style.maxHeight = '0px';
+    icon.style.transform = 'rotate(0deg)';
+  }
+
+  contenedor.style.transition = 'max-height 0.3s ease';
+}
+
+function toggleDeudasProximas() {
+  const contenedor = document.getElementById('contenedorDeudasProximas');
+  const icon = document.getElementById('iconDeudasProximas');
+
+  deudasProximasExpandido = !deudasProximasExpandido;
+
+  if (deudasProximasExpandido) {
     contenedor.style.maxHeight = '10000px';
     icon.style.transform = 'rotate(180deg)';
   } else {

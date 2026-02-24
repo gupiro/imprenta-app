@@ -163,7 +163,7 @@ async function startServer() {
     // RUTAS PROTEGIDAS
     // ────────────────────────────────────────────────────────────────────
 
-    app.use('/dashboard', authMiddleware.isAuthenticated, dashboardRouterConfigured);
+    app.use('/dashboard', authMiddleware.isAuthenticated, permitirRoles('admin','vendedor'), dashboardRouterConfigured);
     app.use('/clientes',     permitirRoles('admin','vendedor'),            clientesRouterConfigured);
     app.use('/pedidos',      permitirRoles('admin','vendedor','operador','empleado','recepcionista'), pedidosRouterConfigured);
     app.use('/usuarios',     permitirRoles('admin'),                       usuariosRouterConfigured);
@@ -291,6 +291,7 @@ async function startServer() {
             }
 
             const isEmpleado = req.session.user?.rol === 'empleado';
+            const isRecepcionista = req.session.user?.rol === 'recepcionista';
             res.render('home', {
                 title: 'Panel Principal',
                 counts,
@@ -301,20 +302,23 @@ async function startServer() {
                 ultimosPedidos,
                 deudasVencidas,
                 deudasProximas,
-                isEmpleado
+                isEmpleado,
+                isRecepcionista
             });
         } catch (err) {
             console.error('Error en dashboard:', err);
             const isEmpleado = req.session.user?.rol === 'empleado';
+            const isRecepcionista = req.session.user?.rol === 'recepcionista';
             res.render('home', {
                 title: 'Panel Principal',
-                counts: {}, 
-                ingresosHoy: 0, 
+                counts: {},
+                ingresosHoy: 0,
                 ingresosMes: 0,
-                deudores: [], 
-                stockBajo: [], 
+                deudores: [],
+                stockBajo: [],
                 ultimosPedidos: [],
-                isEmpleado
+                isEmpleado,
+                isRecepcionista
             });
         }
     });

@@ -487,5 +487,116 @@ module.exports = (db) => {
     }
   });
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // ANÁLISIS ABC DE PRODUCTOS
+  // ═══════════════════════════════════════════════════════════════════════
+  router.get('/productos', async (req, res) => {
+    try {
+      const periodo = req.query.periodo || 'mes';
+      let fechaInicio = new Date();
+
+      // Calcular fecha de inicio según período
+      switch (periodo) {
+        case 'trimestre':
+          fechaInicio.setMonth(fechaInicio.getMonth() - 3);
+          break;
+        case 'semestre':
+          fechaInicio.setMonth(fechaInicio.getMonth() - 6);
+          break;
+        case 'año':
+          fechaInicio.setFullYear(fechaInicio.getFullYear(), 0, 1);
+          break;
+        case 'todo':
+          fechaInicio = new Date('2000-01-01');
+          break;
+        case 'mes':
+        default:
+          fechaInicio.setDate(1);
+      }
+
+      const fechaInicio_str = fechaInicio.toISOString().slice(0, 10);
+
+      // Query: Obtener productos vendidos agrupados
+      const productosVentas = await db.all(`
+        SELECT
+          pr.material AS producto,
+          SUM(pr.cantidad) AS unidades_vendidas,
+          SUM(pr.precio) AS ventas_totales,
+          COUNT(DISTINCT pr.pedido_id) AS pedidos_count
+        FROM productos pr
+        INNER JOIN pedidos p ON p.id = pr.pedido_id
+        WHERE p.estado != 'CANCELADO'
+          AND pr.material IS NOT NULL
+          AND pr.material != ''
+          AND DATE(p.fecha) >= ?
+        GROUP BY pr.material
+        ORDER BY ventas_totales DESC
+      `, fechaInicio_str) || [];
+
+      // Calcular análisis ABC
+      let totalVentas = 0;
+      productosVentas.forEach(p => {
+        totalVentas += p.ventas_totales || 0;
+      });
+
+      let acumulado = 0;
+      let conteoA = 0, conteoB = 0, conteoC = 0;
+
+      productosVentas.forEach((p, i) => {
+        p.porcentaje = totalVentas > 0 ? ((p.ventas_totales || 0) / totalVentas) * 100 : 0;
+        acumulado += p.porcentaje;
+        p.porcentaje_acumulado = acumulado;
+        p.rank = i + 1;
+
+        if (acumulado <= 80) {
+          p.clase = 'A';
+          conteoA++;
+        } else if (acumulado <= 95) {
+          p.clase = 'B';
+          conteoB++;
+        } else {
+          p.clase = 'C';
+          conteoC++;
+        }
+      });
+
+      // Datos para gráficos
+      const top10 = productosVentas.slice(0, 10);
+      const top10Labels = top10.map(p => p.producto);
+      const top10Datos = top10.map(p => p.ventas_totales);
+
+      // Ingresos por clase ABC
+      const ingresosPorClase = {
+        A: productosVentas.filter(p => p.clase === 'A').reduce((s, p) => s + (p.ventas_totales || 0), 0),
+        B: productosVentas.filter(p => p.clase === 'B').reduce((s, p) => s + (p.ventas_totales || 0), 0),
+        C: productosVentas.filter(p => p.clase === 'C').reduce((s, p) => s + (p.ventas_totales || 0), 0)
+      };
+
+      res.render('reportes/productos', {
+        title: 'Análisis ABC de Productos',
+        periodo,
+        productosVentas,
+        totalVentas,
+        conteoA,
+        conteoB,
+        conteoC,
+        top10Labels: JSON.stringify(top10Labels),
+        top10Datos: JSON.stringify(top10Datos),
+        ingresosPorClase: JSON.stringify([
+          { label: 'Clase A', value: ingresosPorClase.A, color: '#198754' },
+          { label: 'Clase B', value: ingresosPorClase.B, color: '#ffc107' },
+          { label: 'Clase C', value: ingresosPorClase.C, color: '#dc3545' }
+        ])
+      });
+    } catch (err) {
+      console.error('Error en análisis ABC:', err);
+      res.status(500).render('error', {
+        title: 'Error',
+        mensaje: 'Error al cargar análisis ABC',
+        error: err.message
+      });
+    }
+  });
+
   return router;
 };

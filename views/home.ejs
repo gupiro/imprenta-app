@@ -1,44 +1,485 @@
-<% /* views/home.ejs */ %>
-<% title = 'Panel Principal' %>
+<!-- views/home.ejs - DASHBOARD COMPLETO Y PROFESIONAL -->
+<div class="container-fluid py-4">
+  <!-- ═══════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-5 fw-bold mb-1">
+        <i class="bi bi-speedometer2"></i> Panel de Control
+      </h1>
+      <p class="text-muted">
+        Bienvenido, <strong><%= (user && user.username) || "Usuario" %></strong> | 
+        <%= new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+      </p>
+    </div>
+  </div>
 
-<style>
-  .counter-circle {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: crimson;
-    color: #fff;
-    font-size: 0.75rem;
-    font-weight: bold;
-    border-radius: 50%;
-    width: 26px;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-</style>
-
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 my-4">
-  <% items.forEach((item, i) => { %>
-    <div class="col">
-      <a href="<%= item.url %>" class="text-decoration-none position-relative">
-        <div class="card h-100 retro-card shadow-offset-<%= ['coral','menta','mostaza'][i % 3] %>">
-          <div class="card-body d-flex flex-column align-items-center position-relative">
-            <% if (item.countKey && counts?.[item.countKey] > 0) { %>
-              <div class="counter-circle"><%= counts[item.countKey] %></div>
+  <!-- ═══════════════════════════════════════════════════════
+       ACCIONES RÁPIDAS - SECCIÓN 1
+       ═══════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="card-body py-4">
+          <h6 class="mb-3"><i class="bi bi-lightning-fill"></i> 🚀 ACCIONES RÁPIDAS</h6>
+          <div class="row g-2">
+            <% if (!isEmpleado) { %>
+              <div class="col-6 col-md-4 col-lg-2">
+                <a href="/pedidos/nuevo" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                  <div><i class="bi bi-plus-circle" style="font-size: 1.5rem;"></i></div>
+                  Nuevo Pedido
+                </a>
+              </div>
+              <div class="col-6 col-md-4 col-lg-2">
+                <a href="/presupuestos/nuevo" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                  <div><i class="bi bi-calculator" style="font-size: 1.5rem;"></i></div>
+                  Presupuesto
+                </a>
+              </div>
             <% } %>
-            <i class="bi <%= item.icon %> display-4 mb-3" aria-hidden="true"></i>
-            <h5 class="card-title"><%= item.title %></h5>
-            <p class="card-text text-center"><%= item.text %></p>
-            <span class="btn btn-outline-dark mt-auto">Ver</span>
+            <div class="col-6 col-md-4 col-lg-2">
+              <a href="/pedidos/pendientes" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                <div><i class="bi bi-clock-history" style="font-size: 1.5rem;"></i></div>
+                Pendientes
+              </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <a href="/pedidos/en-produccion" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                <div><i class="bi bi-gear" style="font-size: 1.5rem;"></i></div>
+                Producción
+              </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <a href="/pedidos/listos" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                <div><i class="bi bi-check-circle" style="font-size: 1.5rem;"></i></div>
+                Listos
+              </a>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+              <a href="/pedidos/entregados" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                <div><i class="bi bi-box-seam" style="font-size: 1.5rem;"></i></div>
+                Entregados
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 2: ESTADOS DE PEDIDOS (KPIs)
+       ═══════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-2-4">
+      <a href="/pedidos/pendientes" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-danger" style="border-left: 4px solid #dc3545 !important; cursor: pointer; transition: transform 0.2s;">
+          <div class="card-body text-center">
+            <i class="bi bi-clock-history" style="font-size: 2rem; color: #dc3545;"></i>
+            <p class="text-muted small mt-2 mb-1">📋 PENDIENTES</p>
+            <h2 class="text-danger mb-0 fw-bold"><%= counts.pendientes || 0 %></h2>
+            <small class="text-muted">Esperando producción</small>
           </div>
         </div>
       </a>
     </div>
-  <% }) %>
+
+    <div class="col-md-6 col-lg-2-4">
+      <a href="/pedidos/en-produccion" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-warning" style="border-left: 4px solid #ffc107 !important; cursor: pointer; transition: transform 0.2s;">
+          <div class="card-body text-center">
+            <i class="bi bi-gear" style="font-size: 2rem; color: #ffc107;"></i>
+            <p class="text-muted small mt-2 mb-1">⚙️ EN PRODUCCIÓN</p>
+            <h2 class="text-warning mb-0 fw-bold"><%= counts.en_produccion || 0 %></h2>
+            <small class="text-muted">Trabajos activos</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-2-4">
+      <a href="/pedidos/listos" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-info" style="border-left: 4px solid #0dcaf0 !important; cursor: pointer; transition: transform 0.2s;">
+          <div class="card-body text-center">
+            <i class="bi bi-check-circle" style="font-size: 2rem; color: #0dcaf0;"></i>
+            <p class="text-muted small mt-2 mb-1">✅ LISTOS</p>
+            <h2 class="text-info mb-0 fw-bold"><%= counts.listos || 0 %></h2>
+            <small class="text-muted">Para entregar</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-2-4">
+      <a href="/pedidos/entregados" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-success" style="border-left: 4px solid #198754 !important; cursor: pointer; transition: transform 0.2s;">
+          <div class="card-body text-center">
+            <i class="bi bi-box-seam" style="font-size: 2rem; color: #198754;"></i>
+            <p class="text-muted small mt-2 mb-1">🎉 ENTREGADOS</p>
+            <h2 class="text-success mb-0 fw-bold"><%= counts.entregados || 0 %></h2>
+            <small class="text-muted">Completados</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-2-4">
+      <a href="/presupuestos" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-primary" style="border-left: 4px solid #0d6efd !important; cursor: pointer; transition: transform 0.2s;">
+          <div class="card-body text-center">
+            <i class="bi bi-calculator" style="font-size: 2rem; color: #0d6efd;"></i>
+            <p class="text-muted small mt-2 mb-1">📊 PRESUPUESTOS</p>
+            <h2 class="text-primary mb-0 fw-bold"><%= counts.presupuestos || 0 %></h2>
+            <small class="text-muted">Pendientes</small>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 3: CAJA DIARIA PROMINENTE (EMPLEADO)
+       ═══════════════════════════════════════════════════════ -->
+  <% if (isEmpleado) { %>
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+      <a href="/caja-diaria" class="text-decoration-none">
+        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; transform: scale(1); transition: all 0.3s;">
+          <div class="card-body py-5 text-center">
+            <i class="bi bi-cash-coin" style="font-size: 3.5rem; opacity: 0.9;"></i>
+            <h4 class="mt-3 mb-2">💰 CAJA DIARIA</h4>
+            <p class="lead mb-0 opacity-75">Registrar movimientos</p>
+            <small class="opacity-75 d-block mt-2">Ingresos y egresos</small>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-12 col-md-6">
+      <a href="/pedidos" class="text-decoration-none">
+        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; cursor: pointer; transition: all 0.3s;">
+          <div class="card-body py-5 text-center">
+            <i class="bi bi-kanban-fill" style="font-size: 3.5rem; opacity: 0.9;"></i>
+            <h4 class="mt-3 mb-2">📋 MIS TRABAJOS</h4>
+            <p class="lead mb-0 opacity-75">Ver y gestionar pedidos</p>
+            <small class="opacity-75 d-block mt-2">Cargar y cambiar estado</small>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+  <% } else { %>
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 3: INFORMACIÓN FINANCIERA (ADMIN/VENDEDOR)
+       ═══════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-3">
+      <a href="/caja-diaria" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-calendar-day"></i> 📅 Ingresos Hoy</p>
+            <h3 class="mb-0 fw-bold">$<%= (ingresosHoy || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+            <small class="opacity-75">Movimientos del día</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <a href="/caja-diaria" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-calendar-month"></i> 📆 Ingresos Mes</p>
+            <h3 class="mb-0 fw-bold">$<%= (ingresosMes || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+            <small class="opacity-75">Acumulado mensual</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <a href="/clientes" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-people"></i> 👥 Clientes</p>
+            <h3 class="mb-0 fw-bold"><%= counts.clientes || 0 %></h3>
+            <small class="opacity-75">Base de datos</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <a href="/stock" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-boxes"></i> 📦 Stock</p>
+            <h3 class="mb-0 fw-bold">Ver</h3>
+            <small class="opacity-75">Gestionar inventario</small>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 4: NAVEGACIÓN A OTRAS ÁREAS
+       ═══════════════════════════════════════════════════════ -->
+  <% if (!isEmpleado) { %>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6 col-lg-3">
+      <a href="/catalogo" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-3 border-primary">
+          <div class="card-body text-center">
+            <i class="bi bi-card-list" style="font-size: 2rem; color: #0d6efd;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Catálogo</h6>
+            <small class="text-muted">Productos y servicios</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <a href="/gastos" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-3 border-danger">
+          <div class="card-body text-center">
+            <i class="bi bi-receipt" style="font-size: 2rem; color: #dc3545;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Gastos</h6>
+            <small class="text-muted">Egresos registrados</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <a href="/proveedores" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-3 border-warning">
+          <div class="card-body text-center">
+            <i class="bi bi-truck" style="font-size: 2rem; color: #ffc107;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Proveedores</h6>
+            <small class="text-muted">Gestión de contactos</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-6 col-lg-3">
+      <a href="/reportes" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100 border-left border-3 border-success">
+          <div class="card-body text-center">
+            <i class="bi bi-bar-chart-fill" style="font-size: 2rem; color: #198754;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Reportes</h6>
+            <small class="text-muted">Análisis y estadísticas</small>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 5: ALERTAS Y DEUDORES (DESPLEGABLES)
+       ═══════════════════════════════════════════════════════ -->
+  <% if (!isEmpleado) { %>
+  <div class="row g-3 mb-4">
+    <!-- TOP DEUDORES - DESPLEGABLE -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-danger text-white" style="cursor: pointer;" onclick="toggleDeudores()">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> ⚠️ TOP DEUDORES</h6>
+            <i class="bi bi-chevron-down" id="iconDeudores"></i>
+          </div>
+        </div>
+        <div class="card-body p-0" id="contenedorDeudores" style="max-height: 400px; overflow-y: auto;">
+          <% if (deudores && deudores.length > 0) { %>
+            <div class="list-group list-group-flush">
+              <% deudores.forEach((d, idx) => { %>
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="mb-1"><span class="badge bg-danger"><%= idx + 1 %></span> <%= d.cliente_nombre %></h6>
+                      <small class="text-muted">Pedido #<%= d.id %> • <%= d.phone || 'Sin teléfono' %></small>
+                    </div>
+                    <span class="badge bg-danger fs-6">$<%= (d.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                  </div>
+                  <a href="/pedidos/detalle/<%= d.id %>" class="btn btn-sm btn-danger">
+                    <i class="bi bi-cash-coin"></i> Cobrar Ahora
+                  </a>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+              <p class="text-success mt-2 mb-0"><strong>✓ ¡Sin deudas!</strong></p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- STOCK BAJO - DESPLEGABLE -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-warning text-dark" style="cursor: pointer;" onclick="toggleStock()">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-exclamation-circle"></i> ⚠️ STOCK BAJO</h6>
+            <i class="bi bi-chevron-down" id="iconStock"></i>
+          </div>
+        </div>
+        <div class="card-body p-0" id="contenedorStock" style="max-height: 400px; overflow-y: auto;">
+          <% if (stockBajo && stockBajo.length > 0) { %>
+            <div class="list-group list-group-flush">
+              <% stockBajo.forEach((s, idx) => { %>
+                <div class="list-group-item">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 class="mb-1"><span class="badge bg-warning text-dark"><%= idx + 1 %></span> <%= s.nombre %></h6>
+                      <small class="text-muted">Unidad: <%= s.unidad %></small>
+                    </div>
+                    <div class="text-end">
+                      <div class="badge bg-danger"><%= s.cantidad %> / <%= s.stock_minimo %></div>
+                    </div>
+                  </div>
+                  <a href="/stock" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-pencil"></i> Reponer
+                  </a>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+              <p class="text-success mt-2 mb-0"><strong>✓ Stock OK</strong></p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 6: ÚLTIMO RESUMEN
+       ═══════════════════════════════════════════════════════ -->
+  <% if (!isEmpleado) { %>
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body text-center py-4">
+          <h6 class="mb-3">📊 FLUJO DE TRABAJO RECOMENDADO</h6>
+          <div class="d-flex justify-content-around flex-wrap gap-3">
+            <div>
+              <span class="badge bg-danger fs-6">1</span>
+              <p class="mb-0 small mt-1"><strong>Crear Pedido</strong></p>
+            </div>
+            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
+            <div>
+              <span class="badge bg-warning text-dark fs-6">2</span>
+              <p class="mb-0 small mt-1"><strong>En Producción</strong></p>
+            </div>
+            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
+            <div>
+              <span class="badge bg-info fs-6">3</span>
+              <p class="mb-0 small mt-1"><strong>Marcar Listo</strong></p>
+            </div>
+            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
+            <div>
+              <span class="badge bg-success fs-6">4</span>
+              <p class="mb-0 small mt-1"><strong>Entregar</strong></p>
+            </div>
+            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
+            <div>
+              <span class="badge bg-primary fs-6">5</span>
+              <p class="mb-0 small mt-1"><strong>Cobrar</strong></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
 </div>
 
-<% if (user && user.rol === 'Admin') { %>
-  <a href="/usuarios" class="btn btn-dark mt-4">⚙️ Gestión de Usuarios</a>
-<% } %>
+<style>
+  .border-left {
+    border-left: 4px solid !important;
+  }
+  
+  .col-lg-2-4 {
+    flex: 0 0 auto;
+    width: 20%;
+  }
+
+  @media (max-width: 1200px) {
+    .col-lg-2-4 {
+      width: 33.333%;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .col-lg-2-4 {
+      width: 50%;
+    }
+  }
+
+  a.text-decoration-none .card {
+    transition: all 0.3s ease;
+  }
+
+  a.text-decoration-none:hover .card {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+  }
+</style>
+
+<script>
+// Desplegables de deudores y stock
+let deudoresExpandido = false;
+let stockExpandido = false;
+
+function toggleDeudores() {
+  const contenedor = document.getElementById('contenedorDeudores');
+  const icon = document.getElementById('iconDeudores');
+
+  deudoresExpandido = !deudoresExpandido;
+
+  if (deudoresExpandido) {
+    contenedor.style.maxHeight = '10000px';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    contenedor.style.maxHeight = '0px';
+    icon.style.transform = 'rotate(0deg)';
+  }
+
+  contenedor.style.transition = 'max-height 0.3s ease, max-width 0.3s ease';
+}
+
+function toggleStock() {
+  const contenedor = document.getElementById('contenedorStock');
+  const icon = document.getElementById('iconStock');
+
+  stockExpandido = !stockExpandido;
+
+  if (stockExpandido) {
+    contenedor.style.maxHeight = '10000px';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    contenedor.style.maxHeight = '0px';
+    icon.style.transform = 'rotate(0deg)';
+  }
+
+  contenedor.style.transition = 'max-height 0.3s ease';
+}
+
+// Inicialmente contraídos
+document.addEventListener('DOMContentLoaded', function() {
+  const deudoresDiv = document.getElementById('contenedorDeudores');
+  const stockDiv = document.getElementById('contenedorStock');
+  if (deudoresDiv) deudoresDiv.style.maxHeight = '0px';
+  if (stockDiv) stockDiv.style.maxHeight = '0px';
+});
+</script>

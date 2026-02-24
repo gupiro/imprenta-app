@@ -1,0 +1,187 @@
+<!-- views/presupuestos/editar.ejs - TOTALMENTE REESCRITO PARA PERMITIR EDICIÓN -->
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>✏️ Editar Presupuesto #<%= presupuesto.id %></h2>
+    <a href="/presupuestos/<%= presupuesto.id %>" class="btn btn-outline-secondary">← Volver</a>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= Array.isArray(error) ? error.join('<br>') : error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <form action="/presupuestos/<%= presupuesto.id %>/editar" method="POST">
+    
+    <!-- DATOS DEL CLIENTE -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">👤 Datos del Cliente</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Nombre *</label>
+            <input type="text" name="nombre_cliente" class="form-control" value="<%= presupuesto.nombre_cliente %>" required>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Teléfono *</label>
+            <input type="text" name="telefono_cliente" class="form-control" value="<%= presupuesto.telefono_cliente %>" required>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-bold">Email</label>
+            <input type="email" name="email_cliente" class="form-control" value="<%= presupuesto.email_cliente || '' %>">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITEMS EDITABLES -->
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">📦 Ítems del Presupuesto</h5>
+      </div>
+      <div class="card-body">
+        <div id="itemsContainer">
+          <% if (items && items.length > 0) { %>
+            <% items.forEach((item, index) => { %>
+              <div class="card mb-3 itemCard">
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label class="form-label fw-bold">Descripción</label>
+                      <input type="text" name="descripcion[]" class="form-control" value="<%= item.descripcion %>" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label class="form-label fw-bold">Cantidad</label>
+                      <input type="number" name="cantidad[]" class="form-control cantidad" value="<%= item.cantidad %>" step="0.01" min="0" onchange="calcularSubtotal()" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                      <label class="form-label fw-bold">P.Unitario ($)</label>
+                      <input type="number" name="precio_unitario[]" class="form-control precioUnitario" value="<%= item.precio_unitario %>" step="0.01" min="0" onchange="calcularSubtotal()" required>
+                    </div>
+                  </div>
+                  <div class="row">
+                    <div class="col-md-4 mb-3">
+                      <label class="form-label fw-bold">Descuento ($)</label>
+                      <input type="number" name="descuento_item[]" class="form-control descuentoItem" value="<%= item.descuento_item || 0 %>" step="0.01" min="0" onchange="calcularSubtotal()">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <label class="form-label fw-bold">Subtotal</label>
+                      <input type="text" class="form-control subtotalDisplay" value="$<%= (item.subtotal || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>" readonly>
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                      <button type="button" class="btn btn-outline-danger w-100" onclick="eliminarItem(this)">🗑️ Eliminar</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% }); %>
+          <% } %>
+        </div>
+        <button type="button" class="btn btn-outline-success" onclick="agregarItem()">
+          ➕ Agregar Item
+        </button>
+      </div>
+    </div>
+
+    <!-- TOTAL -->
+    <div class="card mb-4 bg-light">
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-6">
+            <h6 class="text-muted">Descuento Total</h6>
+            <h3 class="text-warning">-$<span id="descuentoTotal">0.00</span></h3>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-muted">TOTAL</h6>
+            <h3 class="text-success">$<span id="totalFinal"><%= (presupuesto.precio_estimado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span></h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTONES -->
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-lg px-5">
+        ✅ Guardar Cambios
+      </button>
+      <a href="/presupuestos/<%= presupuesto.id %>" class="btn btn-outline-secondary btn-lg px-5">
+        ❌ Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+
+<script>
+  let itemCounter = <%= items ? items.length : 0 %>;
+
+  function agregarItem() {
+    itemCounter++;
+    const html = `
+      <div class="card mb-3 itemCard">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Descripción</label>
+              <input type="text" name="descripcion[]" class="form-control" placeholder="Ej: Lona 2x3" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold">Cantidad</label>
+              <input type="number" name="cantidad[]" class="form-control cantidad" value="1" step="0.01" min="0" onchange="calcularSubtotal()" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label class="form-label fw-bold">P.Unitario ($)</label>
+              <input type="number" name="precio_unitario[]" class="form-control precioUnitario" step="0.01" min="0" onchange="calcularSubtotal()" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">Descuento ($)</label>
+              <input type="number" name="descuento_item[]" class="form-control descuentoItem" value="0" step="0.01" min="0" onchange="calcularSubtotal()">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">Subtotal</label>
+              <input type="text" class="form-control subtotalDisplay" value="$0.00" readonly>
+            </div>
+            <div class="col-md-4 mb-3 d-flex align-items-end">
+              <button type="button" class="btn btn-outline-danger w-100" onclick="eliminarItem(this)">🗑️ Eliminar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', html);
+  }
+
+  function eliminarItem(btn) {
+    btn.closest('.itemCard').remove();
+    calcularSubtotal();
+  }
+
+  function calcularSubtotal() {
+    let totalFinal = 0;
+    let descuentoTotal = 0;
+    
+    document.querySelectorAll('.itemCard').forEach(card => {
+      const cantidad = parseFloat(card.querySelector('.cantidad').value) || 0;
+      const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || 0;
+      const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
+      
+      const subtotal = (cantidad * precioUnitario) - descuento;
+      card.querySelector('.subtotalDisplay').value = '$' + subtotal.toFixed(2);
+      
+      totalFinal += subtotal;
+      descuentoTotal += descuento;
+    });
+    
+    document.getElementById('descuentoTotal').textContent = descuentoTotal.toFixed(2);
+    document.getElementById('totalFinal').textContent = totalFinal.toFixed(2);
+  }
+
+  // Calcular al cargar la página
+  document.addEventListener('DOMContentLoaded', calcularSubtotal);
+</script>

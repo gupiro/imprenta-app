@@ -1,0 +1,70 @@
+# ════════════════════════════════════════════════════════════════════════════════
+# PRODUCTION DEPLOYMENT CONFIGURATION
+# ════════════════════════════════════════════════════════════════════════════════
+# Best practices applied:
+# - Multi-stage build for minimal image size
+# - Non-root user execution
+# - Volume mounts for data persistence
+# - Health checks for orchestration
+# - Resource limits defined
+# - Proper restart policies
+# - Logging configuration with rotation
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Optional: use BuildKit for better caching
+      # Build with: DOCKER_BUILDKIT=1 docker compose build
+    image: imprenta-app:latest
+    container_name: imprenta-app-prod
+    restart: unless-stopped
+    
+    # Port mapping
+    ports:
+      - "3000:3000"
+    
+    # Environment variables
+    environment:
+      PORT: "3000"
+      NODE_ENV: production
+    
+    # Volume mounts for persistence
+    volumes:
+      # SQLite database persistence
+      - app-data:/app/data
+      # Uploads and generated files persistence
+      - app-uploads:/app/public/uploads
+    
+    # Health check for container orchestration
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    
+    # Optional: Resource limits (uncomment for production Kubernetes/Swarm)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 1G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 512M
+    
+    # Logging configuration with rotation
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes for proper data persistence
+volumes:
+  app-data:
+    driver: local
+  app-uploads:
+    driver: local

@@ -1,0 +1,279 @@
+<!-- views/dashboard.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <h1 class="display-5"><i class="bi bi-graph-up"></i> Dashboard Ejecutivo</h1>
+      <p class="text-muted">Resumen de gestión y operaciones</p>
+    </div>
+  </div>
+
+  <!-- ESTADÍSTICAS PRINCIPALES -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-primary text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="card-text small mb-2">Pedidos Pendientes</p>
+              <h3 class="mb-0"><%= stats.pedidosPendientes %></h3>
+            </div>
+            <i class="bi bi-clock-history" style="font-size: 2rem; opacity: 0.5;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-warning text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="card-text small mb-2">En Producción</p>
+              <h3 class="mb-0"><%= stats.pedidosEnProduccion %></h3>
+            </div>
+            <i class="bi bi-gear" style="font-size: 2rem; opacity: 0.5;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-info text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="card-text small mb-2">Listos para Entregar</p>
+              <h3 class="mb-0"><%= stats.pedidosListos %></h3>
+            </div>
+            <i class="bi bi-check-circle" style="font-size: 2rem; opacity: 0.5;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm bg-success text-white">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <p class="card-text small mb-2">Entregados este Mes</p>
+              <h3 class="mb-0"><%= stats.pedidosEntregados %></h3>
+            </div>
+            <i class="bi bi-box-seam" style="font-size: 2rem; opacity: 0.5;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FINANZAS -->
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">💰 Ingresos Hoy</h6>
+          <h3 class="text-success">$<%= ingresosHoy.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">📊 Ingresos este Mes</h6>
+          <h3 class="text-success">$<%= ingresosMes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">⚠️  Deuda Total</h6>
+          <h3 class="text-danger"><%= deudores.reduce((sum, d) => sum + d.monto_restante, 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">📈 Ingresos Últimos 7 Días</h6>
+          <canvas id="graficoIngresos" style="height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">🎯 Estado de Pedidos</h6>
+          <canvas id="graficoEstado" style="height: 300px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEUDORES -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">💳 Top 5 Deudores</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr class="border-bottom">
+                  <th>Cliente</th>
+                  <th>Deuda</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% deudores.forEach(d => { %>
+                  <tr>
+                    <td>
+                      <strong><%= d.cliente_nombre || 'Sin nombre' %></strong><br/>
+                      <small class="text-muted"><%= d.phone || '-' %></small>
+                    </td>
+                    <td><strong class="text-danger">$<%= d.monto_restante.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                    <td><span class="badge bg-warning"><%= d.estado %></span></td>
+                    <td>
+                      <a href="/pedidos/detalle/<%= d.id %>" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-3">
+            <a href="/reportes/deudores" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-arrow-right"></i> Ver todos los deudores
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STOCK BAJO -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">⚠️  Stock Bajo</h6>
+          <% if (stockBajo.length > 0) { %>
+            <div class="list-group list-group-flush">
+              <% stockBajo.forEach(s => { %>
+                <div class="list-group-item px-0">
+                  <strong><%= s.nombre %></strong><br/>
+                  <small>Actual: <span class="text-danger"><%= s.cantidad %></span> / Mínimo: <%= s.stock_minimo %></small>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <p class="text-muted mb-0">✅ Todo el stock está bien</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÚLTIMOS PEDIDOS -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">📋 Últimos Pedidos</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr class="border-bottom">
+                  <th>#</th>
+                  <th>Cliente</th>
+                  <th>Monto</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% ultimosPedidos.forEach(p => { %>
+                  <tr>
+                    <td><strong>#<%= p.id %></strong></td>
+                    <td><%= p.cliente_nombre || 'Sin cliente' %></td>
+                    <td>$<%= p.precio.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                    <td>
+                      <% 
+                        let badgeClass = 'bg-secondary';
+                        if (p.estado === 'PENDIENTE') badgeClass = 'bg-danger';
+                        if (p.estado === 'EN_PRODUCCION') badgeClass = 'bg-warning';
+                        if (p.estado === 'LISTO') badgeClass = 'bg-info';
+                        if (p.estado === 'ENTREGADO') badgeClass = 'bg-success';
+                      %>
+                      <span class="badge <%= badgeClass %>"><%= p.estado %></span>
+                    </td>
+                    <td><small><%= new Date(p.fecha).toLocaleDateString('es-AR') %></small></td>
+                    <td>
+                      <a href="/pedidos/detalle/<%= p.id %>" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye"></i>
+                      </a>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  // Gráfico: Ingresos últimos 7 días
+  const ctx1 = document.getElementById('graficoIngresos').getContext('2d');
+  new Chart(ctx1, {
+    type: 'line',
+    data: {
+      labels: <%- graficoLabels %>,
+      datasets: [{
+        label: 'Ingresos ($)',
+        data: <%- graficoDatos %>,
+        borderColor: '#198754',
+        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  // Gráfico: Estado de pedidos
+  const ctx2 = document.getElementById('graficoEstado').getContext('2d');
+  new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: <%- estadoLabels %>,
+      datasets: [{
+        data: <%- estadoDatos %>,
+        backgroundColor: ['#dc3545', '#ffc107', '#0dcaf0', '#198754']
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+</script>

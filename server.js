@@ -1,217 +1,296 @@
+// server.js
 const express        = require('express');
-const basicAuth      = require('express-basic-auth');
 const session        = require('express-session');
 const flash          = require('connect-flash');
 const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
-const sharp          = require('sharp');
 
-const db             = require('./config/db');
-const authRouter     = require('./routes/auth');
-const clientesRouter = require('./routes/clientes');
-const pedidosRouter  = require('./routes/pedidos');
-const usuariosRouter = require('./routes/usuarios');
-const materialesRouter = require('./routes/materiales');
+const swaggerUi       = require('swagger-ui-express');
+const YAML            = require('yamljs');
+const swaggerDocument = YAML.load(path.join(__dirname, 'spec/openapi.yaml'));
 
-const { permitirRoles } = require('./middleware/roles');
-const checkPermission  = require('./middleware/permissions');
+const initDbPromise      = require('./config/db');
+const initCajaController = require('./controllers/cajaController');
+const authMiddleware     = require('./middleware/authMiddleware');
+const permitirRoles      = require('./middleware/roles');
+const checkPermission    = require('./middleware/permissions');
 
 const app = express();
 
-// ─── DEBUG: mostrar cada petición en consola ───
-app.use((req, res, next) => {
-  console.log(new Date().toISOString(), req.method, req.path);
-  next();
-});
+// ════════════════════════════════════════════════════════════════
+// CONFIGURACIÓN BÁSICA
+// ════════════════════════════════════════════════════════════════
 
-// ───── Protección básica para historial ─────
-app.use(
-  '/pedidos/historial',
-  basicAuth({ users: { 'admin': 'admin' }, challenge: true, realm: 'Historial Protegido' })
-);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// 1. Configuración de vistas (EJS + layouts)
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 app.use(expressLayouts);
 app.set('layout', 'layout');
-
-// 2. Rutas absolutas para includes
 app.locals.basedir = app.get('views');
 
-// 3. Parseo de formularios
-app.use(express.urlencoded({ extended: true }));
-
-// 4. Asegurar carpeta de uploads y thumbs
-const uploadsDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-const thumbsDir = path.join(uploadsDir, 'thumbs');
-if (!fs.existsSync(thumbsDir)) fs.mkdirSync(thumbsDir, { recursive: true });
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ─── Rutas de imágenes, watermark, etc. ───
-app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
-  try {
-    const { filename } = req.params;
-    const low = req.query.quality === 'low';
-    const filePath = path.join(uploadsDir, filename);
-    if (!fs.existsSync(filePath)) return res.status(404).send('Archivo no encontrado');
-
-    const inputBuffer = await fs.promises.readFile(filePath);
-    let pipeline = sharp(inputBuffer);
-    if (low) pipeline = pipeline.jpeg({ quality: 50, chromaSubsampling: '4:2:0' }).resize({ width: 1200 });
-    const processedBuffer = await pipeline.toBuffer();
-
-    const meta = await sharp(processedBuffer).metadata();
-    const logoBuf  = await fs.promises.readFile(path.join(__dirname, 'public', 'logo.png'));
-    const logoMeta = await sharp(logoBuf).metadata();
-    const minSide  = Math.min(meta.width, meta.height);
-    const scale    = (minSide / 5) / Math.max(logoMeta.width, logoMeta.height);
-    const logoW    = Math.floor(logoMeta.width * scale);
-    const logoH    = Math.floor(logoMeta.height * scale);
-    const logoRes  = await sharp(logoBuf).resize(logoW, logoH).png().toBuffer();
-
-    const composites = [];
-    for (let x = 0; x < meta.width; x += logoW * 2) {
-      for (let y = 0; y < meta.height; y += logoH * 2) {
-        composites.push({ input: logoRes, left: x, top: y, blend: 'overlay' });
-      }
-    }
-
-    const outBuf = await sharp(processedBuffer).composite(composites).png().toBuffer();
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Content-Disposition', `attachment; filename="${path.parse(filename).name}-watermarked.png"`);
-    res.send(outBuf);
-  } catch (err) {
-    console.error('Error watermark:', err);
-    res.status(500).send('Error al procesar imagen');
-  }
-});
-
-app.get('/uploads/:filename', async (req, res, next) => {
-  const { filename } = req.params;
-  const low = req.query.quality === 'low';
-  const filePath = path.join(uploadsDir, filename);
-  if (!fs.existsSync(filePath)) return next();
-  if (low) {
-    try {
-      const transformer = sharp(filePath).jpeg({ quality: 50, chromaSubsampling: '4:2:0' }).resize({ width: 1200 });
-      res.setHeader('Content-Type', 'image/jpeg');
-      res.setHeader('Content-Disposition', `attachment; filename="${filename.replace(/\.(jpe?g)$/i, '-low.$1')}"`);
-      return transformer.pipe(res);
-    } catch (err) {
-      console.error('Error low-quality streaming:', err);
-      return res.status(500).send('Error al procesar imagen');
-    }
-  }
-  return next();
-});
-
-app.get('/uploads/thumbs/:filename', async (req, res, next) => {
-  try {
-    const { filename } = req.params;
-    const origPath = path.join(uploadsDir, filename);
-    if (!fs.existsSync(origPath)) return next();
-
-    const thumbBuffer = await sharp(origPath).resize({ width: 150 }).toBuffer();
-    const ext = path.extname(filename).toLowerCase();
-    if (ext === '.png') res.type('image/png');
-    else if (ext === '.gif') res.type('image/gif');
-    else res.type('image/jpeg');
-    res.send(thumbBuffer);
-  } catch (err) {
-    console.error('Error al servir miniatura:', err);
-    return next(err);
-  }
-});
-
-// 5. Montar carpetas estáticas
-app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// 6. Sesiones y flash
-app.use(session({ secret: 'cualquier_secreto', resave: false, saveUninitialized: false }));
+app.use(session({
+    secret: 'elgrafico_secreto_2026',
+    resave: false,
+    saveUninitialized: false
+}));
 app.use(flash());
 
-// 7. Variables globales para vistas
+// ════════════════════════════════════════════════════════════════
+// VARIABLES GLOBALES PARA VISTAS
+// ════════════════════════════════════════════════════════════════
+
 app.use((req, res, next) => {
-  res.locals.error       = req.flash('error')   || [];
-  res.locals.success     = req.flash('success') || [];
-  res.locals.user        = req.session.user     || null;
-  res.locals.currentPath = req.path;
-  next();
+    res.locals.error       = req.flash('error')   || [];
+    res.locals.success     = req.flash('success') || [];
+    res.locals.user        = req.session.user     || null;
+    res.locals.currentPath = req.path;
+    res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
+    next();
 });
 
-// 8. Navbar con iconos
+// ════════════════════════════════════════════════════════════════
+// NAVBAR DINÁMICO POR ROL
+// ════════════════════════════════════════════════════════════════
+
 app.use((req, res, next) => {
-  res.locals.pages = [
-    { name: 'home',               label: 'Inicio',        url: '/',                     icon: 'bi-house-fill' },
-    { name: 'clientes',           label: 'Clientes',      url: '/clientes',             icon: 'bi-people-fill' },
-    { name: 'clientes-nuevo',     label: 'Nuevo Cliente', url: '/clientes/nuevo',       icon: 'bi-person-plus-fill' },
-    { name: 'materiales',         label: 'Materiales',    url: '/materiales',           icon: 'bi-box-seam-fill' },
-    { name: 'pedidos-nuevo',      label: 'Nuevo Pedido',  url: '/pedidos/nuevo',        icon: 'bi-receipt-cutoff' },
-    { name: 'pedidos-pendientes', label: 'Pendientes',    url: '/pedidos/pendientes',   icon: 'bi-clock-fill' },
-    { name: 'pedidos-revision',   label: 'Revisión',      url: '/pedidos/revision',     icon: 'bi-pencil-square' },
-    { name: 'pedidos-impresiones',label: 'Para Imprimir', url: '/pedidos/impresiones',  icon: 'bi-printer-fill' },
-    { name: 'pedidos-terminados', label: 'Terminados',    url: '/pedidos/terminados',   icon: 'bi-check2-circle' },
-    { name: 'pedidos-entregados', label: 'Entregados',    url: '/pedidos/entregados',   icon: 'bi-truck-flatbed' },
-    { name: 'pedidos-historial',  label: 'Historial',     url: '/pedidos/historial',    icon: 'bi-clock-history' }
-  ];
-  res.locals.activePage = req.path === '/' ? 'home' : req.path.slice(1).replace(/\//g, '-');
-  next();
+    const rol = res.locals.user?.rol || null;
+
+    const allPages = [
+        { name: 'home',          label: 'Inicio',       url: '/',              icon: 'bi-house-fill',     roles: ['admin','vendedor','operador','empleado'] },
+        { name: 'clientes',      label: 'Clientes',     url: '/clientes',      icon: 'bi-people-fill',    roles: ['admin','vendedor'] },
+        { name: 'pedidos',       label: 'Pedidos',      url: '/pedidos',       icon: 'bi-kanban-fill',    roles: ['admin','vendedor','operador','empleado'] },
+        { name: 'presupuestos',  label: 'Presupuestos', url: '/presupuestos',  icon: 'bi-calculator',     roles: ['admin','vendedor','empleado'] },
+        { name: 'catalogo',      label: 'Catálogo',     url: '/catalogo',      icon: 'bi-card-list',      roles: ['admin','vendedor','operador','empleado'] },
+        { name: 'proveedores',   label: 'Proveedores',  url: '/proveedores',   icon: 'bi-truck',          roles: ['admin'] },
+        { name: 'stock',         label: 'Stock',        url: '/stock',         icon: 'bi-boxes',          roles: ['admin'] },
+        { name: 'gastos',        label: 'Gastos',       url: '/gastos',        icon: 'bi-receipt',        roles: ['admin'] },
+        { name: 'caja-diaria',   label: 'Caja',         url: '/caja-diaria',   icon: 'bi-cash-coin',      roles: ['admin','vendedor','empleado'] },
+        { name: 'reportes',      label: 'Reportes',     url: '/reportes',      icon: 'bi-bar-chart-fill', roles: ['admin'] },
+        { name: 'usuarios',      label: 'Usuarios',     url: '/usuarios',      icon: 'bi-gear-fill',      roles: ['admin'] },
+    ];
+
+    res.locals.pages      = rol ? allPages.filter(p => p.roles.includes(rol)) : [];
+    res.locals.activePage = req.path === '/' ? 'home' : req.path.slice(1).replace(/\//g, '-');
+    next();
 });
 
-// 9. Rutas protegidas
-app.use('/auth', authRouter);
-app.use('/clientes',    permitirRoles('Admin','Atención'),            checkPermission, clientesRouter);
-app.use('/pedidos',     permitirRoles('Admin','Atención','Impresor'), checkPermission, pedidosRouter);
-app.use('/usuarios',    permitirRoles('Admin'),                       checkPermission, usuariosRouter);
-app.use('/materiales',  permitirRoles('Admin','Atención'),            checkPermission, materialesRouter);
+// ════════════════════════════════════════════════════════════════
+// DOCUMENTACIÓN Y ARCHIVOS ESTÁTICOS
+// ════════════════════════════════════════════════════════════════
 
-app.get('/', (req, res) => {
-  const counts = {
-    pendientes: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'").get().c,
-    revision: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_REVISIÓN'").get().c,
-    impresion: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO_IMPRESION'").get().c,
-    terminados: db.prepare("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'TERMINADO'").get().c,
-    entregados: 0,
-    presupuestos: db.prepare("SELECT COUNT(*) AS c FROM presupuestos WHERE usado IS NULL OR usado = 0").get().c
-  };
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-  const items = [
-    { url: '/clientes',           icon: 'bi-people-fill',       title: 'Clientes',           text: 'Gestiona tu lista',          countKey: null },
-    { url: '/clientes/nuevo',     icon: 'bi-person-plus-fill',  title: 'Nuevo Cliente',      text: 'Agrega un contacto',         countKey: null },
-    { url: '/pedidos/nuevo',      icon: 'bi-bag-plus-fill',     title: 'Nuevo Pedido',       text: 'Crea un encargo',            countKey: null },
-    { url: '/presupuestos',       icon: 'bi-calculator',        title: 'Presupuestos',       text: 'Control de estimaciones',    countKey: 'presupuestos' },
-    { url: '/presupuestos/publico',icon: 'bi-globe',            title: 'Formulario Público', text: 'Simulador para clientes',    countKey: null },
-    { url: '/catalogo',           icon: 'bi-card-list',         title: 'Catálogo de Productos', text: 'Precios por tipo',        countKey: null },
-    { url: '/productos',          icon: 'bi-tags-fill',         title: 'Editar Productos',    text: 'Carga base de datos',        countKey: null },
-    { url: '/pedidos/pendientes', icon: 'bi-hourglass-split',   title: 'Trabajos Encargados',text: 'Revisa en curso',            countKey: 'pendientes' },
-    { url: '/pedidos/revision',   icon: 'bi-search-heart-fill', title: 'En Revisión',        text: 'Corrige pedidos',            countKey: 'revision' },
-    { url: '/pedidos/impresiones',icon: 'bi-printer-fill',      title: 'Para Imprimir',      text: 'Descarga finales',           countKey: 'impresion' },
-    { url: '/pedidos/terminados', icon: 'bi-check2-all',        title: 'Terminados',         text: 'Listos para entrega',        countKey: 'terminados' },
-    { url: '/pedidos/entregados', icon: 'bi-box-arrow-in-right',title: 'Entregados',         text: 'Historial entregas',         countKey: 'entregados' },
-    { url: '/pedidos/historial',  icon: 'bi-clock-history',     title: 'Historial',          text: 'Repite antiguos',            countKey: null }
-  ];
+const uploadsDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+if (!fs.existsSync(path.join(uploadsDir, 'thumbs'))) fs.mkdirSync(path.join(uploadsDir, 'thumbs'), { recursive: true });
 
-  res.render('home', { title: 'Panel Principal', counts, items });
+app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(uploadsDir));
+
+app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
+    const filePath = path.join(__dirname, 'public', 'uploads', req.params.filename);
+    res.download(filePath);
 });
 
+// ════════════════════════════════════════════════════════════════
+// INICIALIZAR SERVIDOR
+// ════════════════════════════════════════════════════════════════
 
-const presupuestosRoutes = require('./routes/presupuestos');
-app.use('/presupuestos', presupuestosRoutes);
+async function startServer() {
+    let dbInstance;
+    try {
+        dbInstance = await initDbPromise;
+        console.log("✅ Base de datos lista.");
+    } catch (error) {
+        console.error("❌ Error de base de datos:", error);
+        process.exit(1);
+    }
 
-const productosRouter = require('./routes/productos');
-app.use('/productos', productosRouter);
+    // ────────────────────────────────────────────────────────────────────
+    // CARGAR CONTROLADORES Y RUTAS
+    // ────────────────────────────────────────────────────────────────────
 
-const catalogoRouter = require('./routes/catalogo');
-app.use('/catalogo', catalogoRouter);
+    const cajaController               = initCajaController(dbInstance);
+    const authRouterConfigured         = require('./routes/auth')(dbInstance);
+    const clientesRouterConfigured     = require('./routes/clientes')(dbInstance);
+    const apiClientesRouterConfigured  = require('./routes/api/clientes')(dbInstance);
+    const apiProductosRouterConfigured = require('./routes/api/productos')(dbInstance);
+    const apiAutocompleteConfigured    = require('./routes/api/autocomplete')(dbInstance);
+    const apiPedidosRouterConfigured   = require('./routes/api/pedidos')(dbInstance);
+    const productosRouterConfigured    = require('./routes/productos')(dbInstance);
+    const pedidosRouterConfigured      = require('./routes/pedidos')(dbInstance);
+    const usuariosRouterConfigured     = require('./routes/usuarios')(dbInstance);
+    const presupuestosRouterConfigured = require('./routes/presupuestos')(dbInstance);
+    const catalogoRouterConfigured     = require('./routes/catalogo')(dbInstance);
+    const proveedoresRouterConfigured  = require('./routes/proveedores')(dbInstance);
+    const stockRouterConfigured        = require('./routes/stock')(dbInstance);
+    const gastosRouterConfigured       = require('./routes/gastos')(dbInstance);
+    const reportesRouterConfigured     = require('./routes/reportes')(dbInstance);
+    const dashboardRouterConfigured    = require('./routes/dashboard')(dbInstance);
 
-// 11. 404
-app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
+    // ────────────────────────────────────────────────────────────────────
+    // APIS INTERNAS (Autocomplete, etc)
+    // ────────────────────────────────────────────────────────────────────
 
-// 12. Iniciar servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+    app.use('/api/clientes',     apiClientesRouterConfigured);
+    app.use('/api/productos',    apiProductosRouterConfigured);
+    app.use('/api/autocomplete', apiAutocompleteConfigured);
+    app.use('/api/pedidos',      apiPedidosRouterConfigured);
+
+    // ────────────────────────────────────────────────────────────────────
+    // AUTH (Público)
+    // ────────────────────────────────────────────────────────────────────
+
+    app.use('/auth', authRouterConfigured);
+
+    // ────────────────────────────────────────────────────────────────────
+    // RUTAS PÚBLICAS (sin login)
+    // ────────────────────────────────────────────────────────────────────
+
+    // Formulario público de presupuesto (para clientes externos)
+    const presupuestosControllerPublico = require('./controllers/presupuestosController')(dbInstance);
+    const upload = require('./config/multer');
+    app.get('/presupuestos/publico', presupuestosControllerPublico.formPresupuestoPublico);
+    app.post('/presupuestos/publico', upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
+
+    // ────────────────────────────────────────────────────────────────────
+    // RUTAS PROTEGIDAS
+    // ────────────────────────────────────────────────────────────────────
+
+    app.use('/dashboard', authMiddleware.isAuthenticated, dashboardRouterConfigured);
+    app.use('/clientes',     permitirRoles('admin','vendedor'),            clientesRouterConfigured);
+    app.use('/pedidos',      permitirRoles('admin','vendedor','operador','empleado'), pedidosRouterConfigured);
+    app.use('/usuarios',     permitirRoles('admin'),                       usuariosRouterConfigured);
+    app.use('/presupuestos', permitirRoles('admin','vendedor','empleado'),            presupuestosRouterConfigured);
+    app.use('/catalogo',     permitirRoles('admin','vendedor','operador','empleado'), catalogoRouterConfigured);
+    app.use('/productos',    permitirRoles('admin','vendedor'),            productosRouterConfigured);
+    app.use('/proveedores',  permitirRoles('admin'),                       proveedoresRouterConfigured);
+    app.use('/stock',        permitirRoles('admin'),                       stockRouterConfigured);
+    app.use('/gastos',       permitirRoles('admin'),                       gastosRouterConfigured);
+    app.use('/reportes',     permitirRoles('admin','vendedor'),                       reportesRouterConfigured);
+
+    // ────────────────────────────────────────────────────────────────────
+    // CAJA DIARIA
+    // ────────────────────────────────────────────────────────────────────
+
+    app.use('/caja-diaria',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin','vendedor','empleado'),
+        async (req, res, next) => {
+            return cajaController.mostrarCajaDiaria(req, res);
+        }
+    );
+    app.post('/caja-diaria/agregar',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin','vendedor','empleado'),
+        async (req, res, next) => {
+            return cajaController.agregarMovimiento(req, res);
+        }
+    );
+    app.post('/caja-diaria/eliminar/:id',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin'),
+        async (req, res, next) => {
+            return cajaController.eliminarMovimiento(req, res);
+        }
+    );
+
+    // ────────────────────────────────────────────────────────────────────
+    // DASHBOARD PRINCIPAL
+    // ────────────────────────────────────────────────────────────────────
+
+    app.get('/', authMiddleware.isAuthenticated, async (req, res) => {
+        try {
+            const hoy = new Date().toISOString().slice(0, 10);
+
+            const counts = {
+                pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
+                en_produccion: (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,
+                listos:        (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO'"))?.c || 0,
+                entregados:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'"))?.c || 0,
+                presupuestos:  (await dbInstance.get("SELECT COUNT(*) AS c FROM presupuestos WHERE estado = 'PENDIENTE'"))?.c || 0,
+                clientes:      (await dbInstance.get("SELECT COUNT(*) AS c FROM clients"))?.c || 0,
+            };
+
+            const ingresosHoy = (await dbInstance.get(
+                "SELECT COALESCE(SUM(monto),0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?", hoy
+            ))?.total || 0;
+
+            const inicioMes = new Date(); inicioMes.setDate(1);
+            const ingresosMes = (await dbInstance.get(
+                "SELECT COALESCE(SUM(monto),0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) >= ?",
+                inicioMes.toISOString().slice(0, 10)
+            ))?.total || 0;
+
+            const deudores = await dbInstance.all(`
+                SELECT p.id, p.precio, p.monto_restante, p.estado,
+                       c.name AS cliente_nombre, c.phone
+                FROM pedidos p
+                LEFT JOIN clients c ON p.client_id = c.id
+                WHERE p.monto_restante > 0
+                ORDER BY p.monto_restante DESC LIMIT 5
+            `) || [];
+
+            const stockBajo = await dbInstance.all(`
+                SELECT s.id, s.nombre, s.cantidad, s.stock_minimo, s.unidad
+                FROM stock s
+                WHERE s.cantidad <= s.stock_minimo
+                ORDER BY s.cantidad ASC LIMIT 5
+            `) || [];
+
+            const ultimosPedidos = await dbInstance.all(`
+                SELECT p.id, p.precio, p.estado, p.fecha,
+                       c.name AS cliente_nombre
+                FROM pedidos p
+                LEFT JOIN clients c ON p.client_id = c.id
+                ORDER BY p.fecha DESC LIMIT 10
+            `) || [];
+
+            const isEmpleado = req.session.user?.rol === 'empleado';
+            res.render('home', {
+                title: 'Panel Principal',
+                counts, 
+                ingresosHoy, 
+                ingresosMes,
+                deudores, 
+                stockBajo, 
+                ultimosPedidos,
+                isEmpleado
+            });
+        } catch (err) {
+            console.error('Error en dashboard:', err);
+            const isEmpleado = req.session.user?.rol === 'empleado';
+            res.render('home', {
+                title: 'Panel Principal',
+                counts: {}, 
+                ingresosHoy: 0, 
+                ingresosMes: 0,
+                deudores: [], 
+                stockBajo: [], 
+                ultimosPedidos: [],
+                isEmpleado
+            });
+        }
+    });
+
+    // ────────────────────────────────────────────────────────────────────
+    // 404
+    // ────────────────────────────────────────────────────────────────────
+
+    app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
+
+    // ────────────────────────────────────────────────────────────────────
+    // INICIAR SERVIDOR
+    // ────────────────────────────────────────────────────────────────────
+
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, '0.0.0.0', () => console.log(`\n✅ Server corriendo en http://localhost:${PORT}\n`));
+}
+
+startServer();
+
+
 

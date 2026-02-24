@@ -1,98 +1,274 @@
-<%- include('../partials/header', { title }) %>
+<div class="container my-5">
+  <h1 class="mb-4">Nuevo Presupuesto</h1>
 
-<main class="container py-4">
-  <h1 class="mb-4">Solicitá tu Presupuesto</h1>
-
-  <% if (error && error.length) { %>
-    <div class="alert alert-danger"><%= error %></div>
+  <% if (typeof error !== 'undefined' && error && error.length) { %>
+    <div class="alert alert-danger"><%= Array.isArray(error) ? error.join('<br>') : error %></div>
   <% } %>
-  <% if (success && success.length) { %>
-    <div class="alert alert-success"><%= success %></div>
+  <% if (typeof success !== 'undefined' && success && success.length) { %>
+    <div class="alert alert-success"><%= Array.isArray(success) ? success.join('<br>') : success %></div>
   <% } %>
 
-  <form action="/presupuestos/nuevo" method="POST" enctype="multipart/form-data">
-    <div class="mb-3">
-      <label>Nombre</label>
-      <input type="text" name="nombre_cliente" class="form-control" required placeholder="Tu nombre completo">
+  <form action="/presupuestos/nuevo" method="POST" enctype="multipart/form-data" id="formPresupuesto">
+    
+    <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">👤 Datos del Cliente</h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Cliente Existente (opcional)</label>
+            <select name="cliente_id" id="cliente_id" class="form-select" onchange="cargarClienteExistente()">
+              <option value="">-- Seleccionar cliente --</option>
+              <% if (clientes && clientes.length) { %>
+                <% clientes.forEach(c => { %>
+                  <option value="<%= c.id %>" data-name="<%= c.name %>" data-phone="<%= c.phone || '' %>" data-email="<%= c.email || '' %>">
+                    <%= c.name %> - <%= c.phone || 'Sin tel' %>
+                  </option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Nombre del Cliente *</label>
+            <input type="text" name="nombre_cliente" id="nombre_cliente" class="form-control" required placeholder="Nombre completo">
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Teléfono *</label>
+            <input type="text" name="telefono_cliente" id="telefono_cliente" class="form-control" required placeholder="Número">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email_cliente" id="email_cliente" class="form-control" placeholder="Correo">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Archivo de Referencia</label>
+            <input type="file" name="archivo_imagen" class="form-control" accept="image/*">
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="mb-3">
-      <label>Teléfono</label>
-      <input type="text" name="telefono_cliente" class="form-control" required placeholder="Tu número de contacto">
+    <!-- SECCIÓN 2: ITEMS DEL PRESUPUESTO -->
+    <div class="card mb-4">
+      <div class="card-header bg-success text-white">
+        <h5 class="mb-0">📦 Ítems del Presupuesto</h5>
+      </div>
+      <div class="card-body">
+        <div id="itemsContainer">
+          <!-- Los items se agregan dinámicamente aquí -->
+        </div>
+        <button type="button" class="btn btn-outline-success" onclick="agregarItem()">
+          ➕ Agregar Item
+        </button>
+      </div>
     </div>
 
-    <div class="mb-3">
-      <label>Email (opcional)</label>
-      <input type="email" name="email_cliente" class="form-control" placeholder="Tu correo si querés">
+    <!-- SECCIÓN 3: RESUMEN -->
+    <div class="card mb-4 bg-light">
+      <div class="card-body">
+        <div class="row text-center">
+          <div class="col-md-6">
+            <h6 class="text-muted">Descuento Total</h6>
+            <h3 class="text-warning">-$<span id="descuentoTotal">0.00</span></h3>
+          </div>
+          <div class="col-md-6">
+            <h6 class="text-muted">TOTAL</h6>
+            <h3 class="text-success">$<span id="totalFinal">0.00</span></h3>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="mb-3">
-      <label>Producto del Catálogo</label>
-      <select name="producto_id" id="producto_id" class="form-control" required onchange="mostrarCampos()">
-        <option value="">-- Seleccioná producto --</option>
-        <% productos.forEach(p => { %>
-          <option value="<%= p.id %>" data-tipo="<%= p.tipo %>" data-minimo="<%= p.minimo %>">
-            <%= p.nombre %> – €<%= p.precio_base.toFixed(2) %>
-          </option>
-        <% }) %>
-      </select>
+    <!-- BOTONES -->
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary btn-lg">
+        ✅ Guardar Presupuesto
+      </button>
+      <a href="/presupuestos" class="btn btn-outline-secondary">Cancelar</a>
     </div>
-
-    <div id="campos-dinamicos"></div>
-
-    <div class="mb-3">
-      <label>Detalle del trabajo</label>
-      <textarea name="detalle" class="form-control" required></textarea>
-    </div>
-
-    <div class="mb-3">
-      <label>Imágenes (opcional)</label>
-      <input type="file" name="archivo_imagen" class="form-control">
-    </div>
-
-    <button type="submit" class="btn btn-primary">Enviar Solicitud</button>
   </form>
-</main>
-
-<div id="precio-estimado-box" class="mb-3" style="display:none;">
-  <label><strong>💰 Precio estimado:</strong></label>
-  <input type="text" id="precio_estimado" class="form-control" readonly>
 </div>
 
 <script>
-  function mostrarCampos() {
-    const select = document.getElementById('producto_id');
-    const tipo = select.options[select.selectedIndex]?.dataset.tipo;
-    const minimo = parseFloat(select.options[select.selectedIndex]?.dataset.minimo || 1);
-    const contenedor = document.getElementById('campos-dinamicos');
+  let itemCounter = 0;
+  const productosData = <%- JSON.stringify(productos || []) %>;
 
-    contenedor.innerHTML = '';
-    if (!tipo) return;
-
-    if (tipo === 'metro_cuadrado') {
-      contenedor.innerHTML = `
-        <div class="row mb-3">
-          <div class="col">
-            <input type="number" step="0.01" name="ancho" class="form-control" placeholder="Ancho (m)">
-          </div>
-          <div class="col">
-            <input type="number" step="0.01" name="alto" class="form-control" placeholder="Alto (m)">
-          </div>
-        </div>
-        <p class="text-muted">Mínimo facturable: ${minimo} m²</p>
-      `;
-    }
-
-    if (tipo === 'unidad' || tipo === 'hoja') {
-      contenedor.innerHTML = `
-        <div class="mb-3">
-          <input type="number" name="cantidad" class="form-control" placeholder="Cantidad" min="${minimo}">
-        </div>
-        <p class="text-muted">Mínimo: ${minimo} unidades</p>
-      `;
+  function cargarClienteExistente() {
+    const select = document.getElementById('cliente_id');
+    const opt = select.options[select.selectedIndex];
+    if (opt && opt.value) {
+      document.getElementById('nombre_cliente').value = opt.dataset.name || '';
+      document.getElementById('telefono_cliente').value = opt.dataset.phone || '';
+      document.getElementById('email_cliente').value = opt.dataset.email || '';
     }
   }
-  
-</script>
 
-<%- include('../partials/footer') %>
+  function agregarItem() {
+    itemCounter++;
+    const html = `
+      <div class="card mb-3 itemCard" id="item_${itemCounter}">
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Producto</label>
+              <select name="producto_id[]" class="form-select productoSelect" data-item="${itemCounter}" onchange="cambiarProducto(${itemCounter})">
+                <option value="">-- Seleccionar producto --</option>
+                <% if (productos && productos.length) { %>
+                  <% productos.forEach(p => { %>
+                    <option value="<%= p.id %>" data-precio="<%= p.precio_base %>" data-tipo="<%= p.tipo %>" data-minimo="<%= p.minimo %>" data-nombre="<%= p.nombre %>">
+                      <%= p.nombre %> ($<%= p.precio_base %> - <%= p.tipo === 'lona' ? 'm²' : 'unidad' %>)
+                    </option>
+                  <% }) %>
+                <% } %>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Descripción *</label>
+              <input type="text" name="descripcion[]" class="form-control descripcion" placeholder="Descripción del item" required>
+            </div>
+          </div>
+          
+          <div id="camposDinamicos_${itemCounter}" class="row mb-3"></div>
+
+          <div class="row">
+            <div class="col-md-3">
+              <label class="form-label">Cantidad</label>
+              <input type="number" name="cantidad[]" class="form-control cantidad" value="1" min="1" step="0.1" onchange="calcularSubtotal(${itemCounter})">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Precio Unitario ($)</label>
+              <input type="number" name="precio_unitario[]" class="form-control precioUnitario" step="0.01" min="0" onchange="calcularSubtotal(${itemCounter})">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Descuento ($)</label>
+              <input type="number" name="descuento_item[]" class="form-control descuentoItem" step="0.01" value="0" min="0" onchange="calcularSubtotal(${itemCounter})">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Subtotal</label>
+              <input type="text" class="form-control subtotalItem" readonly placeholder="$0.00">
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-outline-danger btn-sm mt-2" onclick="eliminarItem(${itemCounter})">
+            🗑️ Eliminar Item
+          </button>
+        </div>
+      </div>
+    `;
+    document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', html);
+  }
+
+  function cambiarProducto(itemNum) {
+    const card = document.getElementById(`item_${itemNum}`);
+    const select = card.querySelector('.productoSelect');
+    const opt = select.options[select.selectedIndex];
+    
+    if (!opt || !opt.value) return;
+
+    const tipo = opt.dataset.tipo;
+    const precio = parseFloat(opt.dataset.precio) || 0;
+    const minimo = parseFloat(opt.dataset.minimo) || 1;
+    const nombreProducto = opt.dataset.nombre;
+
+    // Establecer descripción con el nombre del producto
+    card.querySelector('.descripcion').value = nombreProducto;
+
+    // Establecer precio unitario
+    card.querySelector('.precioUnitario').value = precio.toFixed(2);
+
+    // Limpiar campos dinámicos
+    const dinamicos = document.getElementById(`camposDinamicos_${itemNum}`);
+    dinamicos.innerHTML = '';
+
+    // Agregar campos según tipo (LONA necesita Ancho x Alto)
+    if (tipo === 'lona') {
+      dinamicos.innerHTML = `
+        <div class="col-md-3">
+          <label class="form-label">Ancho (m) *</label>
+          <input type="number" class="form-control ancho" step="0.01" min="0" required onchange="calcularSubtotal(${itemNum})" placeholder="0.00">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Alto (m) *</label>
+          <input type="number" class="form-control alto" step="0.01" min="0" required onchange="calcularSubtotal(${itemNum})" placeholder="0.00">
+        </div>
+        <div class="col-md-6">
+          <p class="text-muted small"><strong>📐 Tipo:</strong> Metro Cuadrado</p>
+        </div>
+      `;
+    } else {
+      dinamicos.innerHTML = `
+        <div class="col-12">
+          <p class="text-muted small"><strong>📦 Tipo:</strong> Unidad</p>
+        </div>
+      `;
+    }
+
+    card.querySelector('.cantidad').value = minimo;
+    calcularSubtotal(itemNum);
+  }
+
+  function calcularSubtotal(itemNum) {
+    const card = document.getElementById(`item_${itemNum}`);
+    const select = card.querySelector('.productoSelect');
+    const opt = select.options[select.selectedIndex];
+    
+    if (!opt || !opt.value) return;
+
+    const tipo = opt.dataset.tipo;
+    const precioBase = parseFloat(opt.dataset.precio) || 0;
+    const minimo = parseFloat(opt.dataset.minimo) || 1;
+    
+    let cantidad = 1;
+    
+    if (tipo === 'lona') {
+      const ancho = parseFloat(card.querySelector('.ancho')?.value) || 0;
+      const alto = parseFloat(card.querySelector('.alto')?.value) || 0;
+      cantidad = Math.max(ancho * alto, minimo);
+    } else {
+      cantidad = Math.max(parseFloat(card.querySelector('.cantidad').value) || 0, minimo);
+    }
+
+    const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || precioBase;
+    const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
+    
+    const subtotal = (cantidad * precioUnitario) - descuento;
+    
+    card.querySelector('.cantidad').value = cantidad.toFixed(2);
+    card.querySelector('.precioUnitario').value = precioUnitario.toFixed(2);
+    card.querySelector('.subtotalItem').value = '$' + subtotal.toFixed(2);
+    
+    calcularTotales();
+  }
+
+  function calcularTotales() {
+    let totalFinal = 0;
+    let descuentoTotal = 0;
+    
+    document.querySelectorAll('.itemCard').forEach(card => {
+      const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || 0;
+      const cantidad = parseFloat(card.querySelector('.cantidad').value) || 0;
+      const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
+      
+      const subtotal = (cantidad * precioUnitario) - descuento;
+      totalFinal += subtotal;
+      descuentoTotal += descuento;
+    });
+    
+    document.getElementById('descuentoTotal').textContent = descuentoTotal.toFixed(2);
+    document.getElementById('totalFinal').textContent = totalFinal.toFixed(2);
+  }
+
+  function eliminarItem(itemNum) {
+    document.getElementById(`item_${itemNum}`).remove();
+    calcularTotales();
+  }
+
+  // Agregar primer item al cargar
+  document.addEventListener('DOMContentLoaded', function() {
+    agregarItem();
+  });
+</script>

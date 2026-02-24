@@ -1,0 +1,124 @@
+<!-- views/reportes/inicio.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <h1 class="display-6"><i class="bi bi-bar-chart-fill"></i> Reportes y Análisis</h1>
+      <p class="text-muted">Centro de generación de reportes empresariales</p>
+    </div>
+  </div>
+
+  <!-- ESTADÍSTICAS RÁPIDAS -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <h3 class="text-primary"><%= stats.totalPedidos %></h3>
+          <p class="card-text text-muted mb-0">Total de Pedidos</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <h3 class="text-success">$<%= stats.ingresosMes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <p class="card-text text-muted mb-0">Ingresos este Mes</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <h3 class="text-danger">$<%= stats.egresosMes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <p class="card-text text-muted mb-0">Egresos este Mes</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center">
+        <div class="card-body">
+          <h3 class="text-warning"><%= stats.totalClientes %></h3>
+          <p class="card-text text-muted mb-0">Clientes Activos</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPCIONES DE REPORTES -->
+  <div class="row">
+    <div class="col-md-6 mb-4">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/mensual'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-calendar-month" style="font-size: 2rem; color: #0d6efd;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Reporte Mensual</h5>
+              <p class="card-text text-muted mb-0">Ingresos, egresos y análisis del mes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/clientes'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-people-fill" style="font-size: 2rem; color: #198754;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Reporte de Clientes</h5>
+              <p class="card-text text-muted mb-0">Análisis de cliente y comportamiento de compra</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/deudores'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-cash-circle" style="font-size: 2rem; color: #dc3545;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Reporte de Deudores</h5>
+              <p class="card-text text-muted mb-0">Seguimiento de cuentas por cobrar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/stock/movimientos'">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <i class="bi bi-boxes" style="font-size: 2rem; color: #ffc107;"></i>
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h5 class="card-title mb-1">Movimientos de Stock</h5>
+              <p class="card-text text-muted mb-0">Historial de entradas, salidas y ajustes</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INFORMACIÓN IMPORTANTE -->
+  <div class="row mt-4">
+    <div class="col-md-12">
+      <div class="alert alert-info border-0">
+        <h6 class="alert-heading"><i class="bi bi-lightbulb"></i> Información Importante</h6>
+        <p class="mb-2">Los reportes se generan en tiempo real con datos de la base de datos.</p>
+        <p class="mb-2">Puedes exportar reportes a PDF desde cada sección individual.</p>
+        <p class="mb-0">Los datos se actualizan cada vez que realizes movimientos en el sistema.</p>
+      </div>
+    </div>
+  </div>
+</div>

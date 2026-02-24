@@ -1,76 +1,174 @@
-<%- include('../partials/header', { title: 'Clientes' }) %>
-
 <main class="container py-4">
-  <h1 class="mb-4">👥 Clientes</h1>
+  <h2 class="mb-4">Clientes</h2>
 
-  <div class="mb-3">
-    <a href="/clientes/nuevo" class="btn btn-primary">+ Nuevo Cliente</a>
+  <div class="mb-4 text-end">
+    <a href="/clientes/nuevo" class="btn btn-primary">
+      <i class="bi bi-person-plus"></i> Nuevo Cliente
+    </a>
   </div>
 
-  <% if (clients.length) { %>
-    <table class="table table-striped align-middle">
-      <thead>
+  <div class="mb-3">
+    <input
+      type="text"
+      id="buscarCliente"
+      class="form-control"
+      placeholder="🔍 Busca por nombre..."
+    >
+  </div>
+
+  <% if (typeof error !== 'undefined' && error && error.length) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success && success.length) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (!clients || clients.length === 0) { %>
+    <div class="alert alert-info">No hay clientes registrados todavía.</div>
+  <% } else { %>
+  <div class="table-responsive">
+    <table class="table table-striped align-middle" id="tablaClientes">
+      <thead class="table-dark">
         <tr>
           <th>ID</th>
           <th>Nombre</th>
           <th>Teléfono</th>
-          <th>Email</th>
-          <th class="text-center">Acciones</th>
+          <th class="text-center">Presupuestos Pendientes</th>
+          <th class="text-end">Deuda Total</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <% clients.forEach(client => { %>
-          <tr>
+          <tr <%= client.deuda_total > 0 || client.cant_presupuestos > 0 ? 'class="table-warning"' : '' %>>
             <td><%= client.id %></td>
-            <td><%= client.name %></td>
-            <td><%= client.phone %></td>
-            <td><%= client.email %></td>
+            <td class="col-nombre"><strong><%= client.name %></strong></td>
+            <td><%= client.phone || '-' %></td>
             <td class="text-center">
-              <!-- Ver Historial -->
-              <a 
-                href="/clientes/<%= client.id %>/historial" 
-                class="btn btn-sm btn-info me-1"
-              >Historial</a>
-              
-              <!-- Editar -->
-              <a 
-                href="/clientes/editar/<%= client.id %>" 
-                class="btn btn-sm btn-warning me-1"
-              >Editar</a>
-              
-              <!-- Eliminar con clave -->
-              <form 
-                action="/clientes/eliminar/<%= client.id %>" 
-                method="POST" 
-                class="d-inline"
-                onsubmit="return pedirClave(this, '<%= client.name %>');"
-              >
-                <button class="btn btn-sm btn-danger">Eliminar</button>
-              </form>
+              <% if (client.cant_presupuestos > 0) { %>
+                <span class="badge bg-info"><%= client.cant_presupuestos %></span>
+                <button class="btn btn-sm btn-outline-info ms-1" type="button" data-bs-toggle="collapse" 
+                        data-bs-target="#presup-<%= client.id %>" title="Ver presupuestos">
+                  <i class="bi bi-chevron-down"></i>
+                </button>
+              <% } else { %>
+                <span class="text-muted">-</span>
+              <% } %>
+            </td>
+            <td class="text-end">
+              <% if (client.deuda_total > 0) { %>
+                <span class="badge bg-danger">$<%= client.deuda_total.toLocaleString('es-AR') %></span>
+              <% } else { %>
+                <span class="text-muted">-</span>
+              <% } %>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group">
+                <a href="/pedidos/nuevo?clienteId=<%= client.id %>" class="btn btn-success" title="Crear pedido">
+                  <i class="bi bi-cart-plus"></i>
+                </a>
+                <a href="/clientes/editar/<%= client.id %>" class="btn btn-warning">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a href="/clientes/<%= client.id %>/historial" class="btn btn-info">
+                  <i class="bi bi-clock-history"></i>
+                </a>
+                <% if (client.phone) {
+                  const tel = client.phone.replace(/\D/g,'');
+                  const msgDeuda = encodeURIComponent(
+                    `Hola ${client.name}, le recordamos desde Imprenta El Gráfico que tiene un saldo pendiente. ` +
+                    `Por favor comuníquese con nosotros para regularizar su cuenta. ¡Muchas gracias!`
+                  );
+                %>
+                  <a href="https://wa.me/549<%= tel %>?text=<%= msgDeuda %>"
+                     target="_blank" class="btn btn-success" title="WhatsApp">
+                    📲
+                  </a>
+                <% } %>
+                <form action="/clientes/eliminar/<%= client.id %>" method="POST" class="d-inline"
+                      onsubmit="return confirm('¿Seguro que querés eliminar a <%= client.name %>?')">
+                  <button type="submit" class="btn btn-danger" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </div>
             </td>
           </tr>
+          
+          <!-- Fila expandible con presupuestos -->
+          <% if (client.cant_presupuestos > 0) { %>
+          <tr class="collapse" id="presup-<%= client.id %>">
+            <td colspan="6">
+              <div class="p-3 bg-light">
+                <h6 class="mb-3">Presupuestos Pendientes de <%= client.name %></h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-hover">
+                    <thead class="table-secondary">
+                      <tr>
+                        <th>#</th>
+                        <th>Fecha</th>
+                        <th>Monto</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% client.presupuestos_pendientes.forEach(presup => { %>
+                        <tr>
+                          <td><strong><%= presup.id %></strong></td>
+                          <td><%= new Date(presup.fecha_creacion).toLocaleDateString('es-AR') %></td>
+                          <td>$<%= presup.precio_estimado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                          <td>
+                            <span class="badge bg-<%= presup.estado === 'ACEPTADO' ? 'success' : 'warning' %>">
+                              <%= presup.estado %>
+                            </span>
+                          </td>
+                          <td>
+                            <a href="/presupuestos/<%= presup.id %>" class="btn btn-xs btn-outline-primary">
+                              <i class="bi bi-eye"></i> Ver
+                            </a>
+                            <% if (presup.estado === 'ACEPTADO') { %>
+                              <form action="/presupuestos/<%= presup.id %>/crear-pedido" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-xs btn-outline-success" onclick="return confirm('¿Convertir a pedido?')">
+                                  <i class="bi bi-arrow-right-square"></i> A Pedido
+                                </button>
+                              </form>
+                            <% } %>
+                          </td>
+                        </tr>
+                      <% }); %>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </td>
+          </tr>
+          <% } %>
         <% }) %>
       </tbody>
     </table>
-  <% } else { %>
-    <div class="alert alert-info">No hay clientes aún.</div>
+  </div>
   <% } %>
 </main>
 
-<%- include('../partials/footer') %>
-
 <script>
-function pedirClave(form, nombreCliente) {
-  const clave = prompt(`Introduce la clave para eliminar al cliente "${nombreCliente}":`);
-  if (!clave) {
-    alert('Operación cancelada.');
-    return false;
-  }
-  const inputClave = document.createElement('input');
-  inputClave.type = 'hidden';
-  inputClave.name = 'clave';
-  inputClave.value = clave;
-  form.appendChild(inputClave);
-  return true;
-}
+  document.getElementById('buscarCliente').addEventListener('input', function () {
+    const filtro = this.value.trim().toLowerCase();
+    document.querySelectorAll('#tablaClientes tbody tr').forEach(row => {
+      const nombre = row.querySelector('.col-nombre');
+      if (nombre) {
+        const matches = nombre.textContent.toLowerCase().includes(filtro);
+        // Show/hide the main row and related expandable rows
+        const nextRows = [];
+        let currentRow = row.nextElementSibling;
+        while (currentRow && currentRow.classList.contains('collapse')) {
+          nextRows.push(currentRow);
+          currentRow = currentRow.nextElementSibling;
+        }
+        
+        row.style.display = matches ? '' : 'none';
+        nextRows.forEach(r => r.style.display = matches ? '' : 'none');
+      }
+    });
+  });
 </script>

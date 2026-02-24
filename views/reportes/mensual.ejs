@@ -1,0 +1,139 @@
+<!-- views/reportes/mensual.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-calendar-month"></i> Reporte Mensual - <%= mes %></h1>
+    </div>
+    <div class="col-md-4 text-end">
+      <input type="month" class="form-control" id="selectorMes" value="<%= mes %>">
+    </div>
+  </div>
+
+  <!-- RESUMEN FINANCIERO -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">💰 Ingresos</h6>
+          <h3 class="text-success">$<%= ingresos.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">📤 Egresos</h6>
+          <h3 class="text-danger">$<%= egresos.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">✅ Ganancia</h6>
+          <h3 class="text-primary">$<%= ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">📊 Margen</h6>
+          <h3><%= ingresos > 0 ? (((ganancia / ingresos) * 100).toFixed(2)) : 0 %>%</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTOS POR CATEGORÍA -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">📋 Movimientos por Categoría</h6>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr class="border-bottom">
+                  <th>Categoría</th>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% movimientos.forEach(m => { %>
+                  <tr>
+                    <td><strong><%= m.categoria %></strong></td>
+                    <td>
+                      <% const badgeClass = m.tipo === 'ingreso' ? 'bg-success' : 'bg-danger'; %>
+                      <span class="badge <%= badgeClass %>"><%= m.tipo.toUpperCase() %></span>
+                    </td>
+                    <td><%= m.cantidad %></td>
+                    <td>
+                      <% if (m.tipo === 'ingreso') { %>
+                        <span class="text-success">+$<%= m.total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                      <% } else { %>
+                        <span class="text-danger">-$<%= m.total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PEDIDOS DEL MES -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">📦 Pedidos Completados (<%= totalPedidos %>)</h6>
+          <% if (pedidos && pedidos.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead>
+                  <tr class="border-bottom">
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% pedidos.forEach(p => { %>
+                    <tr>
+                      <td><strong>#<%= p.id %></strong></td>
+                      <td><%= p.cliente_nombre || 'Sin nombre' %></td>
+                      <td>$<%= p.precio.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td><small><%= new Date(p.fecha).toLocaleDateString('es-AR') %></small></td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="alert alert-info mb-0">
+              <i class="bi bi-info-circle"></i> No hay pedidos en este período
+            </div>
+          <% } %>
+          <div class="mt-3">
+            <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-printer"></i> Imprimir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('selectorMes').addEventListener('change', (e) => {
+    window.location.href = '/reportes/mensual?mes=' + e.target.value;
+  });
+</script>

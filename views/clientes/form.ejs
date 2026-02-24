@@ -1,7 +1,15 @@
-<% /* form.ejs */ %>
-
 <div class="row justify-content-center py-4" style="max-width:600px; margin:auto;">
   <h1 class="mb-4 text-center"><%= title %></h1>
+
+  <!-- Mensajes de éxito -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <!-- Mensajes de error -->
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
 
   <form
     action="<%= client.id ? '/clientes/editar/' + client.id : '/clientes/nuevo' %>"
@@ -10,7 +18,7 @@
     novalidate
   >
     <div class="mb-3">
-      <label for="name" class="form-label">Nombre</label>
+      <label for="name" class="form-label">Nombre *</label>
       <input
         type="text"
         id="name"
@@ -34,14 +42,16 @@
     </div>
 
     <div class="mb-3">
-      <label for="phone" class="form-label">Teléfono</label>
+      <label for="phone" class="form-label">Teléfono *</label>
       <input
         type="text"
         id="phone"
         name="phone"
         class="form-control"
+        required
         value="<%= client.phone || '' %>"
       />
+      <div class="invalid-feedback">El teléfono es obligatorio.</div>
     </div>
 
     <div class="mb-3">
@@ -62,10 +72,8 @@
         id="cuit"
         name="cuit"
         class="form-control"
-        required
         value="<%= client.cuit || '' %>"
       />
-      <div class="invalid-feedback">El CUIT es obligatorio.</div>
     </div>
 
     <div class="d-flex justify-content-between">

@@ -1,0 +1,321 @@
+<!-- views/cajaDiaria.ejs - CON DESGLOSE POR MÉTODO -->
+<div class="container py-4">
+  <h1><i class="bi bi-cash-coin"></i> Caja Diaria</h1>
+  <p class="text-muted">Registro de ingresos y egresos del día con desglose por método de pago</p>
+
+  <!-- ALERTAS -->
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <%= Array.isArray(error) ? error.join('<br>') : error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle"></i>
+      <%= Array.isArray(success) ? success.join('<br>') : success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- BOTONES DE ACCIÓN -->
+  <div class="row g-2 mb-4">
+    <div class="col-auto">
+      <button onclick="imprimirCaja()" class="btn btn-primary">
+        <i class="bi bi-printer"></i> 🖨️ Imprimir Caja
+      </button>
+    </div>
+    <div class="col-auto">
+      <button onclick="exportarPDF()" class="btn btn-danger">
+        <i class="bi bi-file-pdf"></i> 📄 Exportar PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN FINANCIERO -->
+  <div class="row g-3 mb-5">
+    <div class="col-md-3">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <h6>Ingresos</h6>
+          <h3>$<%= (totales.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-danger text-white">
+        <div class="card-body text-center">
+          <h6>Egresos</h6>
+          <h3>$<%= (totales.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body text-center">
+          <h6>Saldo</h6>
+          <h3>$<%= (totales.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-info text-white">
+        <div class="card-body text-center">
+          <h6>Movimientos</h6>
+          <h3><%= (movimientos && movimientos.length) || 0 %></h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESGLOSE POR MÉTODO DE PAGO -->
+  <div class="card mb-5">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">💳 Desglose por Método de Pago</h6>
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-3">
+          <p class="text-muted mb-1">💵 Efectivo</p>
+          <h5 class="text-success">$<%= (totales.efectivo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">🏦 Transferencia</p>
+          <h5 class="text-info">$<%= (totales.transferencia || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">💳 Tarjeta</p>
+          <h5 class="text-primary">$<%= (totales.tarjeta || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">📱 QR</p>
+          <h5 class="text-warning">$<%= (totales.qr || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORMULARIO PARA AGREGAR MOVIMIENTO -->
+  <div class="card mb-5">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">➕ Registrar Movimiento</h5>
+    </div>
+    <div class="card-body">
+      <form action="/caja-diaria/agregar" method="POST">
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="ingreso">➕ Ingreso</option>
+              <option value="egreso">➖ Egreso</option>
+            </select>
+          </div>
+          <div class="col-md-5 mb-3">
+            <label class="form-label fw-bold">Concepto *</label>
+            <input type="text" name="concepto" class="form-control" placeholder="Ej: Pago Pedido #123" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">Categoría</label>
+            <select name="categoria" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="Ventas">💰 Ventas</option>
+              <option value="Devoluciones">↩️ Devoluciones</option>
+              <option value="Sueldos">👥 Sueldos</option>
+              <option value="Alquiler">🏠 Alquiler</option>
+              <option value="Servicios">⚙️ Servicios</option>
+              <option value="Otros">📌 Otros</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Monto ($) *</label>
+            <input type="number" name="monto" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+          <div class="col-md-5 mb-3">
+            <label class="form-label fw-bold">Método de Pago *</label>
+            <select name="metodo_pago" class="form-select" required>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="QR">📱 QR</option>
+            </select>
+          </div>
+          <div class="col-md-4 mb-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-check-circle"></i> Registrar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TABLA DE MOVIMIENTOS DEL DÍA -->
+  <div class="card">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">📊 Movimientos de Hoy</h6>
+    </div>
+    <div class="card-body p-0">
+      <% if (movimientos && movimientos.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;">Tipo</th>
+                <th>Concepto</th>
+                <th>Categoría</th>
+                <th style="width: 100px;">Método</th>
+                <th style="width: 120px;">Monto</th>
+                <th>Hora</th>
+                <% if (user && user.rol === 'admin') { %>
+                  <th style="width: 80px;">Acciones</th>
+                <% } %>
+              </tr>
+            </thead>
+            <tbody>
+              <% movimientos.forEach(mov => { %>
+                <tr>
+                  <td>
+                    <% if (mov.tipo === 'ingreso') { %>
+                      <span class="badge bg-success">➕ Ingreso</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">➖ Egreso</span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= mov.concepto %></strong></td>
+                  <td><small class="text-muted"><%= mov.categoria || '-' %></small></td>
+                  <td>
+                    <% if (mov.metodo_pago === 'Efectivo') { %>
+                      💵 Efectivo
+                    <% } else if (mov.metodo_pago === 'Transferencia') { %>
+                      🏦 Transfer.
+                    <% } else if (mov.metodo_pago === 'Tarjeta') { %>
+                      💳 Tarjeta
+                    <% } else if (mov.metodo_pago === 'QR') { %>
+                      📱 QR
+                    <% } else { %>
+                      <%= mov.metodo_pago || '-' %>
+                    <% } %>
+                  </td>
+                  <td class="fw-bold">
+                    <% if (mov.tipo === 'ingreso') { %>
+                      <span class="text-success">+$<%= (mov.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                    <% } else { %>
+                      <span class="text-danger">-$<%= (mov.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      <% if (mov.fecha) { %>
+                        <%= new Date(mov.fecha).toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'}) %>
+                      <% } %>
+                    </small>
+                  </td>
+                  <% if (user && user.rol === 'admin') { %>
+                    <td>
+                      <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
+                            onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">🗑️</button>
+                      </form>
+                    </td>
+                  <% } %>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info m-3 mb-0">
+          <i class="bi bi-info-circle"></i> No hay movimientos registrados para hoy.
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+function imprimirCaja() {
+  const hoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Obtener datos de la página
+  const ingresos = document.querySelector('[class*="bg-success"] h3').textContent;
+  const egresos = document.querySelector('[class*="bg-danger"] h3').textContent;
+  const saldo = document.querySelector('[class*="bg-primary"] h3').textContent;
+  const tabla = document.querySelector('.table-responsive table').outerHTML;
+
+  const html = `
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { margin: 0; }
+          .header p { margin: 5px 0; color: #666; }
+          .resumen { display: flex; justify-content: space-around; margin: 30px 0; }
+          .resumen-item { text-align: center; }
+          .resumen-item h3 { font-size: 24px; margin: 10px 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+          th { background-color: #f0f0f0; font-weight: bold; }
+          .badge { padding: 5px 10px; border-radius: 3px; }
+          .success { background: #28a745; color: white; }
+          .danger { background: #dc3545; color: white; }
+          .footer { margin-top: 30px; text-align: center; color: #999; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>📊 Caja Diaria</h1>
+          <p>Imprenta El Gráfico - El Gráfico de Orán, Salta</p>
+          <p><strong>${hoy}</strong></p>
+        </div>
+
+        <div class="resumen">
+          <div class="resumen-item">
+            <p>Ingresos</p>
+            <h3>${ingresos}</h3>
+          </div>
+          <div class="resumen-item">
+            <p>Egresos</p>
+            <h3>${egresos}</h3>
+          </div>
+          <div class="resumen-item">
+            <p>Saldo</p>
+            <h3>${saldo}</h3>
+          </div>
+        </div>
+
+        ${tabla}
+
+        <div class="footer">
+          <p>Documento impreso: ${new Date().toLocaleString('es-AR')}</p>
+          <p>Imprenta El Gráfico • 3878 22-4908</p>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '', 'width=900,height=600');
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
+}
+
+function exportarPDF() {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const downloadUrl = `/reportes/caja/pdf/${hoy}`;
+
+  // Descargar PDF directamente desde el servidor
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = `Caja-Diaria-${hoy}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+</script>

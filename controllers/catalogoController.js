@@ -1,90 +1,141 @@
-const db = require('../database'); // ✅ ESTA ES LA CORRECTA
+// controllers/catalogoController.js - ACTUALIZADO CON BÚSQUEDA POR CÓDIGO
 
-// Mostrar la lista de productos del catálogo
-exports.listarCatalogo = (req, res) => {
-  try {
-    const stmt = db.prepare('SELECT * FROM catalogo_productos ORDER BY nombre ASC');
-    const productos = stmt.all();
+module.exports = (db) => {
 
-    console.log('🧾 Productos en catálogo:', productos);
-    console.log('Tipo de datos productos:', typeof productos);
-    console.log('¿Es array?', Array.isArray(productos));
+    const listarCatalogo = async (req, res) => {
+        try {
+            const query = req.query.q?.trim().toLowerCase() || '';
+            let productos;
+            
+            if (query) {
+                // Búsqueda por nombre o código
+                productos = await db.all(
+                    'SELECT * FROM catalogo_productos WHERE LOWER(nombre) LIKE ? OR LOWER(codigo) LIKE ? ORDER BY nombre ASC',
+                    [`%${query}%`, `%${query}%`]
+                );
+            } else {
+                productos = await db.all(
+                    'SELECT * FROM catalogo_productos ORDER BY nombre ASC'
+                );
+            }
+            
+            res.render('catalogo/lista', {
+                title: 'Catálogo de Productos',
+                productos: Array.isArray(productos) ? productos : [],
+                busqueda: query,
+                success: req.flash('success'),
+                error: req.flash('error')
+            });
+        } catch (err) {
+            console.error('Error cargando catálogo:', err.message);
+            res.render('catalogo/lista', {
+                title: 'Catálogo de Productos',
+                productos: [],
+                busqueda: '',
+                error: 'Error al cargar productos del catálogo.'
+            });
+        }
+    };
 
-    res.render('catalogo/lista', {
-      title: 'Catálogo de Productos',
-      productos: Array.isArray(productos) ? productos : []
-    });
+    const formNuevo = (req, res) => {
+        res.render('catalogo/nuevo', { title: 'Nuevo Producto del Catálogo' });
+    };
 
-  } catch (err) {
-    console.error('❌ Error cargando productos del catálogo:', err.message);
-    res.render('catalogo/lista', {
-      title: 'Catálogo de Productos',
-      productos: [],
-      error: 'Error al cargar productos del catálogo.'
-    });
-  }
-};
+    const crearProducto = async (req, res) => {
+        const { codigo, nombre, tipo, precio_base, minimo } = req.body;
+        try {
+            if (!nombre || !tipo) {
+                req.flash('error', 'Nombre y tipo son requeridos');
+                return res.redirect('/catalogo/nuevo');
+            }
+            
+            await db.run(
+                'INSERT INTO catalogo_productos (codigo, nombre, tipo, precio_base, minimo) VALUES (?, ?, ?, ?, ?)',
+                codigo || null, 
+                nombre.trim(), 
+                tipo, 
+                parseFloat(precio_base) || 0, 
+                parseInt(minimo) || 1
+            );
+            req.flash('success', 'Producto creado correctamente');
+            res.redirect('/catalogo');
+        } catch (err) {
+            console.error('Error al insertar producto:', err);
+            req.flash('error', 'Error al guardar el producto: ' + err.message);
+            res.redirect('/catalogo/nuevo');
+        }
+    };
 
-// Mostrar el formulario para agregar un producto nuevo
-exports.formNuevo = (req, res) => {
-  res.render('catalogo/nuevo', {
-    title: 'Nuevo Producto del Catálogo'
-  });
-};
+    const formEditar = async (req, res) => {
+        try {
+            const producto = await db.get(
+                'SELECT * FROM catalogo_productos WHERE id = ?', 
+                parseInt(req.params.id)
+            );
+            if (!producto) {
+                req.flash('error', 'Producto no encontrado');
+                return res.redirect('/catalogo');
+            }
+            res.render('catalogo/editar', { 
+                title: 'Editar Producto', 
+                producto,
+                success: req.flash('success'),
+                error: req.flash('error')
+            });
+        } catch (err) {
+            console.error('Error al cargar producto:', err);
+            req.flash('error', 'Error al cargar el producto');
+            res.redirect('/catalogo');
+        }
+    };
 
-// Guardar el nuevo producto en la base
-exports.crearProducto = (req, res) => {
-  const { nombre, tipo, precio_base, minimo } = req.body;
+    const actualizarProducto = async (req, res) => {
+        const { codigo, nombre, tipo, precio_base, minimo } = req.body;
+        const id = parseInt(req.params.id);
+        
+        try {
+            if (!nombre || !tipo) {
+                req.flash('error', 'Nombre y tipo son requeridos');
+                return res.redirect(`/catalogo/editar/${id}`);
+            }
+            
+            await db.run(
+                'UPDATE catalogo_productos SET codigo = ?, nombre = ?, tipo = ?, precio_base = ?, minimo = ? WHERE id = ?',
+                codigo || null,
+                nombre.trim(), 
+                tipo, 
+                parseFloat(precio_base) || 0, 
+                parseInt(minimo) || 1, 
+                id
+            );
+            req.flash('success', 'Producto actualizado correctamente');
+            res.redirect('/catalogo');
+        } catch (err) {
+            console.error('Error al actualizar producto:', err);
+            req.flash('error', 'Error al actualizar: ' + err.message);
+            res.redirect(`/catalogo/editar/${id}`);
+        }
+    };
 
-  console.log('📥 Datos recibidos del formulario:', req.body);
+    const eliminarProducto = async (req, res) => {
+        try {
+            const id = parseInt(req.params.id);
+            await db.run('DELETE FROM catalogo_productos WHERE id = ?', id);
+            req.flash('success', 'Producto eliminado correctamente');
+            res.redirect('/catalogo');
+        } catch (err) {
+            console.error('Error al eliminar producto:', err.message);
+            req.flash('error', 'Error al eliminar producto: ' + err.message);
+            res.redirect('/catalogo');
+        }
+    };
 
-  try {
-    db.prepare(`
-      INSERT INTO catalogo_productos (nombre, tipo, precio_base, minimo)
-      VALUES (?, ?, ?, ?)
-    `).run(nombre, tipo, precio_base, minimo || 1);
-
-    console.log('✅ Producto insertado correctamente');
-    res.redirect('/catalogo');
-  } catch (err) {
-    console.error('❌ Error al insertar producto:', err);
-    res.status(500).send('Error al guardar el producto en la base de datos.');
-  }
-};
-// Mostrar formulario para editar un producto
-exports.formEditar = (req, res) => {
-  const producto = db.prepare('SELECT * FROM catalogo_productos WHERE id = ?').get(req.params.id);
-  if (!producto) return res.status(404).send('Producto no encontrado');
-
-  res.render('catalogo/editar', {
-    title: 'Editar Producto',
-    producto
-  });
-};
-
-// Guardar cambios de edición
-exports.actualizarProducto = (req, res) => {
-  const { nombre, tipo, precio_base, minimo } = req.body;
-  const id = req.params.id;
-
-  db.prepare(`
-    UPDATE catalogo_productos
-    SET nombre = ?, tipo = ?, precio_base = ?, minimo = ?
-    WHERE id = ?
-  `).run(nombre, tipo, precio_base, minimo || 1, id);
-
-  res.redirect('/catalogo');
-};
-// Eliminar producto del catálogo
-exports.eliminarProducto = (req, res) => {
-  const id = req.params.id;
-
-  try {
-    db.prepare('DELETE FROM catalogo_productos WHERE id = ?').run(id);
-    console.log(`🗑️ Producto ID ${id} eliminado del catálogo`);
-    res.redirect('/catalogo');
-  } catch (err) {
-    console.error('❌ Error al eliminar producto:', err.message);
-    res.status(500).send('Error al eliminar producto');
-  }
+    return {
+        listarCatalogo,
+        formNuevo,
+        crearProducto,
+        formEditar,
+        actualizarProducto,
+        eliminarProducto
+    };
 };

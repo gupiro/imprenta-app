@@ -1,196 +1,251 @@
-const db = require('../config/db');
+// controllers/presupuestosController.js
 
-exports.formNuevoPresupuesto = (req, res) => {
-  let productos = [];
-  try {
-    productos = db.prepare('SELECT * FROM catalogo_productos ORDER BY nombre ASC').all();
-    if (!Array.isArray(productos)) productos = [];
-    console.log("✅ Productos cargados para presupuesto interno:", productos);
-  } catch (err) {
-    console.error('❌ Error cargando productos para presupuesto:', err);
-    productos = [];
-  }
+module.exports = (db) => {
 
-  res.render('presupuestos/nuevo', {
-    title: 'Nuevo Presupuesto (Interno)',
-    productos
-  });
-};
+    const formNuevoPresupuesto = async (req, res) => {
+        let productos = [];
+        let clientes = [];
+        try {
+            productos = await db.all('SELECT * FROM catalogo_productos ORDER BY nombre ASC');
+            if (!Array.isArray(productos)) productos = [];
+            clientes = await db.all('SELECT id, name, phone, email FROM clients ORDER BY name ASC');
+            if (!Array.isArray(clientes)) clientes = [];
+        } catch (err) {
+            console.error('❌ Error cargando datos para presupuesto:', err);
+        }
 
-// Crear presupuesto interno
-exports.crearPresupuesto = (req, res) => {
-  const {
-    cliente_id,
-    nombre_cliente,
-    email_cliente,
-    telefono_cliente,
-    detalle,
-    precio_estimado,
-    producto_id,
-    ancho,
-    alto,
-    cantidad
-  } = req.body;
+        res.render('presupuestos/nuevo', {
+            title: 'Nuevo Presupuesto',
+            productos,
+            clientes,
+            error: req.flash('error'),
+            success: req.flash('success')
+        });
+    };
 
-  const archivo_imagen = req.file ? req.file.filename : null;
+    // ✅ NUEVA FUNCIÓN: Crear presupuesto con múltiples items
+    const crearPresupuesto = async (req, res) => {
+        try {
+            const {
+                cliente_id,
+                nombre_cliente,
+                email_cliente,
+                telefono_cliente,
+                archivo_imagen,
+                descripcion = [],
+                producto_id = [],
+                cantidad = [],
+                precio_unitario = [],
+                descuento_item = []
+            } = req.body;
 
-  const producto = producto_id ? db.prepare('SELECT * FROM catalogo_productos WHERE id = ?').get(producto_id) : null;
+            // Validar datos del cliente
+            let nombreFinal = nombre_cliente;
+            let emailFinal = email_cliente;
+            let telefonoFinal = telefono_cliente;
+            let clienteIdFinal = cliente_id ? parseInt(cliente_id, 10) : null;
 
-  let precio_final = parseFloat(precio_estimado) || 0;
-  if (producto) {
-    const base = producto.precio_base;
-    const min = producto.minimo || 1;
+            if (clienteIdFinal) {
+                const cl = await db.get('SELECT id, name, phone, email FROM clients WHERE id = ?', clienteIdFinal);
+                if (cl) {
+                    nombreFinal = nombreFinal || cl.name;
+                    telefonoFinal = telefonoFinal || cl.phone;
+                    emailFinal = emailFinal || cl.email;
+                }
+            }
 
-    if (producto.tipo === 'metro_cuadrado') {
-      const m2 = Math.max((parseFloat(ancho) || 0) * (parseFloat(alto) || 0), min);
-      precio_final = base * m2;
-    } else if (producto.tipo === 'unidad' || producto.tipo === 'hoja') {
-      const cant = Math.max(parseInt(cantidad) || 0, min);
-      precio_final = base * cant;
-    }
-  }
+            if (!nombreFinal || !telefonoFinal) {
+                req.flash('error', 'Nombre y teléfono del cliente son requeridos.');
+                return res.redirect('/presupuestos/nuevo');
+            }
 
-  const stmt = `
-    INSERT INTO presupuestos
-    (cliente_id, nombre_cliente, email_cliente, telefono_cliente, detalle, precio_estimado, archivo_imagen, producto_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+            // Validar que haya al menos un item
+            const descripciones = Array.isArray(descripcion) ? descripcion : [descripcion];
+            if (descripciones.length === 0 || !descripciones[0]) {
+                req.flash('error', 'Debes agregar al menos un item.');
+                return res.redirect('/presupuestos/nuevo');
+            }
 
-  db.run(stmt, [
-    cliente_id || null,
-    nombre_cliente,
-    email_cliente,
-    telefono_cliente,
-    detalle,
-    precio_final,
-    archivo_imagen,
-    producto ? producto.id : null
-  ], function(err) {
-    if (err) return res.status(500).send("Error en base de datos");
-    res.redirect('/presupuestos/' + this.lastID);
-  });
-};
+            // Calcular total
+            let totalPresupuesto = 0;
+            const cantidades = Array.isArray(cantidad) ? cantidad : [cantidad];
+            const preciosUnit = Array.isArray(precio_unitario) ? precio_unitario : [precio_unitario];
+            const descuentos = Array.isArray(descuento_item) ? descuento_item : [descuento_item];
 
-// Listar presupuestos
-exports.listarPresupuestos = (req, res) => {
-  try {
-    const query = `
-      SELECT p.*, c.nombre AS producto_nombre
-      FROM presupuestos p
-      LEFT JOIN catalogo_productos c ON p.producto_id = c.id
-      ORDER BY p.id DESC
-    `;
-    const presupuestos = db.prepare(query).all() || [];
-    res.render('presupuestos/lista', {
-      title: 'Listado de Presupuestos',
-      presupuestos: Array.isArray(presupuestos) ? presupuestos : []
-    });
-  } catch (err) {
-    console.error('Error al listar presupuestos:', err);
-    res.render('presupuestos/lista', {
-      title: 'Listado de Presupuestos',
-      presupuestos: [],
-      error: 'Hubo un error al cargar los presupuestos.'
-    });
-  }
-};
+            for (let i = 0; i < descripciones.length; i++) {
+                if (descripciones[i]) {
+                    const cant = parseFloat(cantidades[i]) || 0;
+                    const precio = parseFloat(preciosUnit[i]) || 0;
+                    const desc = parseFloat(descuentos[i]) || 0;
+                    totalPresupuesto += (cant * precio) - desc;
+                }
+            }
 
-// Ver detalle de un presupuesto
-exports.verDetallePresupuesto = (req, res) => {
-  const id = req.params.id;
-  db.get('SELECT * FROM presupuestos WHERE id = ?', [id], (err, presupuesto) => {
-    if (err || !presupuesto) return res.status(404).send("Presupuesto no encontrado");
-    res.render('presupuestos/detalle', { title: 'Detalle del Presupuesto', presupuesto });
-  });
-};
+            // Crear presupuesto
+            const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const presupuestoResult = await db.run(`
+                INSERT INTO presupuestos (
+                    cliente_id, nombre_cliente, email_cliente, telefono_cliente,
+                    precio_estimado, estado, fecha_creacion
+                ) VALUES (?, ?, ?, ?, ?, 'PENDIENTE', ?)
+            `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, fecha);
 
-// Formulario público
-exports.formPresupuestoPublico = (req, res) => {
-  let productos = [];
-  try {
-    productos = db.prepare('SELECT * FROM catalogo_productos ORDER BY nombre ASC').all();
-    if (!Array.isArray(productos)) productos = [];
-  } catch (err) {
-    console.error('Error al cargar productos del catálogo:', err);
-    productos = [];
-  }
+            const presupuestoId = presupuestoResult.lastID;
 
-  res.render('presupuestos/publico', {
-    title: 'Solicitá tu Presupuesto',
-    productos,
-    mensaje: null
-  });
-};
+            // Crear items
+            for (let i = 0; i < descripciones.length; i++) {
+                if (descripciones[i]) {
+                    const cant = parseFloat(cantidades[i]) || 1;
+                    const precio = parseFloat(preciosUnit[i]) || 0;
+                    const desc = parseFloat(descuentos[i]) || 0;
+                    const subtotal = (cant * precio) - desc;
+                    const prodId = parseInt(producto_id[i]) || null;
 
-// Procesar presupuesto público corregido
-exports.recibirPresupuestoPublico = (req, res) => {
-  const {
-    nombre_cliente,
-    email_cliente,
-    telefono_cliente,
-    detalle,
-    producto_id,
-    ancho,
-    alto,
-    cantidad
-  } = req.body;
+                    await db.run(`
+                        INSERT INTO presupuesto_items (
+                            presupuesto_id, producto_id, descripcion, cantidad,
+                            precio_unitario, descuento_item, subtotal
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, presupuestoId, prodId, descripciones[i], cant, precio, desc, subtotal);
+                }
+            }
 
-  const archivo_imagen = req.file ? req.file.filename : null;
+            req.flash('success', 'Presupuesto creado correctamente.');
+            res.redirect('/presupuestos/' + presupuestoId);
+        } catch (err) {
+            console.error('Error al crear presupuesto:', err);
+            req.flash('error', 'Error al crear presupuesto: ' + err.message);
+            res.redirect('/presupuestos/nuevo');
+        }
+    };
 
-  const producto = db.prepare('SELECT * FROM catalogo_productos WHERE id = ?').get(producto_id);
-  if (!producto) {
-    return res.status(400).send("Producto no válido.");
-  }
+    const listarPresupuestos = async (req, res) => {
+        try {
+            const filtroNombre = req.query.nombre?.trim() || '';
+            const filtroFecha = req.query.fecha?.trim() || '';
+            const filtroBusqueda = req.query.busqueda?.trim() || '';
+            
+            let query = 'SELECT p.* FROM presupuestos p WHERE 1=1';
+            const params = [];
+            
+            if (filtroNombre) {
+                query += ' AND LOWER(p.nombre_cliente) LIKE ?';
+                params.push(`%${filtroNombre.toLowerCase()}%`);
+            }
+            
+            if (filtroFecha) {
+                query += ' AND DATE(p.fecha_creacion) = ?';
+                params.push(filtroFecha);
+            }
+            
+            if (filtroBusqueda) {
+                query += ' AND (LOWER(p.nombre_cliente) LIKE ? OR LOWER(p.email_cliente) LIKE ?)';
+                params.push(`%${filtroBusqueda.toLowerCase()}%`);
+                params.push(`%${filtroBusqueda.toLowerCase()}%`);
+            }
+            
+            query += ' ORDER BY p.id DESC';
+            
+            const presupuestos = await db.all(query, params) || [];
+            
+            res.render('presupuestos/lista', {
+                title: 'Listado de Presupuestos',
+                presupuestos: Array.isArray(presupuestos) ? presupuestos : [],
+                filtros: { nombre: filtroNombre, fecha: filtroFecha, busqueda: filtroBusqueda }
+            });
+        } catch (err) {
+            console.error('Error al listar presupuestos:', err);
+            res.render('presupuestos/lista', {
+                title: 'Listado de Presupuestos',
+                presupuestos: [],
+                filtros: {},
+                error: 'Hubo un error al cargar los presupuestos.'
+            });
+        }
+    };
 
-  let precio_estimado = 0;
-  const base = producto.precio_base;
-  const min = producto.minimo || 1;
+    const verDetallePresupuesto = async (req, res) => {
+        const id = req.params.id;
+        try {
+            const presupuesto = await db.get('SELECT * FROM presupuestos WHERE id = ?', id);
+            if (!presupuesto) {
+                return res.status(404).send('Presupuesto no encontrado');
+            }
 
-  if (producto.tipo === 'metro_cuadrado') {
-    const m2 = Math.max((parseFloat(ancho) || 0) * (parseFloat(alto) || 0), min);
-    precio_estimado = base * m2;
-  } else if (producto.tipo === 'unidad' || producto.tipo === 'hoja') {
-    const cant = Math.max(parseInt(cantidad) || 0, min);
-    precio_estimado = base * cant;
-  }
+            // Cargar items
+            const items = await db.all('SELECT * FROM presupuesto_items WHERE presupuesto_id = ?', id);
 
-  const stmt = `
-    INSERT INTO presupuestos
-    (nombre_cliente, email_cliente, telefono_cliente, detalle, archivo_imagen, producto_id, precio_estimado)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `;
+            res.render('presupuestos/detalle', {
+                title: `Detalle del Presupuesto #${id}`,
+                presupuesto,
+                items: items || [],
+                error: req.flash('error'),
+                success: req.flash('success')
+            });
+        } catch (err) {
+            console.error('Error al ver detalle:', err);
+            res.status(500).send('Error interno del servidor.');
+        }
+    };
 
-  db.run(
-    stmt,
-    [
-      nombre_cliente,
-      email_cliente,
-      telefono_cliente,
-      detalle,
-      archivo_imagen,
-      producto.id,
-      precio_estimado
-    ],
-    function (err) {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Error en base de datos");
-      }
+    const formPresupuestoPublico = async (req, res) => {
+        let productos = [];
+        try {
+            productos = await db.all('SELECT * FROM catalogo_productos WHERE publico = 1 ORDER BY nombre ASC');
+            if (!Array.isArray(productos)) {
+                productos = await db.all('SELECT * FROM catalogo_productos ORDER BY nombre ASC');
+            }
+        } catch (err) {
+            console.error('Error al cargar productos públicos:', err);
+            productos = [];
+        }
 
-      // 🔄 Recargar productos para mostrar el formulario otra vez correctamente
-      let productos = [];
-      try {
-        productos = db.prepare('SELECT * FROM catalogo_productos ORDER BY nombre ASC').all();
-      } catch (e) {
-        console.error("Error al recargar productos luego del insert:", e.message);
-        productos = [];
-      }
+        res.render('presupuestos/publico', {
+            title: 'Solicitá tu Presupuesto',
+            productos,
+            mensaje: null
+        });
+    };
 
-      res.render('presupuestos/publico', {
-        title: 'Presupuesto Enviado',
-        mensaje: '✅ Tu presupuesto fue enviado correctamente. ¡Te contactaremos pronto!',
-        productos
-      });
-    }
-  );
+    const recibirPresupuestoPublico = async (req, res) => {
+        const { nombre_cliente, email_cliente, telefono_cliente, detalle, producto_id } = req.body;
+
+        try {
+            const producto = await db.get('SELECT * FROM catalogo_productos WHERE id = ?', producto_id);
+            if (!producto) {
+                return res.status(400).send('Producto no válido.');
+            }
+
+            const precio_estimado = producto.precio_base || 0;
+            const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+            await db.run(`
+                INSERT INTO presupuestos (
+                    nombre_cliente, email_cliente, telefono_cliente, detalle,
+                    producto_id, precio_estimado, estado, fecha_creacion
+                ) VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', ?)
+            `, nombre_cliente, email_cliente, telefono_cliente, detalle, producto_id, precio_estimado, fecha);
+
+            let productos = await db.all('SELECT * FROM catalogo_productos WHERE publico = 1 ORDER BY nombre ASC');
+            if (!Array.isArray(productos)) productos = [];
+
+            res.render('presupuestos/publico', {
+                title: 'Presupuesto Enviado',
+                mensaje: '✅ Tu presupuesto fue enviado correctamente. ¡Te contactaremos pronto!',
+                productos
+            });
+        } catch (err) {
+            console.error('Error:', err);
+            res.status(500).send('Error al recibir presupuesto');
+        }
+    };
+
+    return {
+        formNuevoPresupuesto,
+        crearPresupuesto,
+        listarPresupuestos,
+        verDetallePresupuesto,
+        formPresupuestoPublico,
+        recibirPresupuestoPublico
+    };
 };

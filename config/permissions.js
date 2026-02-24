@@ -1,16 +1,34 @@
 // config/permissions.js
-module.exports = {
-    Admin: [
-      'clientes.view','clientes.create','clientes.edit','clientes.delete',
-      'pedidos.view','pedidos.create','pedidos.edit','pedidos.delete',
-      'usuarios.view','usuarios.create','usuarios.edit','usuarios.delete'
-    ],
-    Atención: [
-      'clientes.view','clientes.create','clientes.edit',
-      'pedidos.view','pedidos.create','pedidos.edit'
-    ],
-    Impresor: [
-      'pedidos.view','pedidos.edit'
-    ]
-  };
-  
+
+const rolePermissions = {
+  admin: [
+    '*', // Todos los permisos
+    'crear_pedido',
+    'editar_pedido',
+    'eliminar_pedido',
+    'crear_presupuesto',
+    'editar_presupuesto',
+    'eliminar_presupuesto',
+    'gestionar_clientes',
+    'gestionar_usuarios',
+    'gestionar_stock',
+    'ver_reportes',
+    'gestionar_caja'
+  ],
+  vendedor: [
+    'crear_pedido',
+    'editar_pedido',
+    'crear_presupuesto',
+    'editar_presupuesto',
+    'gestionar_clientes',
+    'ver_reportes'
+  ],
+  operador: [
+    'ver_pedidos',
+    'editar_pedido',
+    'ver_catalogo',
+    'crear_pedido'
+  ]
+};
+
+module.exports = rolePermissions;

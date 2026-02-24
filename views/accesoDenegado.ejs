@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/style.css"> <style>
+        /* Estilos básicos para la página de acceso denegado */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container-denegado {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        .container-denegado h1 {
+            color: #dc3545; /* Rojo para indicar error */
+            margin-bottom: 20px;
+        }
+        .container-denegado p {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        .container-denegado a {
+            background-color: #007bff; /* Azul para el botón */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+        .container-denegado a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-denegado">
+        <h1><%= title %></h1>
+        <p>No tienes los permisos necesarios para acceder a esta página.</p>
+        <a href="/">Volver al Inicio</a>
+    </div>
+</body>
+</html>

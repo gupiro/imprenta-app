@@ -1,29 +1,160 @@
-<%- include('../partials/header', { title }) %>
+<!-- views/presupuestos/detalle.ejs - SIMPLIFICADO SIN SECCIONES INNECESARIAS -->
+<style>
+  @media print {
+    .no-print { display: none !important; }
+    body { font-size: 12pt; }
+  }
+</style>
 
-<main class="container py-4">
-  <h2>Detalle del Presupuesto #<%= presupuesto.id %></h2>
+<% if (typeof error !== 'undefined' && error && error.length) { %>
+  <div class="alert alert-danger no-print alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle"></i>
+    <%= Array.isArray(error) ? error.join('<br>') : error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if (typeof success !== 'undefined' && success && success.length) { %>
+  <div class="alert alert-success no-print alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle"></i>
+    <%= Array.isArray(success) ? success.join('<br>') : success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
-  <ul class="list-group">
-    <li class="list-group-item"><strong>Cliente:</strong> <%= presupuesto.nombre_cliente %></li>
-    <li class="list-group-item"><strong>Email:</strong> <%= presupuesto.email_cliente %></li>
-    <li class="list-group-item"><strong>Teléfono:</strong> <%= presupuesto.telefono_cliente || 'No proporcionado' %></li>
-    <li class="list-group-item"><strong>Fecha creación:</strong> <%= presupuesto.fecha_creacion %></li>
-    <li class="list-group-item"><strong>Estado:</strong> <%= presupuesto.estado %></li>
-    <li class="list-group-item"><strong>Precio Estimado:</strong> € <%= presupuesto.precio_estimado || 'Por definir' %></li>
-    <li class="list-group-item"><strong>Detalle:</strong> <%= presupuesto.detalle %></li>
-    <% if(presupuesto.archivo_imagen){ %>
-      <li class="list-group-item">
-        <strong>Archivo adjunto:</strong><br>
-        <img src="/uploads/<%= presupuesto.archivo_imagen %>" class="img-fluid mt-2" alt="Adjunto">
-      </li>
+<!-- MEMBRETE PROFESIONAL -->
+<div class="text-center mb-4" style="border-bottom: 2px solid #333; padding-bottom: 1.5rem;">
+  <h2 class="fw-bold mb-1">Imprenta El Gráfico</h2>
+  <p class="text-muted mb-0">San Ramón de la Nueva Orán, Salta</p>
+  <p class="small text-muted mb-3">Tel: (387) 000-0000</p>
+  <h4 class="text-uppercase fw-bold">PRESUPUESTO N° <%= presupuesto.id %></h4>
+  <p class="small text-muted">Fecha: <%= presupuesto.fecha_creacion ? new Date(presupuesto.fecha_creacion).toLocaleDateString('es-AR') : new Date().toLocaleDateString('es-AR') %></p>
+</div>
+
+<!-- BOTONES DE ACCIÓN (sin imprimir) -->
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+  <h4>Detalle del Presupuesto</h4>
+  <div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+      🖨️ Imprimir / PDF
+    </button>
+    <% if (presupuesto.telefono_cliente) {
+      const tel = presupuesto.telefono_cliente.replace(/\D/g,'');
+      const precio = presupuesto.precio_estimado ? '$' + Math.round(presupuesto.precio_estimado) : 'a definir';
+      const msg = encodeURIComponent(
+        `Hola ${presupuesto.nombre_cliente}, le enviamos el presupuesto:\n\n` +
+        `💰 *Precio:* ${precio}\n` +
+        `Para confirmar, responda este mensaje. ¡Gracias!`
+      );
+    %>
+      <a href="https://wa.me/549<%= tel %>?text=<%= msg %>" target="_blank" class="btn btn-success btn-sm">
+        📲 WhatsApp
+      </a>
     <% } %>
-  </ul>
+  </div>
+</div>
 
-  <a href="/presupuestos" class="btn btn-secondary mt-3">← Volver al listado</a>
-</main>
+<!-- INFORMACIÓN PRINCIPAL -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <p><strong>Cliente:</strong><br><%= presupuesto.nombre_cliente %></p>
+        <% if (presupuesto.email_cliente) { %>
+          <p><strong>Email:</strong> <%= presupuesto.email_cliente %></p>
+        <% } %>
+        <% if (presupuesto.telefono_cliente) { %>
+          <p><strong>Teléfono:</strong> <%= presupuesto.telefono_cliente %></p>
+        <% } %>
+      </div>
+      <div class="col-md-6 text-end">
+        <form action="/presupuestos/<%= presupuesto.id %>/cambiar-estado" method="POST" class="mb-3">
+          <label class="form-label fw-bold">Estado:</label>
+          <div class="d-flex gap-2">
+            <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+              <option value="PENDIENTE" <% if (presupuesto.estado === 'PENDIENTE') { %>selected<% } %>>📋 PENDIENTE</option>
+              <option value="ACEPTADO" <% if (presupuesto.estado === 'ACEPTADO') { %>selected<% } %>>✅ ACEPTADO</option>
+              <option value="RECHAZADO" <% if (presupuesto.estado === 'RECHAZADO') { %>selected<% } %>>❌ RECHAZADO</option>
+              <option value="CONVERTIDO" <% if (presupuesto.estado === 'CONVERTIDO') { %>selected<% } %>>🎯 CONVERTIDO</option>
+            </select>
+          </div>
+        </form>
+        <% if (presupuesto.usado) { %>
+          <p><span class="badge bg-success">✔ Pedido creado</span></p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
 
-<a href="/presupuestos/<%= presupuesto.id %>/crear-pedido" class="btn btn-outline-primary">
-  🧾 Crear pedido desde este presupuesto
-</a>
+<!-- ITEMS DEL PRESUPUESTO -->
+<% if (items && items.length > 0) { %>
+  <div class="card mb-4">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">📦 Ítems del Presupuesto</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Descripción</th>
+              <th style="width: 80px;">Cantidad</th>
+              <th style="width: 100px;">P.Unitario</th>
+              <th style="width: 80px;">Descuento</th>
+              <th style="width: 100px;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% items.forEach(item => { %>
+            <tr>
+              <td><%= item.descripcion %></td>
+              <td class="text-center"><%= parseFloat(item.cantidad).toFixed(2) %></td>
+              <td class="text-end">$<%= (item.precio_unitario || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+              <td class="text-end">$<%= (item.descuento_item || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+              <td class="text-end"><strong>$<%= (item.subtotal || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+<% } %>
 
-<%- include('../partials/footer') %>
+<!-- TOTAL Y TÉRMINOS -->
+<div class="card mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6"></div>
+      <div class="col-md-6 text-end">
+        <h5>Precio Estimado:</h5>
+        <h3 class="text-success">$<%= presupuesto.precio_estimado ? Math.round(presupuesto.precio_estimado).toLocaleString('es-AR') : '0.00' %></h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TÉRMINOS Y CONDICIONES -->
+<div class="text-muted small" style="border-top: 1px solid #ddd; padding-top: 1rem;">
+  <p class="mb-1"><strong>⏰ Validez:</strong> Este presupuesto tiene validez de 7 días.</p>
+  <p class="mb-1"><strong>💰 Señal:</strong> Se requiere señal del 50% para confirmar el trabajo.</p>
+  <p><strong>📝 Nota:</strong> Los precios pueden variar según disponibilidad de materiales.</p>
+</div>
+
+<!-- BOTONES DE ACCIÓN (sin imprimir) -->
+<div class="d-flex gap-2 no-print flex-wrap mt-4">
+  <a href="/presupuestos" class="btn btn-secondary">← Volver</a>
+  <% if (!presupuesto.usado) { %>
+    <a href="/presupuestos/<%= presupuesto.id %>/editar" class="btn btn-warning">
+      ✏️ Editar
+    </a>
+    <form action="/presupuestos/<%= presupuesto.id %>/crear-pedido" method="POST" class="d-inline">
+      <button type="submit" class="btn btn-primary" onclick="return confirm('¿Crear pedido desde este presupuesto?');">
+        ✅ Crear Pedido
+      </button>
+    </form>
+  <% } %>
+  <form action="/presupuestos/<%= presupuesto.id %>/eliminar" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este presupuesto?');">
+    <button type="submit" class="btn btn-outline-danger">🗑️ Eliminar</button>
+  </form>
+</div>

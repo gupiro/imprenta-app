@@ -1,0 +1,80 @@
+<!-- views/stock/nuevo-movimiento.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-plus-circle"></i> Registrar Movimiento</h1>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <form method="POST" action="/stock/nuevo-movimiento">
+            <div class="mb-3">
+              <label class="form-label">Producto <span class="text-danger">*</span></label>
+              <select name="producto_id" class="form-control" required id="selectProducto">
+                <option value="">Seleccionar producto...</option>
+                <% productos.forEach(p => { %>
+                  <option value="<%= p.id %>"><%= p.nombre %> (<%= p.unidad %>)</option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Tipo de Movimiento <span class="text-danger">*</span></label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="tipo" id="tipoEntrada" value="entrada" required>
+                <label class="btn btn-outline-success" for="tipoEntrada">
+                  <i class="bi bi-arrow-down-left"></i> Entrada
+                </label>
+                
+                <input type="radio" class="btn-check" name="tipo" id="tipoSalida" value="salida">
+                <label class="btn btn-outline-danger" for="tipoSalida">
+                  <i class="bi bi-arrow-up-right"></i> Salida
+                </label>
+                
+                <input type="radio" class="btn-check" name="tipo" id="tipoAjuste" value="ajuste">
+                <label class="btn btn-outline-warning" for="tipoAjuste">
+                  <i class="bi bi-pencil"></i> Ajuste
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+              <input type="number" step="0.01" class="form-control" name="cantidad" required placeholder="Ej: 10.50">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Notas (opcional)</label>
+              <textarea class="form-control" name="notas" rows="3" placeholder="Motivo del movimiento, detalles, etc."></textarea>
+            </div>
+
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+              <a href="/stock" class="btn btn-outline-secondary">Cancelar</a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Registrar Movimiento
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body">
+          <h6 class="card-title"><i class="bi bi-info-circle"></i> Instrucciones</h6>
+          <div class="small">
+            <p><strong>Entrada:</strong> Nuevo stock recibido de proveedores</p>
+            <p><strong>Salida:</strong> Stock utilizado en pedidos</p>
+            <p><strong>Ajuste:</strong> Corrección de inventario</p>
+            <hr/>
+            <p class="mb-0 text-muted">Todos los movimientos se registran automáticamente en el historial.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

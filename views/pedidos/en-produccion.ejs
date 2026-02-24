@@ -1,0 +1,85 @@
+<!-- views/pedidos/en-produccion.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-6"><i class="bi bi-gear"></i> Trabajos en Producción</h1>
+      <p class="text-muted">Actualmente en proceso</p>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- LISTA DE PEDIDOS -->
+  <% if (pedidos && pedidos.length > 0) { %>
+    <div class="row g-4">
+      <% pedidos.forEach(p => { %>
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-0 shadow-sm h-100 border-left border-warning" style="border-left: 4px solid #ffc107 !important;">
+            <div class="card-header bg-warning text-dark">
+              <h5 class="mb-0">Pedido #<%= p.id %></h5>
+            </div>
+            <div class="card-body">
+              <p><strong>Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <p><strong>Fecha:</strong> <%= new Date(p.fecha).toLocaleDateString('es-AR') %></p>
+              <p><strong>Total:</strong> $<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              
+              <% if (p.monto_restante > 0) { %>
+                <p class="text-danger"><strong>Deuda:</strong> $<%= (p.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              <% } else { %>
+                <p class="text-success"><strong>✓ Pagado</strong></p>
+              <% } %>
+              
+              <div class="mb-3">
+                <strong>Productos:</strong>
+                <ul class="list-group list-group-sm mt-2">
+                  <% p.productos.forEach(prod => { %>
+                    <li class="list-group-item"><%= prod.material %> - $<%= (prod.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></li>
+                  <% }); %>
+                </ul>
+              </div>
+
+              <!-- SELECTOR DE ESTADO -->
+              <form action="/pedidos/<%= p.id %>/cambiar-estado" method="POST" class="mb-3">
+                <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+                  <option value="PENDIENTE">📋 PENDIENTE</option>
+                  <option value="EN_PRODUCCION" selected>⚙️ EN PRODUCCIÓN</option>
+                  <option value="LISTO">✅ LISTO</option>
+                  <option value="ENTREGADO">🎉 ENTREGADO</option>
+                  <option value="CANCELADO">❌ CANCELADO</option>
+                </select>
+              </form>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="/pedidos/detalle/<%= p.id %>" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i> Detalle
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i> No hay trabajos en producción en este momento.
+    </div>
+  <% } %>
+
+  <div class="mt-4">
+    <a href="/" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Volver al Inicio
+    </a>
+  </div>
+</div>

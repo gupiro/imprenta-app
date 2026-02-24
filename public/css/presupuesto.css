@@ -1,0 +1,15 @@
+/* public/css/presupuesto.css */
+
+#imagenes-container > .border {
+  background-color: #f9f9f9;
+}
+
+#imagenes-container .precio-img {
+  font-weight: bold;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+}

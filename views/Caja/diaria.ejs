@@ -1,0 +1,173 @@
+<div class="container-fluid py-3">
+  <% if (messages && messages.success && messages.success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show">
+      <%= Array.isArray(messages.success) ? messages.success[0] : messages.success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (messages && messages.error && messages.error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
+      <%= Array.isArray(messages.error) ? messages.error[0] : messages.error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <h1 class="mb-4"><i class="bi bi-cash-stack text-primary"></i> Caja Diaria</h1>
+
+  <!-- Resumen del día - cards visuales -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
+        <div class="card-body text-center">
+          <div class="text-muted small text-uppercase">Ingresos del día</div>
+          <div class="fs-3 fw-bold text-success">$ <%= (ingresosDelDia || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
+        <div class="card-body text-center">
+          <div class="text-muted small text-uppercase">Egresos del día</div>
+          <div class="fs-3 fw-bold text-danger">$ <%= (egresosDelDia || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 <%= balanceDelDia >= 0 ? 'border-primary' : 'border-warning' %>">
+        <div class="card-body text-center">
+          <div class="text-muted small text-uppercase">Balance del día</div>
+          <div class="fs-3 fw-bold <%= balanceDelDia >= 0 ? 'text-primary' : 'text-warning' %>">$ <%= (balanceDelDia || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registrar movimiento -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+      <i class="bi bi-plus-circle me-2"></i>Registrar movimiento
+    </div>
+    <div class="card-body">
+      <form action="/caja-diaria/agregar" method="POST" id="formMovimiento">
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Tipo *</label>
+          <select name="tipo" id="tipoMovimiento" class="form-select" required onchange="toggleCampos()">
+            <option value="">-- Elegí --</option>
+            <option value="ingreso">Ingreso</option>
+            <option value="egreso">Egreso</option>
+          </select>
+        </div>
+
+        <div id="camposIngreso" style="display:none;">
+          <div class="mb-3">
+            <label class="form-label">Producto / Servicio</label>
+            <input type="text" name="producto_nombre_ingresado" class="form-control" list="listaProductos" placeholder="Escribí o elegí un producto..." autocomplete="off">
+            <datalist id="listaProductos">
+              <% if (productosCatalogo && productosCatalogo.length) { productosCatalogo.forEach(p => { %>
+                <option value="<%= p.nombre %>"><%= p.nombre %> — $<%= Number(p.precio_base).toFixed(2) %></option>
+              <% }); } %>
+            </datalist>
+          </div>
+          <div class="row mb-3" id="camposMedidas" style="display:none;">
+            <div class="col"><label class="form-label">Ancho (m)</label><input type="number" name="ancho_producto" class="form-control" step="0.01" min="0"></div>
+            <div class="col"><label class="form-label">Alto (m)</label><input type="number" name="alto_producto" class="form-control" step="0.01" min="0"></div>
+          </div>
+          <div class="mb-3" id="camposCantidad">
+            <label class="form-label">Cantidad</label>
+            <input type="number" name="cantidad_producto" class="form-control" value="1" min="1">
+          </div>
+          <div id="nuevoProductoBloque" style="display:none;">
+            <p class="fw-semibold small">Producto nuevo — agregar al catálogo:</p>
+            <div class="row mb-2">
+              <div class="col"><label class="form-label small">Tipo</label><select name="nuevo_producto_tipo" class="form-select form-select-sm"><option value="unidad">Por unidad</option><option value="metro_cuadrado">m²</option></select></div>
+              <div class="col"><label class="form-label small">Precio base ($)</label><input type="number" name="nuevo_producto_precio_base" class="form-control form-control-sm" step="0.01" min="0"></div>
+              <div class="col"><label class="form-label small">Mínimo</label><input type="number" name="nuevo_producto_minimo" class="form-control form-control-sm" value="1" step="0.01"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="camposEgreso" style="display:none;">
+          <div class="mb-3">
+            <label class="form-label">Categoría *</label>
+            <select name="categoria" class="form-select">
+              <option value="">-- Elegí categoría --</option>
+              <% if (categoriasEgresos && categoriasEgresos.length) { categoriasEgresos.forEach(cat => { %>
+                <option value="<%= cat %>"><%= cat %></option>
+              <% }); } %>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Detalle *</label>
+            <input type="text" name="detalle" class="form-control" placeholder="Descripción del egreso...">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Monto ($) *</label>
+            <input type="number" name="monto" class="form-control" step="0.01" min="0.01" placeholder="0.00">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Medio de pago</label>
+          <select name="metodo_pago" class="form-select">
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="cuenta_corriente">Cuenta Corriente</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Registrar</button>
+        <a href="/" class="btn btn-outline-secondary">Volver al Inicio</a>
+      </form>
+    </div>
+  </div>
+
+  <!-- Movimientos de hoy -->
+  <div class="card shadow-sm">
+    <div class="card-header bg-light">
+      <i class="bi bi-list-ul me-2"></i>Movimientos de hoy
+    </div>
+    <div class="card-body p-0">
+      <% if (!movimientos || movimientos.length === 0) { %>
+        <p class="text-muted p-4 mb-0">No hay movimientos registrados hoy.</p>
+      <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Tipo</th>
+                <th>Concepto</th>
+                <th>Categoría</th>
+                <th class="text-end">Monto</th>
+                <th>Medio</th>
+                <th>Hora</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% movimientos.forEach((mov, i) => { %>
+                <tr class="<%= mov.tipo === 'ingreso' ? 'table-success' : 'table-danger' %>">
+                  <td><%= i + 1 %></td>
+                  <td><span class="badge bg-<%= mov.tipo === 'ingreso' ? 'success' : 'danger' %>"><%= mov.tipo === 'ingreso' ? 'Ingreso' : 'Egreso' %></span></td>
+                  <td><%= mov.concepto %></td>
+                  <td><%= mov.categoria || '—' %></td>
+                  <td class="text-end fw-semibold">$ <%= parseFloat(mov.monto).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></td>
+                  <td><%= mov.metodo_pago || '—' %></td>
+                  <td><%= mov.fecha ? mov.fecha.substring(11, 16) : '—' %></td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleCampos() {
+    const tipo = document.getElementById('tipoMovimiento').value;
+    document.getElementById('camposIngreso').style.display = tipo === 'ingreso' ? 'block' : 'none';
+    document.getElementById('camposEgreso').style.display = tipo === 'egreso' ? 'block' : 'none';
+  }
+</script>

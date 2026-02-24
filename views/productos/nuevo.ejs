@@ -1,24 +1,125 @@
 <%- include('../partials/header', { title }) %>
 
 <main class="container py-4">
-  <h2>Nuevo Producto</h2>
+  <h2><%= title %></h2>
 
-  <form action="/productos/nuevo" method="POST" class="border p-4 rounded bg-light">
-    <input type="text" name="nombre" placeholder="Nombre del producto" required class="form-control mb-2">
-    
-    <select name="tipo" class="form-control mb-2" required>
-      <option value="">Seleccionar tipo</option>
-      <option value="unidad">Por unidad</option>
-      <option value="metro_cuadrado">Por metro cuadrado</option>
-      <option value="hoja">Por hoja</option>
-    </select>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
 
-    <input type="number" name="precio_base" step="0.01" placeholder="Precio base (€)" required class="form-control mb-2">
-    
-    <input type="number" name="minimo" step="0.1" placeholder="Cantidad mínima (opcional)" class="form-control mb-2">
+  <form action="<%= producto.id ? '/productos/editar/' + producto.id : '/productos/nuevo' %>" method="POST">
+    <% if (producto.pedido_id) { %>
+      <input type="hidden" name="pedido_id" value="<%= producto.pedido_id %>">
+    <% } %>
 
-    <button class="btn btn-success">Guardar Producto</button>
+    <div class="mb-3">
+      <label for="material">Material <span class="text-danger">*</span></label>
+      <input type="text" id="material" name="material" class="form-control" value="<%= producto.material || '' %>" required>
+    </div>
+
+    <div class="mb-3">
+      <label>Tipo de medición <span class="text-danger">*</span></label>
+      <select name="tipo" id="tipo" class="form-control" required>
+        <option value="unidad" <%= producto.tipo === 'unidad' ? 'selected' : '' %>>Por Unidad</option>
+        <option value="metro_cuadrado" <%= producto.tipo === 'metro_cuadrado' ? 'selected' : '' %>>Por Metro Cuadrado</option>
+      </select>
+    </div>
+
+    <div id="unidad-campos">
+      <div class="mb-3">
+        <label for="cantidad">Cantidad <span class="text-danger">*</span></label>
+        <input type="number" id="cantidad" name="cantidad" class="form-control" min="1" value="<%= producto.cantidad || 1 %>">
+      </div>
+      <div class="mb-3">
+        <label for="precio_unitario">Precio por Unidad ($)</label>
+        <input type="number" step="0.01" min="0" id="precio_unitario" name="precio_unitario" class="form-control" value="<%= producto.precio_unitario || '' %>">
+      </div>
+    </div>
+
+    <div id="m2-campos" style="display:none;">
+      <div class="mb-3">
+        <label for="ancho">Ancho (cm)</label>
+        <input type="number" step="0.01" id="ancho" name="ancho" class="form-control" value="<%= producto.ancho || '' %>">
+      </div>
+      <div class="mb-3">
+        <label for="alto">Alto (cm)</label>
+        <input type="number" step="0.01" id="alto" name="alto" class="form-control" value="<%= producto.alto || '' %>">
+      </div>
+      <div class="mb-3">
+        <label for="precio_metro">Precio por m² ($)</label>
+        <input type="number" step="0.01" min="0" id="precio_metro" name="precio_metro" class="form-control" value="<%= producto.precio_metro || '' %>">
+      </div>
+      <div class="mb-3">
+        <label for="minimo">Mínimo facturable (m²)</label>
+        <input type="number" step="0.01" min="0" id="minimo" name="minimo" class="form-control" value="<%= producto.minimo || 1 %>">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label><strong>Precio estimado ($):</strong></label>
+      <input type="text" id="precio_estimado" class="form-control" readonly value="0">
+    </div>
+
+    <div class="form-check mb-3">
+      <input type="checkbox" class="form-check-input" id="publico" name="publico" value="1" <%= producto.publico ? 'checked' : '' %>>
+      <label class="form-check-label" for="publico">Publicar en formulario público</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary"><%= producto.id ? 'Actualizar' : 'Crear' %> Producto</button>
   </form>
 </main>
 
-<%- include('../partials/footer') %>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const tipoEl = document.getElementById('tipo');
+    const unidadFields = document.getElementById('unidad-campos');
+    const m2Fields = document.getElementById('m2-campos');
+    const anchoEl = document.getElementById('ancho');
+    const altoEl = document.getElementById('alto');
+    const cantidadEl = document.getElementById('cantidad');
+    const precioUnitEl = document.getElementById('precio_unitario');
+    const precioMetroEl = document.getElementById('precio_metro');
+    const minimoEl = document.getElementById('minimo');
+    const precioEstObj = document.getElementById('precio_estimado');
+
+    function toggleFields() {
+      if (tipoEl.value === 'unidad') {
+        unidadFields.style.display = 'block';
+        m2Fields.style.display = 'none';
+      } else {
+        unidadFields.style.display = 'none';
+        m2Fields.style.display = 'block';
+      }
+      calcularPrecio();
+    }
+
+    function calcularPrecio() {
+      let precio = 0;
+      if (tipoEl.value === 'unidad') {
+        const qty = parseInt(cantidadEl.value) || 0;
+        const pu = parseFloat(precioUnitEl.value) || 0;
+        precio = qty * pu;
+      } else {
+        const ancho = parseFloat(anchoEl.value) || 0;
+        const alto = parseFloat(altoEl.value) || 0;
+        const areaM2 = (ancho * alto) / 10000;
+        const minM2 = parseFloat(minimoEl.value) || 0;
+        const puM2 = parseFloat(precioMetroEl.value) || 0;
+        const facturable = Math.max(areaM2, minM2);
+        precio = facturable * puM2;
+      }
+      precioEstObj.value = precio.toFixed(2);
+    }
+
+    tipoEl.addEventListener('change', toggleFields);
+    [anchoEl, altoEl, cantidadEl, precioUnitEl, precioMetroEl, minimoEl].forEach(el => {
+      if (el) el.addEventListener('input', calcularPrecio);
+    });
+
+    toggleFields();
+  });
+</script>
+

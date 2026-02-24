@@ -1,0 +1,343 @@
+<!-- views/pedidos/comprobante.ejs - Receipt for order -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprobante Pedido #<%= pedido.id %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @page {
+            size: A5;
+            margin: 0.5cm;
+        }
+
+        @media print {
+            body {
+                background: white;
+                margin: 0;
+                padding: 0;
+                width: 148mm;
+                height: 210mm;
+            }
+            .no-print { display: none !important; }
+            .comprobante {
+                max-width: 148mm;
+                margin: 0;
+                padding: 0.5cm;
+                box-shadow: none;
+                border: none;
+            }
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .comprobante {
+            max-width: 148mm;
+            height: 210mm;
+            margin: 2rem auto;
+            border: 1px solid #ddd;
+            padding: 0.8cm;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            font-size: 12px;
+        }
+        
+        .membrete {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .membrete h2 {
+            font-weight: bold;
+            margin: 0 0 0.2rem 0;
+            font-size: 1.3rem;
+        }
+
+        .membrete .texto-pequeno {
+            font-size: 0.85rem;
+            color: #333;
+            margin: 0.1rem 0;
+        }
+
+        .titulo {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 0.6rem 0 0.3rem 0;
+        }
+
+        .info-section {
+            margin-bottom: 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .info-section .label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .info-section .value {
+            color: #666;
+        }
+        
+        .tabla-productos {
+            margin: 0.6rem 0;
+        }
+
+        .tabla-productos table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .tabla-productos th {
+            background: #f0f0f0;
+            padding: 0.3rem;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 1px solid #333;
+            font-size: 0.8rem;
+        }
+
+        .tabla-productos td {
+            padding: 0.3rem;
+            border-bottom: 1px solid #ddd;
+            font-size: 0.8rem;
+        }
+
+        .tabla-productos tr.total {
+            font-weight: bold;
+            background: #f9f9f9;
+            border-top: 1px solid #333;
+        }
+
+        .totales {
+            margin-top: 0.6rem;
+            text-align: right;
+            font-size: 0.9rem;
+        }
+
+        .totales .fila {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.2rem 0;
+            font-size: 0.85rem;
+        }
+
+        .totales .fila.total {
+            font-size: 1rem;
+            font-weight: bold;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+            padding: 0.3rem 0;
+            margin-top: 0.3rem;
+        }
+        
+        .estado-pago {
+            padding: 0.4rem;
+            border-radius: 3px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .estado-pago.pagado {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .estado-pago.parcial {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .estado-pago.pendiente {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .pie {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: auto;
+            border-top: 1px solid #ddd;
+            padding-top: 0.4rem;
+        }
+
+        .botones {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .botones .btn {
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="comprobante">
+        <!-- MEMBRETE -->
+        <div class="membrete">
+            <h2 style="margin: 0; font-size: 1.5rem;">Imprenta El Gráfico</h2>
+            <div class="texto-pequeno" style="font-size: 0.9rem;">El Gráfico de Orán - Salta</div>
+            <div class="texto-pequeno" style="font-size: 0.85rem; font-weight: bold;">📱 3878 22-4908</div>
+        </div>
+        
+        <!-- TÍTULO -->
+        <div class="titulo">COMPROBANTE DE PEDIDO</div>
+        <div style="text-align: center; font-size: 1.1rem; font-weight: bold;">
+            Número de Pedido: #<%= pedido.id %>
+        </div>
+        
+        <!-- INFORMACIÓN GENERAL -->
+        <div class="info-section">
+            <div class="row">
+                <div class="col-6">
+                    <div><span class="label">Fecha:</span> <span class="value"><%= new Date(pedido.fecha).toLocaleDateString('es-AR') %></span></div>
+                </div>
+                <div class="col-6">
+                    <div><span class="label">Estado:</span> <span class="value">
+                        <% if (pedido.estado === 'ENTREGADO') { %>
+                            <span class="badge bg-success">✓ <%= pedido.estado %></span>
+                        <% } else if (pedido.estado === 'LISTO') { %>
+                            <span class="badge bg-info">🟦 <%= pedido.estado %></span>
+                        <% } else if (pedido.estado === 'EN_PRODUCCION') { %>
+                            <span class="badge bg-warning">⚙️ <%= pedido.estado %></span>
+                        <% } else { %>
+                            <span class="badge bg-secondary"><%= pedido.estado %></span>
+                        <% } %>
+                    </span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- INFORMACIÓN DEL CLIENTE -->
+        <div class="info-section">
+            <div class="label">📍 CLIENTE</div>
+            <div><strong><%= pedido.cliente_nombre || 'No especificado' %></strong></div>
+            <% if (pedido.phone) { %>
+                <div class="text-muted small">Tel: <%= pedido.phone %></div>
+            <% } %>
+        </div>
+        
+        <!-- TABLA DE PRODUCTOS -->
+        <div class="tabla-productos">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40%;">Descripción</th>
+                        <th style="width: 20%; text-align: center;">Cantidad</th>
+                        <th style="width: 20%; text-align: right;">Precio Unit.</th>
+                        <th style="width: 20%; text-align: right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (productos && productos.length > 0) { %>
+                        <% productos.forEach(prod => { %>
+                            <tr>
+                                <td><%= prod.material || prod.descripcion || 'Producto' %></td>
+                                <td style="text-align: center;"><%= prod.cantidad || 1 %></td>
+                                <td style="text-align: right;">$<%= ((prod.precio || 0) / Math.max(prod.cantidad || 1, 1)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                                <td style="text-align: right;"><strong>$<%= (prod.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #999;">Sin productos registrados</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- TOTALES -->
+        <div class="totales">
+            <div class="fila">
+                <span>Subtotal:</span>
+                <span>$<%= (pedido.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+            </div>
+            <% if (pedido.descuento && pedido.descuento > 0) { %>
+                <div class="fila">
+                    <span>Descuento:</span>
+                    <span>-$<%= (pedido.descuento || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                </div>
+            <% } %>
+            <div class="fila total">
+                <span>TOTAL:</span>
+                <span>$<%= (pedido.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+            </div>
+        </div>
+        
+        <!-- ESTADO DE PAGO -->
+        <% 
+            const deuda = (pedido.precio || 0) - (pedido.monto_entregado || 0);
+            let estadoPago = 'PENDIENTE';
+            let clasePago = 'pendiente';
+            if (deuda <= 0.01) {
+                estadoPago = 'PAGADO';
+                clasePago = 'pagado';
+            } else if (pedido.monto_entregado > 0) {
+                estadoPago = 'PAGADO PARCIALMENTE';
+                clasePago = 'parcial';
+            }
+        %>
+        <div class="estado-pago <%= clasePago %>">
+            <% if (clasePago === 'pagado') { %>
+                ✅ COMPLETAMENTE PAGADO
+            <% } else if (clasePago === 'parcial') { %>
+                ⚠️ PAGO PARCIAL - Deuda: $<%= deuda.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+            <% } else { %>
+                🔴 PAGO PENDIENTE - Deuda: $<%= deuda.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+            <% } %>
+        </div>
+        
+        <!-- DETALLES DE PAGO -->
+        <div class="info-section" style="margin-top: 1.5rem;">
+            <div class="row" style="font-size: 0.9rem;">
+                <div class="col-6">
+                    <div><span class="label">Monto Pagado:</span> $<%= (pedido.monto_entregado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+                </div>
+                <div class="col-6">
+                    <div><span class="label">Medio de Pago:</span> <%= pedido.medio_pago || 'No especificado' %></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- PIE DE PÁGINA -->
+        <div class="pie">
+            <p style="margin: 0; font-size: 0.8rem;">Gracias por su confianza</p>
+            <p style="margin: 0.3rem 0 0 0; font-size: 0.75rem;">📞 3878 22-4908 | El Gráfico de Orán - Salta</p>
+            <p style="margin: 0.3rem 0 0 0; font-size: 0.75rem;">Este comprobante es válido como prueba de compra</p>
+        </div>
+    </div>
+    
+    <!-- BOTONES (sin imprimir) -->
+    <div class="botones no-print">
+        <button onclick="window.print()" class="btn btn-primary btn-sm">
+            🖨️ Imprimir / PDF
+        </button>
+        <a href="/pedidos/detalle/<%= pedido.id %>" class="btn btn-secondary btn-sm">
+            ← Volver
+        </a>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

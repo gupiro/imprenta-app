@@ -1,0 +1,90 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-truck me-2"></i>Proveedores</h2>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevo">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo Proveedor
+  </button>
+</div>
+
+<% if (!proveedores.length) { %>
+  <div class="alert alert-info">No hay proveedores registrados todavía.</div>
+<% } else { %>
+<div class="row g-3">
+  <% proveedores.forEach(p => { %>
+  <div class="col-md-6 col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title mb-1"><i class="bi bi-shop me-1"></i><%= p.nombre %></h5>
+        <span class="badge bg-secondary mb-2"><%= p.rubro || 'Sin rubro' %></span>
+        <p class="mb-1 small"><i class="bi bi-telephone me-1"></i><%= p.telefono || '—' %></p>
+        <p class="mb-1 small"><i class="bi bi-envelope me-1"></i><%= p.email || '—' %></p>
+        <% if (p.notas) { %><p class="mb-2 small text-muted"><%= p.notas %></p><% } %>
+        <% if (p.saldo_deuda > 0) { %>
+          <div class="alert alert-danger py-1 px-2 small mb-2">
+            <i class="bi bi-exclamation-triangle me-1"></i>Deuda: $<%= p.saldo_deuda.toLocaleString('es-AR') %>
+          </div>
+        <% } %>
+      </div>
+      <div class="card-footer bg-transparent d-flex gap-2">
+        <a href="/proveedores/editar/<%= p.id %>" class="btn btn-sm btn-outline-primary w-50">
+          <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+        <form action="/proveedores/eliminar/<%= p.id %>" method="POST" class="w-50"
+              onsubmit="return confirm('¿Eliminar proveedor?')">
+          <button class="btn btn-sm btn-outline-danger w-100">
+            <i class="bi bi-trash me-1"></i>Eliminar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <% }) %>
+</div>
+<% } %>
+
+<!-- Modal Nuevo Proveedor -->
+<div class="modal fade" id="modalNuevo" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="/proveedores/nuevo" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title">Nuevo Proveedor</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Nombre *</label>
+            <input type="text" name="nombre" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Teléfono</label>
+            <input type="text" name="telefono" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Email</label>
+            <input type="email" name="email" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Rubro</label>
+            <select name="rubro" class="form-select">
+              <option value="">Seleccioná un rubro</option>
+              <option>Papel e insumos</option>
+              <option>Tintas</option>
+              <option>Lonas y vinilos</option>
+              <option>Equipos y repuestos</option>
+              <option>Servicios</option>
+              <option>Otros</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

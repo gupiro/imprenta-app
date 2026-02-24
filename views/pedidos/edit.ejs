@@ -1,172 +1,126 @@
-<%- include('../partials/header', { title }) %>
+<div class="container py-4">
+  <div class="mb-3">
+    <a href="/pedidos/detalle/<%= pedido.id %>" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Volver al detalle
+    </a>
+  </div>
+  <h1 class="mb-1">Editar Pedido #<%= pedido.id %></h1>
+  <p class="text-muted mb-4">Cliente actual: <strong><%= pedido.cliente_nombre %></strong></p>
 
-<main class="container py-4">
-  <a href="/pedidos/pendientes" class="btn btn-link mb-3">← Volver a Pendientes</a>
-  <h1 class="mb-4"><%= title %></h1>
-
-  <% if (error && (Array.isArray(error) ? error.length : true)) { %>
-    <div class="alert alert-danger">
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show">
       <%= Array.isArray(error) ? error.join('<br>') : error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   <% } %>
-  <% if (success && (Array.isArray(success) ? success.length : true)) { %>
-    <div class="alert alert-success">
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show">
       <%= Array.isArray(success) ? success.join('<br>') : success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   <% } %>
 
   <form action="/pedidos/editar/<%= pedido.id %>" method="POST" enctype="multipart/form-data">
-    <div class="row g-3 mb-4">
-      <div class="col-md-6">
-        <label class="form-label">Cliente</label>
-        <select name="client_id" class="form-select" required>
-          <% clients.forEach(c => { %>
-            <option value="<%= c.id %>" <%= c.id === pedido.client_id ? 'selected' : '' %>><%= c.name %></option>
-          <% }) %>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Monto Señalado</label>
-        <input type="number" name="monto_entregado" step="0.01" class="form-control" value="<%= pedido.monto_entregado %>" required>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label">Medio de Pago</label>
-        <select name="medio_pago" class="form-select" required>
-          <option value="Efectivo" <%= pedido.medio_pago === 'Efectivo' ? 'selected' : '' %>>Efectivo</option>
-          <option value="Transferencia" <%= pedido.medio_pago === 'Transferencia' ? 'selected' : '' %>>Transferencia</option>
-          <option value="Tarjeta" <%= pedido.medio_pago === 'Tarjeta' ? 'selected' : '' %>>Tarjeta</option>
-        </select>
-      </div>
-    </div>
 
     <% items.forEach(item => { %>
       <input type="hidden" name="item_id[]" value="<%= item.id %>">
+    <% }) %>
 
-      <div class="card mb-4 p-3 position-relative">
-        <button type="submit" class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2"
-                formaction="/pedidos/editar/<%= pedido.id %>/eliminar/<%= item.id %>" formmethod="POST"
-                onclick="return confirm('¿Eliminar este producto?');">
-          <i class="bi bi-trash-fill"></i>
-        </button>
-
-        <h5 class="mb-3">#<%= item.id %> – <%= item.material %></h5>
+    <!-- ═══ DATOS DEL PEDIDO ═══════════════════════════════════════ -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-primary text-white">
+        <h6 class="mb-0"><i class="bi bi-info-circle"></i> Datos del Pedido</h6>
+      </div>
+      <div class="card-body">
         <div class="row g-3">
-          <div class="col-md-2">
-            <label>Ancho (m)</label>
-            <input type="number" step="0.01" name="ancho_<%= item.id %>" class="form-control" value="<%= item.ancho %>" required>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Cliente</label>
+            <select name="client_id" class="form-select" required>
+              <% clients.forEach(c => { %>
+                <option value="<%= c.id %>" <%= c.id === pedido.client_id ? 'selected' : '' %>><%= c.name %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Monto Adelantado ($)</label>
+            <input type="number" name="monto_entregado" step="0.01" class="form-control"
+                   value="<%= pedido.monto_entregado || 0 %>" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Método de Pago</label>
+            <select name="medio_pago" class="form-select">
+              <option value="Efectivo"      <%= pedido.medio_pago === 'Efectivo'      ? 'selected' : '' %>>💵 Efectivo</option>
+              <option value="Transferencia" <%= pedido.medio_pago === 'Transferencia' ? 'selected' : '' %>>🏦 Transferencia</option>
+              <option value="Tarjeta"       <%= pedido.medio_pago === 'Tarjeta'       ? 'selected' : '' %>>💳 Tarjeta</option>
+              <option value="QR"            <%= pedido.medio_pago === 'QR'            ? 'selected' : '' %>>📱 QR</option>
+            </select>
           </div>
           <div class="col-md-2">
-            <label>Alto (m)</label>
-            <input type="number" step="0.01" name="alto_<%= item.id %>" class="form-control" value="<%= item.alto %>" required>
-          </div>
-          <div class="col-md-2">
-            <label>Precio</label>
-            <input type="number" step="0.01" name="precio_<%= item.id %>" class="form-control" value="<%= item.precio %>" required>
-          </div>
-          <div class="col-md-6">
-            <label>Descripción</label>
-            <textarea name="descripcion_<%= item.id %>" class="form-control" rows="2" required><%= item.descripcion %></textarea>
-          </div>
-
-          <div class="col-12">
-            <p class="mb-1">Imágenes actuales:</p>
-            <% if (item.imagenes && item.imagenes.length) { %>
-              <div class="d-flex flex-wrap gap-2 mb-2">
-                <% item.imagenes.forEach(img => { %>
-                  <img src="/uploads/thumbs/<%= encodeURIComponent(img) %>" width="100" class="rounded" loading="lazy" alt="Imagen <%= img %>">
-                <% }) %>
-              </div>
-            <% } %>
-
-            <label>Agregar nuevas imágenes</label>
-            <div class="dropzone border border-secondary rounded p-3 text-center"
-                 data-input="file_<%= item.id %>" ondragover="event.preventDefault()" ondrop="handleDrop(event, <%= item.id %>)">
-              Arrastrá imágenes aquí o hacé clic para seleccionarlas
-              <input type="file" name="file_<%= item.id %>[]" class="form-control mt-2 d-none"
-                     id="fileInput_<%= item.id %>" multiple onchange="handleManualSelect(event, <%= item.id %>)">
-            </div>
-            <div id="preview_<%= item.id %>" class="mt-2 d-flex flex-wrap gap-2"></div>
+            <label class="form-label fw-bold">📅 Fecha de Entrega</label>
+            <input type="date" name="fecha_entrega" class="form-control"
+                   value="<%= pedido.fecha_entrega ? pedido.fecha_entrega.slice(0,10) : '' %>">
           </div>
         </div>
       </div>
-    <% }) %>
+    </div>
 
-    <hr>
-    <h4>➕ Agregar Producto</h4>
-    <div id="new-productos"></div>
-    <button type="button" class="btn btn-outline-success mb-4" onclick="agregarNuevoProducto()">➕ Nuevo Producto</button>
+    <!-- ═══ PRODUCTOS ═══════════════════════════════════════════════ -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-success text-white">
+        <h6 class="mb-0"><i class="bi bi-box"></i> Productos del Pedido</h6>
+      </div>
+      <div class="card-body">
+        <% if (items.length === 0) { %>
+          <p class="text-muted text-center py-3">No hay productos en este pedido</p>
+        <% } %>
+        <% items.forEach(item => { %>
+          <div class="card mb-3 border border-secondary-subtle">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <h6 class="mb-0 text-muted">#<%= item.id %> — <strong><%= item.material %></strong></h6>
+                <button type="submit"
+                        formaction="/pedidos/editar/<%= pedido.id %>/eliminar/<%= item.id %>"
+                        formmethod="POST"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('¿Eliminar este producto?')">
+                  <i class="bi bi-trash"></i> Eliminar
+                </button>
+              </div>
+              <div class="row g-3">
+                <div class="col-md-2">
+                  <label class="form-label">Ancho (m)</label>
+                  <input type="number" step="0.01" name="ancho_<%= item.id %>" class="form-control"
+                         value="<%= item.ancho || '' %>">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label">Alto (m)</label>
+                  <input type="number" step="0.01" name="alto_<%= item.id %>" class="form-control"
+                         value="<%= item.alto || '' %>">
+                </div>
+                <div class="col-md-2">
+                  <label class="form-label fw-bold">Precio ($)</label>
+                  <input type="number" step="0.01" name="precio_<%= item.id %>" class="form-control fw-bold"
+                         value="<%= item.precio || 0 %>" required>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Descripción</label>
+                  <textarea name="descripcion_<%= item.id %>" class="form-control" rows="2"><%= item.descripcion || '' %></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
 
-    <div class="d-flex justify-content-between">
-      <a href="/pedidos/pendientes" class="btn btn-secondary">← Cancelar</a>
-      <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+    <!-- ═══ BOTONES ═══════════════════════════════════════════════════ -->
+    <div class="d-flex gap-3">
+      <a href="/pedidos/detalle/<%= pedido.id %>" class="btn btn-secondary btn-lg">
+        <i class="bi bi-x"></i> Cancelar
+      </a>
+      <button type="submit" class="btn btn-primary btn-lg px-5">
+        <i class="bi bi-save"></i> Guardar Cambios
+      </button>
     </div>
   </form>
-</main>
-
-<script>
-function handleManualSelect(event, id) {
-  const input = document.getElementById(`fileInput_${id}`);
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach(f => dt.items.add(f));
-  Array.from(event.target.files).forEach(f => {
-    if (f.type.startsWith('image/')) dt.items.add(f);
-  });
-  input.files = dt.files;
-  showFiles(id);
-}
-
-function handleDrop(event, id) {
-  event.preventDefault();
-  const input = document.getElementById(`fileInput_${id}`);
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach(f => dt.items.add(f));
-  Array.from(event.dataTransfer.files).forEach(f => {
-    if (f.type.startsWith('image/')) dt.items.add(f);
-  });
-  input.files = dt.files;
-  showFiles(id);
-}
-
-function showFiles(id) {
-  const input = document.getElementById(`fileInput_${id}`);
-  const preview = document.getElementById(`preview_${id}`);
-  preview.innerHTML = '';
-  Array.from(input.files).forEach((file, index) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'position-relative d-inline-block';
-      wrapper.innerHTML = `
-        <img src="${e.target.result}" class="border rounded me-2" style="max-height: 80px;">
-        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
-                onclick="removeImage(${id}, ${index})">×</button>
-      `;
-      preview.appendChild(wrapper);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function removeImage(id, indexToRemove) {
-  const input = document.getElementById(`fileInput_${id}`);
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach((file, index) => {
-    if (index !== indexToRemove) dt.items.add(file);
-  });
-  input.files = dt.files;
-  showFiles(id);
-}
-
-document.addEventListener('click', e => {
-  const dz = e.target.closest('.dropzone');
-  if (dz) {
-    const inputName = dz.dataset.input;
-    const input = document.querySelector(`input[name="${inputName}[]"]`);
-    input.addEventListener('change', (event) => handleManualSelect(event, input.id.split('_')[1]), { once: true });
-    input.click();
-  }
-});
-</script>
-
-<%- include('../partials/footer') %>
+</div>

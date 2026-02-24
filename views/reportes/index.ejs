@@ -1,0 +1,109 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><i class="bi bi-bar-chart-fill me-2"></i>Reportes</h2>
+  <form method="GET" class="d-flex gap-2 align-items-center">
+    <input type="month" name="mes" class="form-control" value="<%= mes %>">
+    <button type="submit" class="btn btn-outline-secondary">
+      <i class="bi bi-filter me-1"></i>Ver
+    </button>
+  </form>
+</div>
+
+<!-- Métricas principales -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-4">
+      <div class="text-muted small mb-1">Ingresos del mes</div>
+      <div class="fs-3 fw-bold text-success">$<%= ingresos.toLocaleString('es-AR') %></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-4">
+      <div class="text-muted small mb-1">Gastos del mes</div>
+      <div class="fs-3 fw-bold text-danger">$<%= gastos.toLocaleString('es-AR') %></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm text-center p-4">
+      <div class="text-muted small mb-1">Ganancia neta</div>
+      <div class="fs-3 fw-bold <%= ganancia >= 0 ? 'text-primary' : 'text-danger' %>">
+        $<%= ganancia.toLocaleString('es-AR') %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- Gastos por categoría -->
+  <div class="col-md-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-pie-chart me-1"></i>Gastos por categoría
+      </div>
+      <div class="card-body p-0">
+        <% if (!gastosPorCategoria.length) { %>
+          <p class="text-muted p-3 mb-0">Sin datos este mes.</p>
+        <% } else { %>
+        <ul class="list-group list-group-flush">
+          <% gastosPorCategoria.forEach(g => { %>
+          <li class="list-group-item d-flex justify-content-between">
+            <span><i class="bi bi-tag me-1"></i><%= g.categoria %></span>
+            <strong>$<%= g.total.toLocaleString('es-AR') %></strong>
+          </li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deuda total de clientes -->
+  <div class="col-md-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header fw-semibold">
+        <i class="bi bi-people me-1"></i>Pedidos del mes
+      </div>
+      <div class="card-body p-0">
+        <% if (!pedidosDelMes.length) { %>
+          <p class="text-muted p-3 mb-0">Sin pedidos este mes.</p>
+        <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Saldo</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pedidosDelMes.forEach(p => { %>
+              <tr>
+                <td><a href="/pedidos/<%= p.id %>">#<%= p.id %></a></td>
+                <td><%= p.cliente || 'Sin cliente' %></td>
+                <td>$<%= (p.precio || 0).toLocaleString('es-AR') %></td>
+                <td>
+                  <% if (p.monto_restante > 0) { %>
+                    <span class="text-danger fw-semibold">
+                      $<%= p.monto_restante.toLocaleString('es-AR') %>
+                    </span>
+                  <% } else { %>
+                    <span class="text-success">Saldado</span>
+                  <% } %>
+                </td>
+                <td><span class="badge bg-secondary"><%= p.estado %></span></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </div>
+      <div class="card-footer text-end">
+        <span class="text-muted small">Deuda total acumulada: </span>
+        <strong class="text-danger">$<%= deudoresTotal.toLocaleString('es-AR') %></strong>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,68 @@
+<!-- views/stock/movimientos.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-arrow-left-right"></i> Movimientos de Stock</h1>
+    </div>
+    <div class="col-md-4 text-end">
+      <a href="/stock/nuevo-movimiento" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Nuevo Movimiento
+      </a>
+      <a href="/stock" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Volver
+      </a>
+    </div>
+  </div>
+
+  <!-- TABLA DE MOVIMIENTOS -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body">
+      <% if (movimientos && movimientos.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr class="border-bottom">
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Usuario</th>
+                <th>Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% movimientos.forEach(m => {
+                let tipoBadge = 'bg-success';
+                if (m.tipo === 'salida') tipoBadge = 'bg-danger';
+                if (m.tipo === 'ajuste') tipoBadge = 'bg-warning';
+              %>
+                <tr>
+                  <td>
+                    <small><%= new Date(m.fecha).toLocaleDateString('es-AR') %> <%= new Date(m.fecha).toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'}) %></small>
+                  </td>
+                  <td><strong><%= m.producto_nombre %></strong></td>
+                  <td>
+                    <span class="badge <%= tipoBadge %>"><%= m.tipo.toUpperCase() %></span>
+                  </td>
+                  <td>
+                    <% if (m.tipo === 'salida') { %>
+                      <span class="text-danger">-<%= m.cantidad %></span>
+                    <% } else { %>
+                      <span class="text-success">+<%= m.cantidad %></span>
+                    <% } %>
+                  </td>
+                  <td><%= m.username || 'Sistema' %></td>
+                  <td><small><%= m.notas || '-' %></small></td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-info-circle"></i> No hay movimientos registrados
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

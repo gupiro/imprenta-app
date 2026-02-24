@@ -1,0 +1,52 @@
+<div class="row justify-content-center">
+  <div class="col-md-7">
+    <div class="card shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="bi bi-truck me-2"></i>
+          <%= proveedor ? 'Editar Proveedor' : 'Nuevo Proveedor' %>
+        </h5>
+      </div>
+      <div class="card-body">
+        <form action="/proveedores/<%= proveedor ? 'editar/' + proveedor.id : 'nuevo' %>" method="POST">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Nombre *</label>
+              <input type="text" name="nombre" class="form-control"
+                     value="<%= proveedor ? proveedor.nombre : '' %>" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Teléfono</label>
+              <input type="text" name="telefono" class="form-control"
+                     value="<%= proveedor ? proveedor.telefono || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Email</label>
+              <input type="email" name="email" class="form-control"
+                     value="<%= proveedor ? proveedor.email || '' : '' %>">
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Rubro</label>
+              <select name="rubro" class="form-select">
+                <option value="">Seleccioná un rubro</option>
+                <% ['Papel e insumos','Tintas','Lonas y vinilos','Equipos y repuestos','Servicios','Otros'].forEach(r => { %>
+                  <option <%= proveedor && proveedor.rubro === r ? 'selected' : '' %>><%= r %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Notas</label>
+              <textarea name="notas" class="form-control" rows="3"><%= proveedor ? proveedor.notas || '' : '' %></textarea>
+            </div>
+          </div>
+          <div class="d-flex gap-2 mt-4">
+            <a href="/proveedores" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-save me-1"></i>Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

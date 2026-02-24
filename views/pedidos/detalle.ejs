@@ -1,191 +1,309 @@
-<%- include('../partials/header') %>
-
+<!-- views/pedidos/detalle.ejs - SIMPLIFICADO -->
 <main class="container py-4">
-  <a href="/pedidos/pendientes" class="btn btn-link mb-3">← Volver a Pendientes</a>
-  <h1 class="mb-4"><%= title %></h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left"></i> Volver
+    </a>
+    <% if (pedido.estado !== 'ENTREGADO' && pedido.estado !== 'CANCELADO') { %>
+      <a href="/pedidos/editar/<%= pedido.id %>" class="btn btn-outline-warning">
+        <i class="bi bi-pencil"></i> Editar Pedido
+      </a>
+    <% } %>
+  </div>
 
+  <!-- HEADER CON ESTADO -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-1">Pedido #<%= pedido.id %></h1>
+      <p class="text-muted mb-0">Creado: <%= new Date(pedido.fecha).toLocaleDateString('es-AR') %></p>
+      <% if (pedido.fecha_entrega) { %>
+        <p class="mb-0">
+          <span class="badge bg-info text-dark fs-6">
+            <i class="bi bi-calendar-check"></i>
+            Entrega: <%= new Date(pedido.fecha_entrega + 'T12:00:00').toLocaleDateString('es-AR') %>
+          </span>
+        </p>
+      <% } %>
+    </div>
+    <span class="badge bg-<%= pedido.estado === 'ENTREGADO' ? 'success' : pedido.estado === 'LISTO' ? 'info' : pedido.estado === 'EN_PRODUCCION' ? 'warning' : 'secondary' %> fs-5">
+      <%= pedido.estado %>
+    </span>
+  </div>
+
+  <!-- ALERTAS -->
   <% if (error && error.length) { %>
-    <div class="alert alert-danger"><%= Array.isArray(error) ? error.join('<br>') : error %></div>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <%= Array.isArray(error) ? error.join('<br>') : error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
   <% } %>
   <% if (success && success.length) { %>
-    <div class="alert alert-success"><%= Array.isArray(success) ? success.join('<br>') : success %></div>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle"></i>
+      <%= Array.isArray(success) ? success.join('<br>') : success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
   <% } %>
 
-  <p><strong>Cliente:</strong> <%= pedido.cliente_nombre %></p>
-  <p><strong>Fecha:</strong> <%= pedido.fecha %></p>
-  <p><strong>Estado:</strong> <%= pedido.estado %></p>
-  <hr/>
+  <!-- INFORMACIÓN DEL CLIENTE -->
+  <div class="card mb-4 border-start border-primary border-5">
+    <div class="card-body">
+      <h6 class="text-muted mb-3">👤 CLIENTE</h6>
+      <h5><%= pedido.cliente_nombre %></h5>
+    </div>
+  </div>
 
-  <!-- 1) Productos -->
-  <% if (pedido.productos && pedido.productos.length) { %>
-    <% pedido.productos.forEach((prod, idx) => { %>
-      <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">Producto <%= idx + 1 %>: <%= prod.material %></h5>
-          <p><strong>Medidas:</strong> <%= prod.ancho %> m × <%= prod.alto %> m</p>
-          <p><strong>Detalle:</strong> <%= prod.descripcion %></p>
+  <!-- CAMBIO DE ESTADO -->
+  <div class="card mb-4 border-start border-info border-5">
+    <div class="card-body">
+      <h6 class="text-muted mb-3">🔄 CAMBIAR ESTADO</h6>
+      <form action="/pedidos/<%= pedido.id %>/cambiar-estado" method="POST" class="d-flex gap-2 align-items-end">
+        <div class="flex-grow-1">
+          <select name="estado" class="form-select form-select-lg" required>
+            <option value="">-- Seleccionar estado --</option>
+            <option value="PENDIENTE" <% if (pedido.estado === 'PENDIENTE') { %>selected<% } %>>📋 PENDIENTE</option>
+            <option value="EN_PRODUCCION" <% if (pedido.estado === 'EN_PRODUCCION') { %>selected<% } %>>⚙️ EN PRODUCCIÓN</option>
+            <option value="LISTO" <% if (pedido.estado === 'LISTO') { %>selected<% } %>>✅ LISTO</option>
+            <option value="ENTREGADO" <% if (pedido.estado === 'ENTREGADO') { %>selected<% } %>>🎉 ENTREGADO</option>
+            <option value="CANCELADO" <% if (pedido.estado === 'CANCELADO') { %>selected<% } %>>❌ CANCELADO</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg">
+          <i class="bi bi-save"></i> Guardar
+        </button>
+      </form>
+    </div>
+  </div>
 
-          <% if (prod.imagenes && prod.imagenes.length) { %>
-            <div class="row g-3">
-              <% prod.imagenes.forEach(img => {
-                   const ext = img.split('.').pop().toLowerCase();
-              %>
-                <div class="col-md-4 text-center">
-                  <% if (['jpg','jpeg','png','gif'].includes(ext)) { %>
-                    <a href="/uploads/<%= encodeURIComponent(img) %>?quality=low" download>
-                      <img src="/uploads/thumbs/<%= encodeURIComponent(img) %>"
-                           class="img-fluid rounded mb-2"
-                           style="max-height:150px;" loading="lazy" alt="Miniatura <%= img %>">
-                    </a>
-                  <% } else { %>
-                    <a href="/uploads/<%= encodeURIComponent(img) %>?quality=low" download
-                       class="btn btn-outline-primary mb-2">📄 <%= img %></a>
-                  <% } %>
-                </div>
+  <!-- PRODUCTOS -->
+  <div class="card mb-4 border-start border-success border-5">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">📦 PRODUCTOS</h6>
+    </div>
+    <div class="card-body">
+      <% if (pedido.productos && pedido.productos.length) { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Descripción</th>
+                <th style="width: 100px;" class="text-center">Cantidad</th>
+                <th style="width: 120px;" class="text-center">Medidas</th>
+                <th style="width: 120px;" class="text-end">Precio</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% pedido.productos.forEach(prod => { %>
+                <tr>
+                  <td>
+                    <strong><%= prod.material %></strong><br>
+                    <small class="text-muted"><%= prod.descripcion || '(sin descripción)' %></small>
+                  </td>
+                  <td class="text-center"><%= prod.cantidad || 1 %></td>
+                  <td class="text-center">
+                    <% if (prod.ancho || prod.alto) { %>
+                      <%= prod.ancho %>m × <%= prod.alto %>m
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                  <td class="text-end fw-bold">$<%= (prod.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                </tr>
               <% }) %>
-            </div>
-          <% } %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <p class="text-muted text-center py-3">No hay productos en este pedido</p>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- FINANCIERO -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">💰 TOTAL</p>
+          <h3 class="mb-0">$<%= (pedido.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
         </div>
       </div>
-    <% }) %>
-  <% } else { %>
-    <p class="text-muted">No hay productos asignados a este pedido.</p>
-  <% } %>
-
-  <!-- 2) Subir diseño final -->
-  <hr/>
-  <div class="card mb-5">
-    <div class="card-body">
-      <h5 class="card-title">📤 Subir Diseño Final</h5>
-      <form action="/pedidos/enviarRevision/<%= pedido.id %>" method="POST" enctype="multipart/form-data">
-        <div class="mb-3">
-          <label for="archivosRevision" class="form-label">Archivos de Diseño Final</label>
-          <input type="file" name="archivosRevision" id="archivosRevision"
-                 class="form-control" multiple required>
+    </div>
+    <div class="col-md-6">
+      <div class="card <% if (pedido.monto_restante > 0) { %>bg-danger<% } else { %>bg-success<% } %> text-white">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">
+            <% if (pedido.monto_restante > 0) { %>
+              🔴 DEUDA
+            <% } else { %>
+              ✅ PAGADO
+            <% } %>
+          </p>
+          <h3 class="mb-0">$<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
         </div>
-        <button class="btn btn-success">Enviar y Marcar en Revisión</button>
-      </form>
-
-      <% if (pedido.revision_archivo) {
-           const revFiles = JSON.parse(pedido.revision_archivo);
-           const lastFile = revFiles[revFiles.length - 1];
-      %>
-        <hr/>
-        <p class="mt-3"><strong>Últimos enviados:</strong></p>
-        <div class="d-flex flex-wrap align-items-center">
-          <% revFiles.forEach((fn, idx) => {
-               const ext    = fn.split('.').pop().toLowerCase();
-               const isLast = idx === revFiles.length - 1;
-          %>
-            <div class="me-2 mb-2">
-              <% if (['jpg','jpeg','png','gif'].includes(ext)) { %>
-                <a href="<%= isLast
-                           ? `/pedidos/revision/descargar/${encodeURIComponent(fn)}?quality=low`
-                           : `/uploads/${encodeURIComponent(fn)}?quality=low`
-                         %>"
-                   download>
-                  <img src="/uploads/thumbs/<%= encodeURIComponent(fn) %>"
-                       alt="Revisión"
-                       style="<%= isLast ? 'width:150px;' : 'width:60px;' %>height:auto;
-                              object-fit:cover;border-radius:4px;
-                              <%= isLast ? 'border:2px solid #0d6efd;' : '' %>"
-                       loading="lazy">
-                </a>
-              <% } else { %>
-                <a href="/uploads/<%= encodeURIComponent(fn) %>?quality=low"
-                   download class="btn btn-outline-secondary btn-sm">📄 <%= fn %></a>
-              <% } %>
-            </div>
-          <% }) %>
-        </div>
-
-        <form action="/pedidos/imprimir/<%= pedido.id %>" method="POST" class="mt-3">
-          <input type="hidden" name="file" value="<%= lastFile %>">
-          <button type="submit" class="btn btn-primary">
-            🖨️ Enviar "<%= lastFile %>" a Impresión
-          </button>
-        </form>
-      <% } %>
+      </div>
     </div>
   </div>
 
-  <!-- 3) Comentarios de revisión -->
-  <hr/>
-  <div class="card mb-5">
-    <div class="card-body">
-      <h5 class="card-title">💬 Comentarios de revisión</h5>
-      <% if (imagenesRevision && imagenesRevision.length) { %>
-  <div class="mb-4">
-    <p><strong>Imágenes adjuntas:</strong></p>
-    <div class="d-flex flex-wrap gap-3">
-      <% imagenesRevision.forEach(img => { %>
-        <a href="/uploads/<%= encodeURIComponent(img.filename) %>?quality=low" target="_blank">
-          <img src="/uploads/thumbs/<%= encodeURIComponent(img.filename) %>" 
-               alt="Imagen adjunta"
-               class="rounded border"
-               style="height: 100px; object-fit: cover;">
-        </a>
-      <% }) %>
+  <!-- BOTONES DE ACCIÓN -->
+  <div class="row g-2 mb-4">
+    <div class="col-md-4">
+      <a href="/pedidos/<%= pedido.id %>/comprobante" class="btn btn-info btn-lg w-100" target="_blank">
+        <i class="bi bi-printer"></i> 🖨️ Imprimir Comprobante
+      </a>
     </div>
+    <% if (pedido.monto_restante > 0) { %>
+      <div class="col-md-4">
+        <button class="btn btn-success btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCancelarDeuda">
+          <i class="bi bi-cash-coin"></i> Cobrar Deuda
+        </button>
+      </div>
+    <% } %>
+    <% if (pedido.estado === 'ENTREGADO' && pedido.monto_restante > 0) { %>
+      <div class="col-md-4">
+        <button class="btn btn-primary btn-lg w-100" onclick="enviarWhatsApp(<%= pedido.id %>, '<%= pedido.cliente_nombre.replace(/'/g, "\\'") %>', <%= pedido.monto_restante %>)">
+          <i class="bi bi-chat-dots"></i> WhatsApp
+        </button>
+      </div>
+    <% } %>
+    <% if (pedido.estado !== 'CANCELADO' && pedido.estado !== 'ENTREGADO') { %>
+      <div class="col-md-4">
+        <button class="btn btn-danger btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCancelarPedido">
+          <i class="bi bi-x-circle"></i> Cancelar Pedido
+        </button>
+      </div>
+    <% } %>
   </div>
-<% } %>
 
-
-      <% if (comentarios && comentarios.length) { %>
-        <ul class="list-group mb-3">
-          <% comentarios.forEach(c => { %>
-            <li class="list-group-item d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-center">
-                <span class="badge <%= {
-                  'Admin':'bg-primary', 'Atención':'bg-success', 'Impresor':'bg-warning'
-                }[c.user] || 'bg-secondary' %> text-white">
-                  <%= c.user %>
-                </span>
-                <small class="text-muted"><%= new Date(c.fecha).toLocaleString() %></small>
-              </div>
-              <p class="mt-2 mb-1"><%= c.comment %></p>
-              <% if (c.imagenes && c.imagenes.length) { %>
-                <div class="d-flex flex-wrap gap-2">
-                  <% c.imagenes.forEach(img => { %>
-                    <img src="/uploads/thumbs/<%= encodeURIComponent(img) %>"
-                         alt="Comentario imagen"
-                         class="rounded border" style="max-height:80px;" loading="lazy">
-                  <% }) %>
+  <!-- IMÁGENES DE PRODUCTOS -->
+  <% if (pedido.productos && pedido.productos.some(p => p.imagenes && p.imagenes.length)) { %>
+    <div class="card mb-4 border-start border-warning border-5">
+      <div class="card-header bg-light">
+        <h6 class="mb-0">🖼️ IMÁGENES</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <% pedido.productos.forEach(prod => { %>
+            <% if (prod.imagenes && prod.imagenes.length) { %>
+              <% prod.imagenes.forEach(img => { %>
+                <% const ext = img.split('.').pop().toLowerCase(); %>
+                <div class="col-md-3">
+                  <% if (['jpg','jpeg','png','gif'].includes(ext)) { %>
+                    <a href="/uploads/<%= encodeURIComponent(img) %>" target="_blank">
+                      <img src="/uploads/<%= encodeURIComponent(img) %>" class="img-fluid rounded border" style="max-height: 150px; width: 100%; object-fit: cover;">
+                    </a>
+                  <% } else { %>
+                    <a href="/uploads/<%= encodeURIComponent(img) %>" target="_blank" class="btn btn-outline-secondary w-100">
+                      📄 <%= img %>
+                    </a>
+                  <% } %>
                 </div>
-              <% } %>
-            </li>
-          <% }) %>
-        </ul>
-      <% } else { %>
-        <p class="text-muted mb-3">No hay comentarios aún.</p>
-      <% } %>
-
-      <form action="/pedidos/<%= pedido.id %>/comentar" method="POST" enctype="multipart/form-data" onsubmit="return prepararComentario()">
-        <div class="mb-3">
-          <label for="comentario" class="form-label">Nuevo comentario</label>
-          <textarea name="comentario" id="comentario" class="form-control"
-                    rows="3" required></textarea>
+              <% }); %>
+            <% } %>
+          <% }); %>
         </div>
-
-        <div class="mb-3">
-          <label for="imagenes_comentario" class="form-label">Imágenes (opcional)</label>
-          <input type="file" name="imagenes_comentario" id="imagenes_comentario"
-                 class="form-control" multiple accept="image/*">
-        </div>
-
-        <button class="btn btn-primary">Agregar comentario</button>
-      </form>
+      </div>
     </div>
-  </div>
+  <% } %>
 </main>
 
+<!-- MODAL: Cancelar Deuda -->
+<div class="modal fade" id="modalCancelarDeuda" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-cash-coin"></i> Cobrar Deuda</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-deuda">
+        <div class="modal-body">
+          <div class="alert alert-info mb-3">
+            <strong>Deuda a cobrar:</strong> $<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a pagar *</label>
+            <input type="number" name="monto_a_pagar" class="form-control form-control-lg" 
+                   step="0.01" min="0.01" max="<%= pedido.monto_restante || 0 %>"
+                   value="<%= pedido.monto_restante || 0 %>" required>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold">Método de Pago *</label>
+            <select name="metodo_pago" class="form-select form-select-lg" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="QR">📱 QR</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check"></i> Cobrar & Registrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Cancelar Pedido -->
+<div class="modal fade" id="modalCancelarPedido" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="bi bi-x-circle"></i> Cancelar Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <strong>⚠️ Advertencia:</strong> Esta acción no se puede deshacer.
+        </div>
+        <% if (pedido.monto_entregado > 0) { %>
+          <div class="alert alert-info">
+            Será registrada una devolución de: <strong>$<%= (pedido.monto_entregado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+          </div>
+        <% } %>
+        <p>¿Confirmas que quieres cancelar este pedido?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No, volver</button>
+        <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-pedido" class="d-inline">
+          <button type="submit" class="btn btn-danger btn-lg">
+            <i class="bi bi-check"></i> Sí, Cancelar
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
-  function prepararComentario() {
-    setTimeout(() => {
-      window.location.href = '/';
-    }, 500);
-    return true;
+  function enviarWhatsApp(pedidoId, cliente, deuda) {
+    fetch(`/api/pedidos/${pedidoId}/cliente-phone`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.phone) {
+          const tel = data.phone.replace(/\D/g, '');
+          const precio = deuda ? '$' + Math.round(deuda) : 'a definir';
+          const msg = encodeURIComponent(
+            `Hola ${cliente},\n\n` +
+            `✅ Tu pedido #${pedidoId} está listo para retirar.\n\n` +
+            `💰 Deuda pendiente: ${precio}\n\n` +
+            `¿Te va bien? ¡Gracias!`
+          );
+          window.open(`https://wa.me/549${tel}?text=${msg}`, '_blank');
+        } else {
+          alert('No hay número de teléfono disponible');
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Error al obtener el teléfono');
+      });
   }
 </script>
-
-<%- include('../partials/footer') %>

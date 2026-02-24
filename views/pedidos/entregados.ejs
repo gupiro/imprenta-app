@@ -1,128 +1,111 @@
-<%- include('../partials/header', { title: 'Trabajos Entregados' }) %>
+<!-- views/pedidos/entregados.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-6"><i class="bi bi-check-circle"></i> Trabajos Entregados</h1>
+      <p class="text-muted">Completados y entregados a clientes</p>
+    </div>
+  </div>
 
-<style>
-  .tarjeta-entregado {
-    background: linear-gradient(135deg, #f9f9f9, #e0f7ff);
-    transition: transform 0.2s ease, box-shadow 0.3s ease;
-    border-left: 6px solid #0d6efd;
-    border-radius: 10px;
-  }
-  .tarjeta-entregado:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
-  }
-  .imagen-previa {
-    max-width: 160px;
-    max-height: 120px;
-    object-fit: cover;
-    border-radius: 6px;
-    margin-right: 10px;
-  }
-  @keyframes parpadeo {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  .badge-nuevo {
-    animation: parpadeo 1.2s infinite;
-    font-size: 0.8rem;
-    padding: 0.3em 0.6em;
-  }
-</style>
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
 
-<h1 class="mb-4 text-center">📦 Trabajos Entregados</h1>
-
-<% if (pedidosAgrupados && Object.keys(pedidosAgrupados).length > 0) { %>
-  <div class="accordion" id="accordionEntregados">
-    <% Object.entries(pedidosAgrupados).forEach(([fechaTexto, pedidos], i) => { %>
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="heading-<%= i %>">
-          <button class="accordion-button <%= i !== 0 ? 'collapsed' : '' %>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-<%= i %>" aria-expanded="<%= i === 0 ? 'true' : 'false' %>" aria-controls="collapse-<%= i %>">
-            🗓️ <%= fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1) %>
-          </button>
-        </h2>
-        <div id="collapse-<%= i %>" class="accordion-collapse collapse <%= i === 0 ? 'show' : '' %>" aria-labelledby="heading-<%= i %>" data-bs-parent="#accordionEntregados">
-          <div class="accordion-body">
-            <% pedidos.forEach(pedido => {
-              const saldo = Math.round(pedido.monto_restante || 0);
-              const fechaEntrega = pedido.fecha_entrega ? new Date(pedido.fecha_entrega) : new Date();
-              const fechaEntregaStr = fechaEntrega.toISOString().substring(0, 10);
-              const diasDesde = Math.floor((Date.now() - fechaEntrega.getTime()) / (1000*60*60*24));
-            %>
-              <div class="tarjeta-entregado p-3 shadow-sm mb-3">
-                <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
-
-                  <% if (pedido.imagen) { %>
-                    <a href="/uploads/<%= encodeURIComponent(pedido.imagen) %>?quality=low" download>
-                      <img 
-                        src="/uploads/thumbs/<%= encodeURIComponent(pedido.imagen) %>" 
-                        class="imagen-previa" 
-                        alt="Preview" 
-                        loading="lazy"
-                      >
-                    </a>
-                  <% } %>
-
-                  <div class="flex-grow-1">
-                    <h5 class="mb-1 text-primary">
-                      📌 <%= pedido.cliente_nombre %>
-                      <% if (pedido.visto_entregado === 0) { %>
-                        <span class="badge bg-warning text-dark ms-2 badge-nuevo">🆕 Nuevo</span>
-                      <% } %>
-                    </h5>
-                    <div class="small">
-                      📞 <strong>Teléfono:</strong> <%= pedido.telefono || 'No disponible' %><br>
-                      ✉️ <strong>Email:</strong> <%= pedido.email || 'No disponible' %><br>
-                      💵 <strong>Precio:</strong> $<%= Math.round(pedido.precio||0) %><br>
-                      💸 <strong>Saldo:</strong> $<%= saldo %><br>
-                      📅 <strong>Entregado:</strong> <%= fechaEntregaStr %>
-                      <% if (diasDesde !== null) { %>(hace <%= diasDesde %> días)<% } %>
-                    </div>
-                  </div>
-
-                  <div class="text-end">
-                    <% if (saldo > 0) { %>
-                      <div class="alert alert-warning p-2 mb-2">⚠️ Saldo pendiente</div>
-                      <button class="btn btn-outline-success btn-sm mb-2" onclick="mostrarFormulario('<%= pedido.id %>')">
-                        💵 Pagar saldo
-                      </button>
-                      <form id="form-<%= pedido.id %>" action="/pedidos/<%= pedido.id %>/completar-pago" method="POST" class="d-none mt-2">
-                        <div class="input-group input-group-sm">
-                          <input type="number" name="monto_extra" class="form-control" min="0.01" max="<%= saldo %>" step="0.01" required>
-                          <button type="submit" class="btn btn-success">Confirmar</button>
-                        </div>
-                      </form>
-                    <% } else { %>
-                      <div class="alert alert-success p-2 mt-3">✅ Totalmente pagado</div>
-                    <% } %>
-
-                    <form action="/pedidos/<%= pedido.id %>/eliminar-entregado" method="POST" class="mt-2" onsubmit="return confirm('¿Estás seguro de eliminar este pedido entregado?')">
-                      <button type="submit" class="btn btn-danger btn-sm">🗑️ Eliminar</button>
-                    </form>
-                  </div>
-                </div>
+  <!-- LISTA DE PEDIDOS -->
+  <% if (pedidos && pedidos.length > 0) { %>
+    <div class="row g-4">
+      <% pedidos.forEach(p => { %>
+        <div class="col-md-6 col-lg-4">
+          <div class="card border-0 shadow-sm h-100 border-left border-success" style="border-left: 4px solid #198754 !important;">
+            <div class="card-header bg-success text-white">
+              <h5 class="mb-0">Pedido #<%= p.id %></h5>
+            </div>
+            <div class="card-body">
+              <p><strong>Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <p><strong>Fecha:</strong> <%= new Date(p.fecha).toLocaleDateString('es-AR') %></p>
+              <p><strong>Total:</strong> $<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              
+              <% if (p.monto_restante > 0) { %>
+                <p class="text-danger"><strong>Deuda:</strong> $<%= (p.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              <% } else { %>
+                <p class="text-success"><strong>✓ Completamente Pagado</strong></p>
+              <% } %>
+              
+              <div class="mb-3">
+                <strong>Productos:</strong>
+                <ul class="list-group list-group-sm mt-2">
+                  <% p.productos.forEach(prod => { %>
+                    <li class="list-group-item">
+                      <%= prod.material %>
+                      <br><small class="text-muted">$<%= (prod.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></small>
+                    </li>
+                  <% }); %>
+                </ul>
               </div>
-            <% }) %>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="/pedidos/detalle/<%= p.id %>" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i> Detalle
+                </a>
+                <a href="/pedidos/<%= p.id %>/comprobante" class="btn btn-sm btn-outline-info">
+                  <i class="bi bi-receipt"></i> Comprobante
+                </a>
+                <% if (p.monto_restante > 0) { %>
+                  <a href="javascript:void(0)" class="btn btn-sm btn-success" onclick="enviarWhatsApp(<%= p.id %>, '<%= p.cliente_nombre.replace(/'/g, '') %>', <%= p.monto_restante %>)">
+                    <i class="bi bi-chat-dots"></i> WhatsApp
+                  </a>
+                <% } %>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    <% }) %>
-  </div>
-<% } else { %>
-  <div class="alert alert-info text-center">No hay trabajos entregados aún. 🕐</div>
-<% } %>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i> No hay trabajos entregados en este momento.
+    </div>
+  <% } %>
 
-<div class="text-center mt-4">
-  <a href="/" class="btn btn-secondary">← Volver al Inicio</a>
+  <div class="mt-4">
+    <a href="/" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Volver al Inicio
+    </a>
+  </div>
 </div>
 
 <script>
-  function mostrarFormulario(id) {
-    document.querySelectorAll("form[id^='form-']").forEach(f => f.classList.add('d-none'));
-    const form = document.getElementById('form-' + id);
-    if (form) form.classList.remove('d-none');
+  function enviarWhatsApp(pedidoId, cliente, deuda) {
+    fetch(`/api/pedidos/${pedidoId}/cliente-phone`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.phone) {
+          const tel = data.phone.replace(/\D/g, '');
+          const precio = deuda ? '$' + Math.round(deuda) : 'a definir';
+          const msg = encodeURIComponent(
+            `Hola ${cliente},\n\n` +
+            `✅ Tu pedido #${pedidoId} está listo para retirar.\n\n` +
+            `💰 Deuda pendiente: ${precio}\n\n` +
+            `¿Te va bien? ¡Gracias!`
+          );
+          window.open(`https://wa.me/549${tel}?text=${msg}`, '_blank');
+        } else {
+          alert('No hay número de teléfono disponible para este cliente');
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('Error al obtener el teléfono del cliente');
+      });
   }
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-
-<%- include('../partials/footer') %>

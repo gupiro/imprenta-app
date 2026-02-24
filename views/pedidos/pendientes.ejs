@@ -1,76 +1,85 @@
-<% /* views/pedidos/pendientes.ejs */ %>
-<% title = 'Trabajos Encargados'; %>
+<!-- views/pedidos/pendientes.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-6"><i class="bi bi-clock-history"></i> Trabajos Pendientes</h1>
+      <p class="text-muted">Esperando inicio de producción</p>
+    </div>
+  </div>
 
-<main class="container py-4">
-  <h1 class="text-center mb-4">📥 <%= title %></h1>
-
-  <% if (error && error.length) { %>
-    <div class="alert alert-danger text-center"><%= error %></div>
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
   <% } %>
-  <% if (success && success.length) { %>
-    <div class="alert alert-success text-center"><%= success %></div>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
   <% } %>
 
-  <% if (pedidos.length) { %>
+  <!-- LISTA DE PEDIDOS -->
+  <% if (pedidos && pedidos.length > 0) { %>
     <div class="row g-4">
-      <% pedidos.forEach(pedido => { %>
+      <% pedidos.forEach(p => { %>
         <div class="col-md-6 col-lg-4">
-          <div class="card h-100 shadow-sm position-relative">
-
-            <!-- Íconos editar/eliminar -->
-            <div class="position-absolute top-0 end-0 m-2">
-              <a href="/pedidos/editar/<%= pedido.id %>"
-                 class="btn btn-sm btn-outline-secondary me-1">
-                <i class="bi bi-pencil-fill"></i>
-              </a>
-              <form action="/pedidos/eliminar/<%= pedido.id %>"
-                    method="POST"
-                    class="d-inline"
-                    onsubmit="return confirm('¿Eliminar este pedido?');">
-                <button type="submit" class="btn btn-sm btn-outline-danger">
-                  <i class="bi bi-trash-fill"></i>
-                </button>
-              </form>
+          <div class="card border-0 shadow-sm h-100 border-left border-danger" style="border-left: 4px solid #dc3545 !important;">
+            <div class="card-header bg-danger text-white">
+              <h5 class="mb-0">Pedido #<%= p.id %></h5>
             </div>
-
-            <a href="/pedidos/detalle/<%= pedido.id %>"
-               class="text-decoration-none text-dark">
-              <div class="card-body">
-                <h5 class="card-title">Pedido #<%= pedido.id %></h5>
-                <p><strong>Cliente:</strong> <%= pedido.cliente_nombre %></p>
-                <hr/>
-                <% pedido.productos.slice(0,2).forEach(prod => { %>
-                  <p class="mb-1">
-                    <strong><%= prod.material %></strong> –
-                    <%= prod.ancho %>×<%= prod.alto %> m
-                  </p>
-                  <% if (prod.imagenes.length) { 
-                       const img = prod.imagenes[0];
-                  %>
-                    <a href="/uploads/<%= img %>" download>
-                      <img
-                        src="/uploads/thumbs/<%= img %>"
-                        class="img-fluid mb-2 rounded"
-                        style="max-height:100px;"
-                        loading="lazy"
-                        alt="Producto <%= prod.material %>"
-                      >
-                    </a>
-                  <% } %>
-                  <hr/>
-                <% }) %>
-                <% if (pedido.productos.length > 2) { %>
-                  <p class="text-muted small">
-                    …y <%= pedido.productos.length - 2 %> más
-                  </p>
-                <% } %>
+            <div class="card-body">
+              <p><strong>Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <p><strong>Fecha:</strong> <%= new Date(p.fecha).toLocaleDateString('es-AR') %></p>
+              <p><strong>Total:</strong> $<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              
+              <% if (p.monto_restante > 0) { %>
+                <p class="text-danger"><strong>Deuda:</strong> $<%= (p.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              <% } else { %>
+                <p class="text-success"><strong>✓ Pagado</strong></p>
+              <% } %>
+              
+              <div class="mb-3">
+                <strong>Productos:</strong>
+                <ul class="list-group list-group-sm mt-2">
+                  <% p.productos.forEach(prod => { %>
+                    <li class="list-group-item"><%= prod.material %> - $<%= (prod.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></li>
+                  <% }); %>
+                </ul>
               </div>
-            </a>
+
+              <!-- SELECTOR DE ESTADO -->
+              <form action="/pedidos/<%= p.id %>/cambiar-estado" method="POST" class="mb-3">
+                <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+                  <option value="PENDIENTE" selected>📋 PENDIENTE</option>
+                  <option value="EN_PRODUCCION">⚙️ EN PRODUCCIÓN</option>
+                  <option value="LISTO">✅ LISTO</option>
+                  <option value="ENTREGADO">🎉 ENTREGADO</option>
+                  <option value="CANCELADO">❌ CANCELADO</option>
+                </select>
+              </form>
+
+              <div class="d-flex gap-2 flex-wrap">
+                <a href="/pedidos/detalle/<%= p.id %>" class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye"></i> Detalle
+                </a>
+              </div>
+            </div>
           </div>
         </div>
-      <% }) %>
+      <% }); %>
     </div>
   <% } else { %>
-    <p class="text-center">No hay pedidos pendientes.</p>
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i> No hay trabajos pendientes en este momento.
+    </div>
   <% } %>
-</main>
+
+  <div class="mt-4">
+    <a href="/" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Volver al Inicio
+    </a>
+  </div>
+</div>

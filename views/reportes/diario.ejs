@@ -1,0 +1,259 @@
+<!-- views/reportes/diario.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-calendar-day"></i> Reporte Diario</h1>
+      <p class="text-muted"><%= fechaFormato %></p>
+    </div>
+    <div class="col-md-4 text-end">
+      <input type="date" class="form-control" id="selectorFecha" value="<%= fecha %>">
+    </div>
+  </div>
+
+  <!-- BOTONES DE ACCIÓN -->
+  <div class="row g-2 mb-4">
+    <div class="col-auto">
+      <button onclick="imprimirReporteDigno()" class="btn btn-primary">
+        <i class="bi bi-printer"></i> 🖨️ Imprimir
+      </button>
+    </div>
+    <div class="col-auto">
+      <button onclick="exportarReportePDF()" class="btn btn-danger">
+        <i class="bi bi-file-pdf"></i> 📄 PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- RESUMEN FINANCIERO -->
+  <div class="row mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">💰 Ingresos</h6>
+          <h3 class="text-success">$<%= ingresos.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">📤 Egresos</h6>
+          <h3 class="text-danger">$<%= egresos.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">✅ Saldo</h6>
+          <h3 class="<%= ganancia >= 0 ? 'text-primary' : 'text-danger' %>">$<%= ganancia.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-muted">📊 Movimientos</h6>
+          <h3><%= (movimientos || []).length %></h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESGLOSE POR MÉTODO DE PAGO -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">💳 Desglose por Método de Pago</h6>
+          <div class="row text-center">
+            <% const metodoMap = {}; %>
+            <% (metodos || []).forEach(m => { metodoMap[m.metodo_pago] = m.total; }); %>
+
+            <div class="col-md-3">
+              <p class="text-muted mb-1">💵 Efectivo</p>
+              <h5 class="text-success">$<%= (metodoMap['Efectivo'] || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-md-3">
+              <p class="text-muted mb-1">🏦 Transferencia</p>
+              <h5 class="text-info">$<%= (metodoMap['Transferencia'] || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-md-3">
+              <p class="text-muted mb-1">💳 Tarjeta</p>
+              <h5 class="text-primary">$<%= (metodoMap['Tarjeta'] || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-md-3">
+              <p class="text-muted mb-1">📱 QR</p>
+              <h5 class="text-warning">$<%= (metodoMap['QR'] || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOVIMIENTOS DEL DÍA -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">📋 Movimientos de Hoy</h6>
+          <% if (movimientos && movimientos.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead>
+                  <tr class="border-bottom">
+                    <th>Hora</th>
+                    <th>Tipo</th>
+                    <th>Concepto</th>
+                    <th>Categoría</th>
+                    <th>Método</th>
+                    <th class="text-end">Monto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% movimientos.forEach(m => { %>
+                    <tr>
+                      <td>
+                        <small class="text-muted">
+                          <% if (m.fecha) { %>
+                            <%= new Date(m.fecha).toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'}) %>
+                          <% } %>
+                        </small>
+                      </td>
+                      <td>
+                        <% const badgeClass = m.tipo === 'ingreso' ? 'bg-success' : 'bg-danger'; %>
+                        <span class="badge <%= badgeClass %>"><%= m.tipo === 'ingreso' ? '➕ Ingreso' : '➖ Egreso' %></span>
+                      </td>
+                      <td><strong><%= m.concepto %></strong></td>
+                      <td><small class="text-muted"><%= m.categoria || '-' %></small></td>
+                      <td>
+                        <% if (m.metodo_pago === 'Efectivo') { %>
+                          💵 Efectivo
+                        <% } else if (m.metodo_pago === 'Transferencia') { %>
+                          🏦 Transfer.
+                        <% } else if (m.metodo_pago === 'Tarjeta') { %>
+                          💳 Tarjeta
+                        <% } else if (m.metodo_pago === 'QR') { %>
+                          📱 QR
+                        <% } else { %>
+                          <%= m.metodo_pago || '-' %>
+                        <% } %>
+                      </td>
+                      <td class="text-end fw-bold">
+                        <% if (m.tipo === 'ingreso') { %>
+                          <span class="text-success">+$<%= (m.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                        <% } else { %>
+                          <span class="text-danger">-$<%= (m.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="text-muted text-center">No hay movimientos registrados</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PEDIDOS DEL DÍA -->
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title">📦 Pedidos Creados Hoy (<%= totalPedidos %>)</h6>
+          <% if (pedidosDelDia && pedidosDelDia.length > 0) { %>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover mb-0">
+                <thead>
+                  <tr class="border-bottom">
+                    <th>Pedido</th>
+                    <th>Cliente</th>
+                    <th>Estado</th>
+                    <th>Total</th>
+                    <th>Pagado</th>
+                    <th>Deuda</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% pedidosDelDia.forEach(p => { %>
+                    <tr>
+                      <td><strong>#<%= p.id %></strong></td>
+                      <td><%= p.cliente_nombre || 'Sin nombre' %></td>
+                      <td>
+                        <%
+                          let badgeClass = 'bg-secondary';
+                          if (p.estado === 'PENDIENTE') badgeClass = 'bg-warning';
+                          if (p.estado === 'EN_PRODUCCION') badgeClass = 'bg-info';
+                          if (p.estado === 'LISTO') badgeClass = 'bg-success';
+                          if (p.estado === 'ENTREGADO') badgeClass = 'bg-primary';
+                          if (p.estado === 'CANCELADO') badgeClass = 'bg-danger';
+                        %>
+                        <span class="badge <%= badgeClass %>"><%= p.estado %></span>
+                      </td>
+                      <td>$<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td class="text-success">$<%= (p.monto_entregado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                      <td class="<%= p.monto_restante > 0 ? 'text-danger' : 'text-success' %>">
+                        <% if (p.monto_restante > 0) { %>
+                          $<%= (p.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                        <% } else { %>
+                          ✓ Pagado
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <p class="text-muted text-center">No hay pedidos creados hoy</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VOLVER -->
+  <div class="mt-4">
+    <a href="/reportes" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Volver a Reportes
+    </a>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+document.getElementById('selectorFecha')?.addEventListener('change', (e) => {
+  window.location.href = `/reportes/diario?fecha=${e.target.value}`;
+});
+
+function imprimirReporteDigno() {
+  window.print();
+}
+
+function exportarReportePDF() {
+  const fecha = '<%= fecha %>';
+  const element = document.querySelector('.container-fluid');
+
+  const opt = {
+    margin: 10,
+    filename: `Reporte-Diario-${fecha}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+}
+</script>
+
+<style>
+  @media print {
+    .btn { display: none !important; }
+    .form-control { display: none !important; }
+  }
+</style>

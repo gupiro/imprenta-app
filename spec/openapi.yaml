@@ -1,0 +1,203 @@
+openapi: 3.0.1
+info:
+  title: Imprenta App API
+  version: 1.0.0
+paths:
+  /clientes:
+    get:
+      summary: Listar clientes
+      responses:
+        '200':
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cliente'
+    post:
+      summary: Crear cliente
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cliente'
+      responses:
+        '201':
+          description: Cliente creado
+
+  /productos:
+    get:
+      summary: Listar productos
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Producto'
+    post:
+      summary: Crear/actualizar producto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Producto'
+      responses:
+        '201':
+          description: Producto creado/actualizado
+
+  /presupuestos:
+    get:
+      summary: Listar presupuestos
+      responses:
+        '200':
+          description: Lista de presupuestos
+    post:
+      summary: Crear presupuesto
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Presupuesto'
+      responses:
+        '201':
+          description: Presupuesto creado
+
+  /pedidos:
+    get:
+      summary: Listar pedidos
+      responses:
+        '200':
+          description: Lista de pedidos
+    post:
+      summary: Crear pedido
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pedido'
+      responses:
+        '201':
+          description: Pedido creado
+
+  /alertas:
+    get:
+      summary: Listar alertas de stock
+      responses:
+        '200':
+          description: Lista de alertas
+    post:
+      summary: Crear alerta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Alerta'
+      responses:
+        '201':
+          description: Alerta creada
+
+components:
+  schemas:
+    Cliente:
+      type: object
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        email:
+          type: string
+      required:
+        - nombre
+
+    Producto:
+      type: object
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        precio:
+          type: number
+        stockInicial:
+          type: integer
+        stockActual:
+          type: integer
+        ilimitado:
+          type: boolean
+      required:
+        - nombre
+        - precio
+
+    Presupuesto:
+      type: object
+      properties:
+        id:
+          type: string
+        clienteId:
+          type: string
+        archivos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Archivo'
+        total:
+          type: number
+      required:
+        - clienteId
+        - archivos
+
+    Archivo:
+      type: object
+      properties:
+        nombre:
+          type: string
+        tipo:
+          type: string
+        tamaño:
+          type: string
+        cantidad:
+          type: integer
+        precioUnitario:
+          type: number
+      required:
+        - nombre
+        - cantidad
+
+    Pedido:
+      type: object
+      properties:
+        id:
+          type: string
+        presupuestoId:
+          type: string
+        estado:
+          type: string
+          enum:
+            - pendiente
+            - enPreparacion
+            - terminado
+            - entregado
+        nombreTrabajo:
+          type: string
+      required:
+        - presupuestoId
+
+    Alerta:
+      type: object
+      properties:
+        id:
+          type: string
+        productoId:
+          type: string
+        nivel:
+          type: string
+          enum:
+            - bajo
+            - muyBajo
+      required:
+        - productoId
+        - nivel

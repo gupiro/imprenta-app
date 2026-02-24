@@ -1,30 +1,50 @@
 <%- include('../partials/header', { title }) %>
 
 <main class="container py-4">
-  <h2>Listado de Productos</h2>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Listado de Productos</h2>
+    <a href="/productos/nuevo" class="btn btn-primary">+ Nuevo Producto</a>
+  </div>
 
-  <a href="/productos/nuevo" class="btn btn-primary mb-3">+ Nuevo Producto</a>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
 
-  <table class="table table-bordered">
+  <table class="table table-striped">
     <thead>
       <tr>
         <th>Nombre</th>
         <th>Tipo</th>
         <th>Precio Base</th>
         <th>Mínimo</th>
+        <th class="text-center">Acciones</th>
       </tr>
     </thead>
     <tbody>
-      <% productos.forEach(p => { %>
+      <% productos.forEach(prod => { %>
         <tr>
-          <td><%= p.nombre %></td>
-          <td><%= p.tipo %></td>
-          <td>€ <%= p.precio_base %></td>
-          <td><%= p.minimo %></td>
+          <td><%= prod.material %></td>
+          <td><%= prod.tipo === 'unidad' ? 'Unidad' : 'Metro Cuadrado' %></td>
+          <td>
+            <% if (prod.tipo === 'unidad') { %>
+              $<%= prod.precio_unitario.toFixed(2) %>
+            <% } else { %>
+              $<%= prod.precio_metro.toFixed(2) %>
+            <% } %>
+          </td>
+          <td><%= prod.minimo %></td>
+          <td class="text-center">
+            <a href="/productos/editar/<%= prod.id %>" class="btn btn-sm btn-outline-warning me-2">Editar</a>
+            <form action="/productos/eliminar/<%= prod.id %>" method="POST" class="d-inline" onsubmit="return confirm('¿Seguro que quieres eliminar este producto?');">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Eliminar</button>
+            </form>
+          </td>
         </tr>
       <% }); %>
     </tbody>
   </table>
 </main>
 
-<%- include('../partials/footer') %>

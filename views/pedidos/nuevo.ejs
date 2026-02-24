@@ -1,424 +1,496 @@
-<% title = 'Nuevo Pedido'; %>
-<%- include('../partials/header') %>
-<% const desdePresupuesto = typeof presupuesto !== 'undefined'; %>
-<main class="container py-5">
-  <h1 class="text-center mb-4">➕ Nuevo Pedido 📄</h1>
-
-  <!-- Mensajes de éxito -->
-  <% if (success.length) { %>
-    <% success.forEach(msg => { %>
-      <div class="alert alert-success text-center"><%= msg %></div>
-    <% }) %>
-  <% } %>
-
-  <!-- Mensajes de error -->
-  <% if (error.length) { %>
-    <% error.forEach(msg => { %>
-      <div class="alert alert-danger text-center"><%= msg %></div>
-    <% }) %>
-  <% } %>
-
-  <form action="/pedidos/nuevo" method="POST" enctype="multipart/form-data" class="row g-4">
-
-    <!-- 1) Cliente: autocompletar o crear nuevo -->
-    <div class="col-12 position-relative">
-      <label for="clienteInput" class="form-label">Cliente:</label>
-      <div class="input-group">
-        <input
-          type="text"
-          id="clienteInput"
-          name="clienteInput"
-          class="form-control"
-          placeholder="Escribí el nombre…"
-          autocomplete="off"
-        >
-        <button type="button" id="btnMostrarClientes" class="btn btn-outline-secondary" title="Mostrar clientes">🔍</button>
-      </div>
-      <input type="hidden" id="clienteExistente" name="clienteExistente">
-      <div id="sugerencias" class="list-group position-absolute w-100"></div>
-    </div>
-
-    <!-- Campos para un cliente nuevo -->
-<div id="nuevoClienteFields" class="col-12" style="display:none;">
-  <div class="row g-3">
-    <div class="col-md-3">
-      <label for="telefonoNuevo" class="form-label">Teléfono</label>
-      <input type="text" id="telefonoNuevo" name="telefonoNuevo" class="form-control"
-             value="<%= typeof presupuesto !== 'undefined' ? presupuesto.telefono_cliente : '' %>">
-    </div>
-    <div class="col-md-3">
-      <label for="direccionNuevo" class="form-label">Dirección</label>
-      <input type="text" id="direccionNuevo" name="direccionNuevo" class="form-control">
-    </div>
-    <div class="col-md-3">
-      <label for="cuitNuevo" class="form-label">CUIT</label>
-      <input type="text" id="cuitNuevo" name="cuitNuevo" class="form-control">
-    </div>
-    <div class="col-md-3">
-      <label for="emailNuevo" class="form-label">Email</label>
-      <input type="email" id="emailNuevo" name="emailNuevo" class="form-control"
-             value="<%= typeof presupuesto !== 'undefined' ? presupuesto.email_cliente : '' %>">
+<!-- views/pedidos/nuevo.ejs -->
+<div class="container-fluid py-5">
+  <div class="row mb-4">
+    <div class="col-12">
+      <h1 class="display-6"><i class="bi bi-plus-circle"></i> Crear Nuevo Pedido</h1>
     </div>
   </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <form action="/pedidos/nuevo" method="POST" enctype="multipart/form-data" id="formPedido">
+    <div class="row g-4">
+      <!-- ═════════════════════════════════════════
+           SECCIÓN 1: CLIENTE
+           ════════════════════════════════════════= -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="bi bi-person"></i> 1️⃣ CLIENTE</h6>
+          </div>
+          <div class="card-body">
+            <div class="btn-group mb-3" role="group">
+              <input type="radio" class="btn-check" name="tipoCliente" id="clienteExistente" value="existente" checked onchange="cambiarTipoCliente()">
+              <label class="btn btn-outline-primary" for="clienteExistente">
+                <i class="bi bi-database"></i> Cliente Existente
+              </label>
+              
+              <input type="radio" class="btn-check" name="tipoCliente" id="clienteNuevo" value="nuevo" onchange="cambiarTipoCliente()">
+              <label class="btn btn-outline-success" for="clienteNuevo">
+                <i class="bi bi-person-plus"></i> Cliente Nuevo
+              </label>
+            </div>
+
+            <!-- OPCIÓN 1: Cliente Existente (con Autocomplete) -->
+            <div id="seccionClienteExistente">
+              <div class="row g-3">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold">🔍 Buscar Cliente (Nombre, Teléfono o CUIT) *</label>
+                  <div class="position-relative">
+                    <input 
+                      type="text" 
+                      id="buscadorCliente" 
+                      class="form-control form-control-lg" 
+                      placeholder="Ej: Juan García, 3874567890, o 23-12345678-9"
+                      autocomplete="off"
+                      oninput="buscarClientes(this.value)"
+                    >
+                    <input type="hidden" name="clienteExistente" id="clienteSeleccionadoId" required>
+                    <ul id="dropdownClientes" class="dropdown-menu w-100" style="display:none; position:absolute; top:100%; left:0; z-index:1000;"></ul>
+                  </div>
+                  <small class="text-muted d-block mt-2">
+                    <span id="clienteSeleccionadoInfo" class="text-success fw-bold"></span>
+                  </small>
+                </div>
+              </div>
+            </div>
+
+            <!-- OPCIÓN 2: Cliente Nuevo -->
+            <div id="seccionClienteNuevo" style="display: none;">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Nombre *</label>
+                  <input type="text" name="clienteInput" id="clienteNombreInput" class="form-control form-control-lg" placeholder="Nombre del cliente">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Teléfono *</label>
+                  <input type="text" name="telefonoNuevo" id="telefonoNuevoInput" class="form-control form-control-lg" placeholder="(387) 123-4567">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Email</label>
+                  <input type="email" name="emailNuevo" id="emailNuevoInput" class="form-control" placeholder="email@ejemplo.com">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Dirección</label>
+                  <input type="text" name="direccionNuevo" id="direccionNuevoInput" class="form-control" placeholder="Calle 123">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════
+           SECCIÓN 2: PRODUCTOS
+           ════════════════════════════════════════= -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-success text-white">
+            <h6 class="mb-0"><i class="bi bi-box"></i> 2️⃣ PRODUCTOS/SERVICIOS</h6>
+          </div>
+          <div class="card-body">
+            <div id="contenedorProductos"></div>
+            <button type="button" class="btn btn-outline-success w-100" onclick="agregarProducto()">
+              <i class="bi bi-plus-circle"></i> Agregar Producto
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════
+           SECCIÓN 3: DESCUENTO GENERAL
+           ════════════════════════════════════════= -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="bi bi-percent"></i> 3️⃣ DESCUENTO GENERAL (OPCIONAL)</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Descuento (%)</label>
+                <input type="number" id="descuentoGeneral" class="form-control form-control-lg" step="0.01" value="0" min="0" max="100" onchange="recalcularTotal()">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Descuento ($)</label>
+                <input type="number" id="descuentoDolaresGeneral" class="form-control form-control-lg" step="0.01" value="0" min="0" readonly style="background-color: #f0f0f0;">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Subtotal ($)</label>
+                <input type="number" id="subtotalGeneral" class="form-control form-control-lg" step="0.01" readonly style="background-color: #f0f0f0;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════
+           SECCIÓN 4: TOTALES Y PAGO
+           ════════════════════════════════════════= -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm border-warning border-4">
+          <div class="card-header bg-warning text-dark">
+            <h6 class="mb-0"><i class="bi bi-cash-coin"></i> 4️⃣ TOTALES Y PAGO</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label fw-bold">💰 Total del Pedido ($) *</label>
+                <input type="number" id="totalPedido" name="precioTotalPedido" class="form-control form-control-lg fw-bold" step="0.01" readonly style="background-color: #fff3cd; font-size: 1.3rem;">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">💵 Monto Adelantado ($)</label>
+                <input type="number" name="monto_entregado" class="form-control form-control-lg" step="0.01" value="0" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">💳 Método de Pago</label>
+                <select name="medio_pago" class="form-select form-select-lg" required>
+                  <option value="">-- Seleccionar --</option>
+                  <option value="Efectivo">💵 Efectivo</option>
+                  <option value="Transferencia">🏦 Transferencia</option>
+                  <option value="Tarjeta">💳 Tarjeta</option>
+                  <option value="QR">📱 QR</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">📅 Fecha de Entrega</label>
+                <input type="date" name="fecha_entrega" class="form-control form-control-lg">
+                <small class="text-muted">Opcional — ¿para cuándo está el trabajo?</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════
+           BOTONES
+           ════════════════════════════════════════= -->
+      <div class="col-12">
+        <div class="d-flex gap-3 justify-content-center">
+          <a href="/" class="btn btn-secondary btn-lg px-5">
+            <i class="bi bi-arrow-left"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-success btn-lg px-5" onclick="return validarFormulario()">
+            <i class="bi bi-save"></i> Guardar Pedido
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
 </div>
 
-<hr class="my-4"/>
-
-    <!-- 2) Productos -->
-    <h4 class="text-primary">Productos:</h4>
-    <div id="productos"></div>
-    <div class="col-12 text-center mb-4">
-      <button type="button" class="btn btn-outline-success" onclick="agregarProducto()">➕ Agregar Producto</button>
-    </div>
-
-    <!-- 3) Totales -->
-    <div class="col-md-6">
-      <label class="form-label fw-bold">💵 Precio Total del Pedido</label>
-      <input type="number" id="precioTotalPedido" name="precioTotalPedido"
-             class="form-control" step="0.01" required>
-    </div>
-
-    <div class="col-md-6">
-      <label class="form-label">Monto Señalado Total</label>
-      <input type="number" name="monto_entregado" step="0.01" class="form-control" required>
-    </div>
-
-    <div class="col-md-6">
-      <label class="form-label">Medio de Pago</label>
-      <select name="medio_pago" class="form-select" required>
-        <option value="Efectivo">Efectivo</option>
-        <option value="Transferencia">Transferencia</option>
-        <option value="Tarjeta">Tarjeta</option>
-      </select>
-    </div>
-
-    <div class="col-12 text-center mt-4">
-      <button type="submit" class="btn btn-danger px-5">💾 Guardar Pedido</button>
-    </div>
-<% if (typeof presupuestoId !== 'undefined') { %>
-  <input type="hidden" name="presupuesto_id" value="<%= presupuestoId %>">
-<% } %>
-  </form>
-
-  <div class="text-center mt-4">
-    <a href="/" class="btn btn-secondary">← Volver al Inicio</a>
-  </div>
-</main>
-
-<%- include('../partials/footer') %>
 
 <script>
-  //────────────────────────────────────────────────────────────
-  // Datos de materiales (inyectados desde el servidor)
-  //────────────────────────────────────────────────────────────
-  const materialesData = <%- JSON.stringify(materiales) %>;
-  const totalInput     = document.getElementById('precioTotalPedido');
-  let contadorProductos = 0;
-  let manualTotal       = false;
+const materiales = <%- JSON.stringify(materiales) %>;
+let contadorProductos = 0;
+let timerBusquedaClientes = null;
+let timerBusquedaProductos = {};
 
-  // Autocomplete Cliente (igual que antes)
-  const inp  = document.getElementById('clienteInput');
-  const hid  = document.getElementById('clienteExistente');
-  const box  = document.getElementById('sugerencias');
-  const btn  = document.getElementById('btnMostrarClientes');
-  async function fetchClientes(q) {
-    const res = await fetch(`/clientes/search?q=${encodeURIComponent(q)}`);
-    const list = await res.json();
-    box.innerHTML = list.map(c =>
-      `<button type="button" class="list-group-item list-group-item-action`
-      + ` data-id="${c.id}" data-name="${c.name}">${c.name}</button>`
-    ).join('') +
-    (q
-      ? `<button type="button" class="list-group-item list-group-item-action text-primary`
-        + ` data-new="true" data-name="${q}">➕ Nuevo: “${q}”</button>`
-      : ''
-    );
+function cambiarTipoCliente() {
+  const tipo = document.querySelector('input[name="tipoCliente"]:checked').value;
+  
+  if (tipo === 'existente') {
+    document.getElementById('seccionClienteExistente').style.display = 'block';
+    document.getElementById('seccionClienteNuevo').style.display = 'none';
+  } else {
+    document.getElementById('seccionClienteExistente').style.display = 'none';
+    document.getElementById('seccionClienteNuevo').style.display = 'block';
   }
-  inp.addEventListener('input', () => {
-    clearTimeout(inp._deb);
-    inp._deb = setTimeout(() => {
-      const q = inp.value.trim();
-      if (!q) {
-        box.innerHTML = '';
-        toggleNuevo(true);
+}
+
+// ════════════════════════════════════════════════════════════════
+// BUSCAR CLIENTES CON AUTOCOMPLETE
+// ════════════════════════════════════════════════════════════════
+
+function buscarClientes(query) {
+  clearTimeout(timerBusquedaClientes);
+  
+  if (!query || query.length < 1) {
+    document.getElementById('dropdownClientes').style.display = 'none';
+    return;
+  }
+
+  timerBusquedaClientes = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/autocomplete/clientes?q=' + encodeURIComponent(query));
+      const clientes = await res.json();
+      const dropdown = document.getElementById('dropdownClientes');
+      
+      if (!clientes || !clientes.length) {
+        dropdown.innerHTML = '<li class="dropdown-item text-muted">Sin resultados</li>';
+        dropdown.style.display = 'block';
         return;
       }
-      fetchClientes(q);
-    }, 300);
-  });
-  btn.addEventListener('click', () => fetchClientes(inp.value.trim()));
-  box.addEventListener('click', e => {
-    if (!e.target.matches('.list-group-item')) return;
-    const isNew = e.target.dataset.new;
-    inp.value = e.target.dataset.name;
-    hid.value = isNew ? '' : e.target.dataset.id;
-    toggleNuevo(!!isNew);
-    box.innerHTML = '';
-  });
-  function toggleNuevo(show) {
-    document.getElementById('nuevoClienteFields').style.display = show ? 'block' : 'none';
+
+      dropdown.innerHTML = clientes.map(c => `
+        <li class="dropdown-item cursor-pointer" style="cursor:pointer;" 
+            onclick="seleccionarCliente(${c.id}, '${c.name.replace(/'/g, "\\'")}', '${c.cuit || ''}')">
+          <strong>${c.name}</strong><br>
+          <small class="text-muted">
+            ${c.cuit ? '🆔 ' + c.cuit : ''} ${c.phone ? '📱 ' + c.phone : ''}
+          </small>
+        </li>
+      `).join('');
+      
+      dropdown.style.display = 'block';
+    } catch (err) {
+      console.error('Error:', err);
+    }
+  }, 300);
+}
+
+function seleccionarCliente(id, nombre, cuit) {
+  document.getElementById('clienteSeleccionadoId').value = id;
+  document.getElementById('buscadorCliente').value = nombre;
+  document.getElementById('clienteSeleccionadoInfo').textContent = '✓ ' + nombre + (cuit ? ' (' + cuit + ')' : '');
+  document.getElementById('dropdownClientes').style.display = 'none';
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#buscadorCliente') && !e.target.closest('#dropdownClientes')) {
+    document.getElementById('dropdownClientes').style.display = 'none';
   }
-  toggleNuevo(true);
+});
 
-  // Mostrar automáticamente los campos si venís desde un presupuesto
-<% if (typeof presupuesto !== 'undefined') { %>
-  toggleNuevo(true);
-<% } %>
+// ════════════════════════════════════════════════════════════════
+// AGREGAR PRODUCTO
+// ════════════════════════════════════════════════════════════════
 
-
-  // ───── Gestión de Productos ─────
-  totalInput.addEventListener('input', () => { manualTotal = true; });
-
-  function agregarProducto() {
-    contadorProductos++;
-    const cont = document.getElementById('productos');
-
-    // Opciones de materiales
-    const opciones = materialesData.map(m =>
-  `<option
-     value="${m.name}"
-     data-price="${m.price}"
-     data-tipounidad="${m.tipo}"
-   >
-     ${m.name} — $${m.price.toFixed(2)} / ${m.tipo === 'metro_cuadrado' ? 'm²' : 'ud'}
-   </option>`
-).join('');
-
-    const card = document.createElement('div');
-    card.className = 'producto-card mb-4 p-3 border rounded';
-    card.innerHTML = `
-      <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label>Material:</label>
-          <select name="material[]" class="form-select"
-                  onchange="onMaterialChange(${contadorProductos}); calcularPrecio(${contadorProductos})"
-                  required>
-            <option value="">-- Elige material --</option>
-            ${opciones}
-          </select>
+function agregarProducto() {
+  contadorProductos++;
+  const idx = contadorProductos;
+  const html = `
+    <div class="producto-item mb-4 p-3 border rounded bg-light" id="producto_${idx}">
+      <div class="row g-3">
+        <div class="col-md-5 position-relative">
+          <label class="form-label fw-bold">🔍 Producto *</label>
+          <input 
+            type="text" 
+            class="form-control buscador-producto" 
+            placeholder="Busca por código o nombre"
+            data-idx="${idx}"
+            autocomplete="off"
+            oninput="buscarProductos(this.value, ${idx})"
+          >
+          <input type="hidden" name="material[]" id="producto_nombre_${idx}" value="" required>
+          <input type="hidden" name="producto_id[]" id="producto_id_${idx}" value="">
+          <ul id="dropdown_productos_${idx}" class="dropdown-menu w-100" style="display:none; position:absolute; top:100%; left:0; z-index:1000; max-height:300px; overflow-y:auto;"></ul>
+          <small id="producto_info_${idx}" class="text-success fw-bold d-block mt-1"></small>
         </div>
+
         <div class="col-md-2">
-          <label>Ancho (m):</label>
-          <input type="number" name="ancho[]" class="form-control" step="0.01"
-                 oninput="calcularPrecio(${contadorProductos})">
+          <label class="form-label fw-bold">Cantidad *</label>
+          <input type="number" name="cantidad[]" class="form-control" step="1" value="1" min="1" onchange="calcularPrecio(${idx})" required>
         </div>
-        <div class="col-md-2">
-          <label>Alto (m):</label>
-          <input type="number" name="alto[]" class="form-control" step="0.01"
-                 oninput="calcularPrecio(${contadorProductos})">
+
+        <div class="col-md-1 campos-lona-${idx}" style="display:none;">
+          <label class="form-label">Ancho (m)</label>
+          <input type="number" name="ancho[]" class="form-control" step="0.01" onchange="calcularPrecio(${idx})">
         </div>
+
+        <div class="col-md-1 campos-lona-${idx}" style="display:none;">
+          <label class="form-label">Alto (m)</label>
+          <input type="number" name="alto[]" class="form-control" step="0.01" onchange="calcularPrecio(${idx})">
+        </div>
+
         <div class="col-md-1">
-          <label>Cant.:</label>
-          <input type="number" name="cantidad[]" class="form-control" step="1" value="1"
-                 oninput="calcularPrecio(${contadorProductos})" required>
+          <label class="form-label fw-bold">P.U. ($)</label>
+          <input type="number" name="precio_unitario[]" id="preciounit_${idx}" class="form-control" step="0.01" readonly style="background-color:#f0f0f0;">
         </div>
-        <div class="col-md-2">
-          <label>Descuento (%):</label>
-          <input type="number" name="descuento[]" class="form-control" step="1" value="0"
-                 oninput="calcularPrecio(${contadorProductos})">
+
+        <div class="col-md-1">
+          <label class="form-label">Desc. (%)</label>
+          <input type="number" name="descuento_item[]" id="descuento_${idx}" class="form-control" step="0.01" value="0" min="0" max="100" onchange="calcularPrecio(${idx})">
         </div>
-        <div class="col-md-2">
-          <label>Precio:</label>
-          <input type="number" name="precio[]" id="precio_${contadorProductos}"
-                 class="form-control" step="0.01" readonly required>
+
+        <div class="col-md-1">
+          <label class="form-label fw-bold">Subtotal ($)</label>
+          <input type="number" name="precio[]" id="precio_${idx}" class="form-control" step="0.01" readonly style="background-color:#f0f0f0;">
         </div>
-        <div class="col-12">
-          <label>Descripción:</label>
-          <textarea name="descripcion[]" class="form-control" rows="2" required></textarea>
+
+        <div class="col-md-12">
+          <label class="form-label">Descripción</label>
+          <textarea name="descripcion[]" class="form-control" rows="2" placeholder="Detalles..."></textarea>
         </div>
-        <div class="col-12">
-  <label>Imágenes (opcional):</label>
-  <div class="dropzone border border-secondary rounded p-3 text-center"
-       data-input="imagen_${contadorProductos}"
-       ondragover="event.preventDefault()"
-       ondrop="handleDrop(event, ${contadorProductos})">
-    Arrastrá imágenes aquí o hacé clic para seleccionarlas
-    <input type="file" name="imagen_${contadorProductos}" class="form-control mt-2 d-none"
-           id="fileInput_${contadorProductos}" multiple onchange="showFiles(${contadorProductos})">
-  </div>
-  <div id="preview_${contadorProductos}" class="mt-2 d-flex flex-wrap gap-2"></div>
-</div>
+
         <div class="col-12 text-end">
-          <button type="button" class="btn btn-outline-danger btn-sm"
-                  onclick="eliminarProducto(this)">🗑️ Eliminar Producto</button>
+          <button type="button" class="btn btn-sm btn-danger" onclick="eliminarProducto(${idx})">
+            <i class="bi bi-trash"></i> Eliminar
+          </button>
         </div>
-      </div>`;
-    cont.appendChild(card);
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('contenedorProductos').insertAdjacentHTML('beforeend', html);
+}
 
-    document.getElementById(`precio_${contadorProductos}`).value = '0.00';
-    calcularPrecio(contadorProductos);
+// ════════════════════════════════════════════════════════════════
+// BUSCAR PRODUCTOS CON AUTOCOMPLETE
+// ════════════════════════════════════════════════════════════════
+
+function buscarProductos(query, idx) {
+  clearTimeout(timerBusquedaProductos[idx]);
+  
+  if (!query || query.length < 1) {
+    document.getElementById('dropdown_productos_' + idx).style.display = 'none';
+    return;
   }
 
-  function onMaterialChange(id) {
-    document.getElementById(`precio_${id}`).readOnly = true;
-    calcularPrecio(id);
-  }
+  timerBusquedaProductos[idx] = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/autocomplete/productos?q=' + encodeURIComponent(query));
+      const productos = await res.json();
+      const dropdown = document.getElementById('dropdown_productos_' + idx);
+      
+      if (!productos || !productos.length) {
+        dropdown.innerHTML = '<li class="dropdown-item text-muted">Sin resultados</li>';
+        dropdown.style.display = 'block';
+        return;
+      }
 
-  function eliminarProducto(btn) {
-    btn.closest('.producto-card').remove();
-    recalcularTotalPedido();
-  }
-
-  function calcularPrecio(id) {
-    const selEl = document.getElementsByName('material[]')[id-1];
-    if (!selEl.value) return;
-
-    // Leemos precio y unidad del <option>
-    const pricePerUnit = parseFloat(selEl.selectedOptions[0].dataset.price) || 0;
-    const unitType     = selEl.selectedOptions[0].dataset.tipounidad;
-
-    const ancho    = parseFloat(document.getElementsByName('ancho[]')[id-1]?.value)    || 0;
-    const alto     = parseFloat(document.getElementsByName('alto[]')[id-1]?.value)     || 0;
-    const cantidad = parseInt  (document.getElementsByName('cantidad[]')[id-1]?.value) || 1;
-    const desc     = parseFloat(document.getElementsByName('descuento[]')[id-1]?.value)|| 0;
-    const inpPre   = document.getElementById(`precio_${id}`);
-
-    // Cálculo: si es "unidad", precio directo; si no, por m² (ancho*alto*precio)
-    let unitPrice;
-    if (unitType === 'unidad') {
-      unitPrice = pricePerUnit;
-    } else {
-      unitPrice = ancho * alto * pricePerUnit;
+      dropdown.innerHTML = productos.map(p => `
+        <li class="dropdown-item cursor-pointer" style="cursor:pointer;" 
+            onclick="seleccionarProducto(${idx}, ${p.id}, '${p.nombre.replace(/'/g, "\\'")}', '${p.codigo || ''}', '${p.tipo}', ${p.precio})">
+          <strong>[${p.codigo || 'S/C'}] ${p.nombre}</strong><br>
+          <small class="text-muted">💵 $${p.precio} • ${p.tipo}</small>
+        </li>
+      `).join('');
+      
+      dropdown.style.display = 'block';
+    } catch (err) {
+      console.error('Error:', err);
     }
-
-    // Aplicamos cantidad y descuento
-    let total = unitPrice * cantidad;
-    total = total - (total * (desc / 100));
-
-    inpPre.value = total.toFixed(2);
-    recalcularTotalPedido();
-  }
-
-  function recalcularTotalPedido() {
-    if (manualTotal) return;
-    let sum = 0;
-    document.querySelectorAll('input[name="precio[]"]').forEach(i => {
-      sum += parseFloat(i.value) || 0;
-    });
-    totalInput.value = sum.toFixed(2);
-  }
-
-  // iniciar total
-  totalInput.value = '0.00';
-
-  function handleDrop(event, id) {
-  event.preventDefault();
-  const input = document.getElementById(`fileInput_${id}`);
-  const dt = new DataTransfer();
-
-  // Agregar las que ya estaban
-  Array.from(input.files).forEach(f => dt.items.add(f));
-
-  // Agregar nuevas arrastradas
-  Array.from(event.dataTransfer.files).forEach(f => {
-    if (f.type.startsWith('image/')) dt.items.add(f);
-  });
-
-  input.files = dt.files;
-  showFiles(id);
+  }, 300);
 }
 
-function showFiles(id) {
-  const input = document.getElementById(`fileInput_${id}`);
-  const preview = document.getElementById(`preview_${id}`);
-  preview.innerHTML = '';
-
-  Array.from(input.files).forEach((file, index) => {
-    if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'position-relative d-inline-block';
-      wrapper.innerHTML = `
-        <img src="${e.target.result}" class="border rounded me-2" style="max-height: 80px;">
-        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
-                onclick="removeImage(${id}, ${index})">×</button>
-      `;
-      preview.appendChild(wrapper);
-    };
-    reader.readAsDataURL(file);
+function seleccionarProducto(idx, productoId, nombre, codigo, tipo, precio) {
+  const item = document.getElementById('producto_' + idx);
+  
+  item.querySelector('.buscador-producto').value = '[' + (codigo || 'S/C') + '] ' + nombre;
+  document.getElementById('producto_id_' + idx).value = productoId;
+  document.getElementById('producto_nombre_' + idx).value = nombre;
+  document.getElementById('preciounit_' + idx).value = precio.toFixed(2);
+  document.getElementById('producto_info_' + idx).textContent = '✓ ' + nombre;
+  
+  // Mostrar/ocultar campos de lona
+  const lonaFields = document.querySelectorAll('.campos-lona-' + idx);
+  const esLona = tipo.toLowerCase().includes('lona');
+  lonaFields.forEach(f => {
+    f.style.display = esLona ? 'block' : 'none';
   });
+  
+  document.getElementById('dropdown_productos_' + idx).style.display = 'none';
+  calcularPrecio(idx);
 }
 
-function removeImage(id, indexToRemove) {
-  const input = document.getElementById(`fileInput_${id}`);
-  const dt = new DataTransfer();
-  Array.from(input.files).forEach((file, index) => {
-    if (index !== indexToRemove) dt.items.add(file);
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('[id^="dropdown_productos_"]').forEach(dd => {
+    if (!e.target.closest('[data-idx="' + dd.id.split('_')[2] + '"]') && !e.target.closest('#' + dd.id)) {
+      dd.style.display = 'none';
+    }
   });
-  input.files = dt.files;
-  showFiles(id);
-}
-
-document.addEventListener('click', e => {
-  const dz = e.target.closest('.dropzone');
-  if (dz) {
-    const inputName = dz.dataset.input;
-    const input = document.querySelector(`input[name="${inputName}"]`);
-    const id = input.id.split('_')[1];
-
-    // Guardamos una copia de los archivos actuales
-    const prevFiles = Array.from(input.files);
-
-    // Creamos un nuevo input temporal
-    const tempInput = document.createElement('input');
-    tempInput.type = 'file';
-    tempInput.accept = 'image/*';
-    tempInput.multiple = true;
-    tempInput.style.display = 'none';
-
-    document.body.appendChild(tempInput);
-
-    tempInput.addEventListener('change', () => {
-      const dt = new DataTransfer();
-      prevFiles.forEach(f => dt.items.add(f));
-      Array.from(tempInput.files).forEach(f => {
-        if (f.type.startsWith('image/')) dt.items.add(f);
-      });
-
-      input.files = dt.files;
-      showFiles(id);
-      document.body.removeChild(tempInput);
-    });
-
-    tempInput.click();
-  }
 });
 
-<% if (typeof presupuesto !== 'undefined') { %>
-<script>
-window.addEventListener('DOMContentLoaded', () => {
-  // Mostrar campos del cliente nuevo
-  toggleNuevo(true);
+// ════════════════════════════════════════════════════════════════
+// CALCULAR PRECIOS
+// ════════════════════════════════════════════════════════════════
 
-  // Agregar un producto automáticamente
-  agregarProducto();
-  const tarjeta  = document.getElementsByClassName('producto-card')[contadorProductos - 1];
-  const select   = tarjeta.querySelector(`select[name="material[]"]`);
-  const desc     = tarjeta.querySelector(`textarea[name="descripcion[]"]`);
-  const cantidad = tarjeta.querySelector(`input[name="cantidad[]"]`);
-  const ancho    = tarjeta.querySelector(`input[name="ancho[]"]`);
-  const alto     = tarjeta.querySelector(`input[name="alto[]"]`);
+function calcularPrecio(idx) {
+  const producto = document.getElementById('producto_' + idx);
+  if (!producto) return;
+  
+  const precioBase = parseFloat(document.getElementById('preciounit_' + idx).value) || 0;
+  const cantidad = parseFloat(producto.querySelector('input[name="cantidad[]"]').value) || 1;
+  const descuento = parseFloat(document.getElementById('descuento_' + idx).value) || 0;
+  const ancho = parseFloat(producto.querySelector('input[name="ancho[]"]')?.value) || 0;
+  const alto = parseFloat(producto.querySelector('input[name="alto[]"]')?.value) || 0;
+  
+  let precioUnitario = precioBase;
+  if (ancho && alto) {
+    precioUnitario = (ancho * alto) * precioBase;
+  }
+  
+  const subtotal = precioUnitario * cantidad;
+  const descuentoMonto = subtotal * (descuento / 100);
+  const precioFinal = subtotal - descuentoMonto;
+  
+  document.getElementById('precio_' + idx).value = precioFinal.toFixed(2);
+  recalcularTotal();
+}
 
-  // Seleccionar el producto en la lista
-  for (let opt of select.options) {
-    if (opt.text.includes("<%= presupuesto.producto_nombre %>")) {
-      opt.selected = true;
-      break;
+function recalcularTotal() {
+  let suma = 0;
+  document.querySelectorAll('input[name="precio[]"]').forEach(input => {
+    suma += parseFloat(input.value) || 0;
+  });
+  
+  const descuentoGeneral = parseFloat(document.getElementById('descuentoGeneral').value) || 0;
+  const descuentoMonto = suma * (descuentoGeneral / 100);
+  const total = suma - descuentoMonto;
+  
+  document.getElementById('subtotalGeneral').value = suma.toFixed(2);
+  document.getElementById('descuentoDolaresGeneral').value = descuentoMonto.toFixed(2);
+  document.getElementById('totalPedido').value = total.toFixed(2);
+}
+
+function eliminarProducto(idx) {
+  const elem = document.getElementById('producto_' + idx);
+  if (elem) elem.remove();
+  recalcularTotal();
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// VALIDAR FORMULARIO
+// ════════════════════════════════════════════════════════════════
+
+function validarFormulario() {
+  const tipo = document.querySelector('input[name="tipoCliente"]:checked').value;
+  
+  if (tipo === 'existente') {
+    if (!document.getElementById('clienteSeleccionadoId').value) {
+      alert('⚠️ Selecciona un cliente');
+      return false;
+    }
+  } else {
+    if (!document.getElementById('clienteNombreInput').value.trim()) {
+      alert('⚠️ Ingresa nombre del cliente');
+      return false;
+    }
+    if (!document.getElementById('telefonoNuevoInput').value.trim()) {
+      alert('⚠️ Ingresa teléfono del cliente');
+      return false;
     }
   }
-
-  <% if (presupuesto.tipo === 'metro_cuadrado') { %>
-    ancho.value = 1;
-    alto.value = 1;
-  <% } else if (presupuesto.tipo === 'unidad' || presupuesto.tipo === 'hoja') { %>
-    cantidad.value = <%= presupuesto.minimo %>;
-  <% } %>
-
-  desc.value = `<%= presupuesto.detalle.replace(/\r?\n/g, '') %>`;
-  calcularPrecio(contadorProductos);
-});
-</script>
-<% } %>
-
+  
+  const productos = document.querySelectorAll('.producto-item');
+  if (productos.length === 0) {
+    alert('⚠️ Agrega al menos un producto');
+    return false;
+  }
+  
+  let valido = true;
+  productos.forEach((prod, i) => {
+    const id = prod.querySelector('input[name="producto_id[]"]').value;
+    if (!id) {
+      alert('⚠️ Selecciona un producto para cada línea');
+      valido = false;
+    }
+  });
+  
+  return valido;
+}
 </script>

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 8 node:*)",
+      "Bash(node -e:*)",
+      "Bash(netstat:*)",
+      "Bash(tasklist:*)",
+      "Bash(sqlite3:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(taskkill:*)",
+      "Bash(node:*)",
+      "Bash(lsof:*)"
+    ]
+  }
+}

@@ -1,0 +1,239 @@
+<h1>➕ Nuevo Pedido</h1>
+
+<form method="POST" action="/pedidos/nuevo" id="pedidoForm">
+  <input type="hidden" name="productos" id="productos_json">
+
+  <!-- PASO 1: CLIENTE AUTOCOMPLETE -->
+  <div class="card mb-4">
+    <div class="card-header"><i class="bi bi-people"></i> Cliente</div>
+    <div class="card-body">
+      <input type="hidden" name="cliente_id" id="cliente_id">
+      <input type="text" class="form-control" id="cliente_input"
+             placeholder="Escribir nombre o buscar..." autocomplete="off">
+      <div id="cliente_info" class="mt-2"></div>
+      <small class="text-muted">Escribe y selecciona, o escribe un nombre nuevo</small>
+    </div>
+  </div>
+
+  <!-- PASO 2: PRODUCTOS DINÁMICOS -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-boxes"></i> Productos</span>
+      <div class="d-flex gap-2">
+        <select id="catalogo_select" class="form-select form-select-sm" style="width:auto">
+          <option value="">➕ Del Catálogo</option>
+          <% catalogo.forEach(p => { %>
+            <option value="<%= p.id %>"
+                    data-desc="<%= p.nombre %>"
+                    data-price="<%= p.precio_base %>">
+              <%= p.nombre %> — $<%= p.precio_base %>
+            </option>
+          <% }); %>
+        </select>
+        <button type="button" class="btn btn-sm btn-outline-primary" onclick="agregarManual()">➕ Manual</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="productos_lista">
+        <p class="text-muted">Agregá productos del catálogo o manualmente.</p>
+      </div>
+      <div class="h4 mt-3">Total: $<span id="total_productos">0</span></div>
+    </div>
+  </div>
+
+  <!-- PASO 3: RESUMEN + PAGO -->
+  <div class="card">
+    <div class="card-header"><i class="bi bi-cash-coin"></i> Resumen y Pago</div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-2">Total Pedido: $<strong id="total_pedido">0</strong></div>
+          <div class="mb-2 d-flex align-items-center gap-2">
+            <label class="mb-0">Seña: $</label>
+            <input type="number" name="senia" id="input_senia"
+                   class="form-control w-auto" min="0" step="100" value="0">
+          </div>
+          <div>Saldo: $<strong id="saldo_restante">0</strong></div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label class="form-label">Medio de Pago:</label>
+            <select name="medio_pago" class="form-select" required>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Seña">Seña Parcial</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Fecha de Entrega:</label>
+            <input type="date" name="fecha_entrega" id="fecha_entrega" class="form-control" required>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-success btn-lg mt-4">
+        <i class="bi bi-check-circle"></i> 💾 Crear Pedido
+      </button>
+    </div>
+  </div>
+</form>
+
+<script>
+// ✅ FIX 1: inyectar clientes desde el servidor
+const clientes = <%- JSON.stringify(clientes) %>;
+
+let productos = [];
+let clienteSeleccionado = null;
+
+// --- CLIENTE AUTOCOMPLETE ---
+document.getElementById('cliente_input').addEventListener('input', (e) => {
+  const valor = e.target.value.trim().toLowerCase();
+  if (!valor) { document.getElementById('cliente_info').innerHTML = ''; return; }
+
+  const matches = clientes.filter(c => c.name.toLowerCase().includes(valor)).slice(0, 5);
+  let html = '';
+  if (matches.length) {
+    // ✅ FIX 3: usar data-* en vez de onclick con strings directos
+    html = '<div class="border rounded">' +
+      matches.map(c => `
+        <div class="cliente-option p-2 border-bottom"
+             data-id="${c.id}"
+             data-nombre="${c.name.replace(/"/g, '&quot;')}"
+             data-phone="${(c.phone || '').replace(/"/g, '&quot;')}">
+          ${c.name} <small class="text-muted">${c.phone || ''}</small>
+        </div>`
+      ).join('') + '</div>';
+  } else if (valor.length > 2) {
+    html = `<div class="p-2 text-success border rounded">➕ Nuevo cliente: "<strong>${e.target.value}</strong>"</div>`;
+  }
+  document.getElementById('cliente_info').innerHTML = html;
+});
+
+// Event delegation — evita el problema del apóstrofe
+document.getElementById('cliente_info').addEventListener('click', (e) => {
+  const opt = e.target.closest('.cliente-option');
+  if (opt) seleccionarCliente(opt.dataset.id, opt.dataset.nombre, opt.dataset.phone);
+});
+
+function seleccionarCliente(id, nombre, phone) {
+  clienteSeleccionado = { id, nombre, phone };
+  // ✅ FIX 2: campo correcto cliente_id
+  document.getElementById('cliente_id').value = id;
+  document.getElementById('cliente_input').value = nombre;
+  document.getElementById('cliente_info').innerHTML = `
+    <div class="alert alert-success p-2 mb-0">
+      ✅ ${nombre}${phone ? ' (' + phone + ')' : ''} seleccionado
+    </div>`;
+}
+
+// --- CATÁLOGO ---
+document.getElementById('catalogo_select').addEventListener('change', (e) => {
+  const opt = e.target.selectedOptions[0];
+  if (opt.value) {
+    agregarProducto({ descripcion: opt.dataset.desc, precio: parseFloat(opt.dataset.price) || 0, cantidad: 1 });
+    e.target.value = '';
+  }
+});
+
+function agregarManual() {
+  agregarProducto({ descripcion: '', precio: 0, cantidad: 1 });
+}
+
+function agregarProducto(prod) {
+  // ✅ FIX 5: ID único con Date.now()
+  prod.id = Date.now() + Math.random();
+  productos.push(prod);
+  renderProductos();
+  calcularTotales();
+}
+
+function eliminarProducto(id) {
+  productos = productos.filter(p => p.id !== id);
+  renderProductos();
+  calcularTotales();
+}
+
+function renderProductos() {
+  if (!productos.length) {
+    document.getElementById('productos_lista').innerHTML =
+      '<p class="text-muted">Agregá productos del catálogo o manualmente.</p>';
+    return;
+  }
+  document.getElementById('productos_lista').innerHTML = productos.map(p => `
+    <div class="producto-row row align-items-center mb-3 p-3 border rounded">
+      <div class="col-md-5">
+        <input class="form-control" placeholder="Descripción"
+               value="${p.descripcion.replace(/"/g, '&quot;')}"
+               onchange="updateProd(${p.id}, 'descripcion', this.value)">
+      </div>
+      <div class="col-md-2">
+        <input type="number" class="form-control" placeholder="Cant."
+               value="${p.cantidad || 1}" min="1"
+               onchange="updateProd(${p.id}, 'cantidad', +this.value)">
+      </div>
+      <div class="col-md-2">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">$</span>
+          <input type="number" class="form-control" value="${p.precio || 0}" step="100" min="0"
+                 onchange="updateProd(${p.id}, 'precio', +this.value)">
+        </div>
+      </div>
+      <div class="col-md-2 fw-bold text-success" id="subtotal_${p.id}">
+        $${((p.cantidad || 1) * (p.precio || 0)).toLocaleString('es-AR')}
+      </div>
+      <div class="col-md-1">
+        <button type="button" class="btn btn-sm btn-outline-danger"
+                onclick="eliminarProducto(${p.id})">❌</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateProd(id, campo, valor) {
+  const p = productos.find(p => p.id === id);
+  if (!p) return;
+  p[campo] = campo === 'descripcion' ? valor : (parseFloat(valor) || 0);
+  // ✅ FIX 4: actualizar subtotal de la fila sin re-renderizar todo
+  const el = document.getElementById(`subtotal_${id}`);
+  if (el) el.textContent = '$' + ((p.cantidad || 1) * (p.precio || 0)).toLocaleString('es-AR');
+  calcularTotales();
+}
+
+function calcularTotales() {
+  const total = productos.reduce((sum, p) => sum + (p.cantidad || 1) * (p.precio || 0), 0);
+  document.getElementById('total_productos').textContent = total.toLocaleString('es-AR');
+  document.getElementById('total_pedido').textContent   = total.toLocaleString('es-AR');
+  const senia = parseFloat(document.getElementById('input_senia').value) || 0;
+  document.getElementById('saldo_restante').textContent = (total - senia).toLocaleString('es-AR');
+  document.getElementById('productos_json').value = JSON.stringify(productos);
+}
+
+document.getElementById('input_senia').addEventListener('input', calcularTotales);
+
+// ✅ FIX 6: fecha de entrega por defecto = hoy
+(function() {
+  const hoy = new Date();
+  const yy = hoy.getFullYear();
+  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dd = String(hoy.getDate()).padStart(2, '0');
+  document.getElementById('fecha_entrega').value = `${yy}-${mm}-${dd}`;
+})();
+
+// --- SUBMIT ---
+document.getElementById('pedidoForm').addEventListener('submit', (e) => {
+  if (!document.getElementById('cliente_input').value.trim()) {
+    e.preventDefault(); alert('⚠️ Escribí o seleccioná un cliente'); return;
+  }
+  if (!productos.length) {
+    e.preventDefault(); alert('⚠️ Agregá al menos 1 producto'); return;
+  }
+  document.getElementById('productos_json').value = JSON.stringify(productos);
+});
+</script>
+
+<style>
+.cliente-option { cursor: pointer; transition: background 0.15s; }
+.cliente-option:hover { background: #f0f7ff; }
+.producto-row input { font-size: 0.9em; }
+</style>
+ 

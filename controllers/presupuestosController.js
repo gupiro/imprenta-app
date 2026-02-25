@@ -1,5 +1,21 @@
 // controllers/presupuestosController.js
 
+// Función auxiliar para obtener fecha y hora en zona horaria local (no UTC)
+function obtenerFechaLocal() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const mes = String(now.getMonth() + 1).padStart(2, '0');
+  const dia = String(now.getDate()).padStart(2, '0');
+  const horas = String(now.getHours()).padStart(2, '0');
+  const minutos = String(now.getMinutes()).padStart(2, '0');
+  const segundos = String(now.getSeconds()).padStart(2, '0');
+
+  return {
+    fecha: `${year}-${mes}-${dia}`,
+    timestamp: `${year}-${mes}-${dia} ${horas}:${minutos}:${segundos}`
+  };
+}
+
 module.exports = (db) => {
 
     const formNuevoPresupuesto = async (req, res) => {
@@ -88,7 +104,7 @@ module.exports = (db) => {
             totalPresupuesto += precioExtraVal;
 
             // Crear presupuesto
-            const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const { timestamp: fecha } = obtenerFechaLocal();
             const usuarioId = req.session.user?.id || null;
 
             const presupuestoResult = await db.run(`
@@ -225,7 +241,7 @@ module.exports = (db) => {
             }
 
             const precio_estimado = producto.precio_base || 0;
-            const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const { timestamp: fecha } = obtenerFechaLocal();
 
             await db.run(`
                 INSERT INTO presupuestos (

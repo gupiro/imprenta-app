@@ -154,10 +154,11 @@
     </div>
   </div>
 
-  <!-- PANEL DE FILTROS -->
+  <!-- PANEL DE FILTROS - SOLO ADMIN -->
+  <% if (user && user.rol === 'admin') { %>
   <form method="GET" action="/caja-diaria" class="card mb-4">
     <div class="card-body">
-      <h6 class="mb-3">🔍 Filtros</h6>
+      <h6 class="mb-3">🔍 Filtros Avanzados</h6>
       <div class="row g-2">
         <!-- Selector de fecha -->
         <div class="col-md-3">
@@ -197,6 +198,7 @@
       </div>
     </div>
   </form>
+  <% } %>
 
   <!-- TABLA DE MOVIMIENTOS -->
   <div class="card">

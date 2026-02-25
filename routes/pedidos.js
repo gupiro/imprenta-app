@@ -6,6 +6,22 @@ const checkPermission = require('../middleware/permissions');
 const path = require('path');
 const pdf = require('html-pdf');
 
+// Función auxiliar para obtener fecha y hora en zona horaria local (no UTC)
+function obtenerFechaLocal() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const mes = String(now.getMonth() + 1).padStart(2, '0');
+  const dia = String(now.getDate()).padStart(2, '0');
+  const horas = String(now.getHours()).padStart(2, '0');
+  const minutos = String(now.getMinutes()).padStart(2, '0');
+  const segundos = String(now.getSeconds()).padStart(2, '0');
+
+  return {
+    fecha: `${year}-${mes}-${dia}`,
+    timestamp: `${year}-${mes}-${dia} ${horas}:${minutos}:${segundos}`
+  };
+}
+
 module.exports = (db) => {
   const router = express.Router();
   // Configuración de directorios
@@ -75,7 +91,7 @@ module.exports = (db) => {
       const precio = parseFloat(precioTotalPedido) || 0;
       const entregado = parseFloat(monto_entregado) || 0;
       const restante = precio - entregado;
-      const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const { timestamp: fecha } = obtenerFechaLocal();
       const usuarioId = req.session.user?.id || null;
 
       const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId);
@@ -219,7 +235,7 @@ module.exports = (db) => {
 
       const nuevo_entregado = (pedido.monto_entregado || 0) + monto;
       const nuevo_saldo = Math.max(0, (pedido.precio || 0) - nuevo_entregado);
-      const fecha_ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const { timestamp: fecha_ahora } = obtenerFechaLocal();
 
       await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, fecha_pago = ?, medio_pago = ?, estado_pago = CASE WHEN ? <= 0.01 THEN "PAGADO" ELSE "PARCIAL" END WHERE id = ?', nuevo_entregado, nuevo_saldo, fecha_ahora, metodo_pago || 'Efectivo', nuevo_saldo, id);
 
@@ -289,7 +305,7 @@ module.exports = (db) => {
       }
       const nuevoEntregado = (pedido.monto_entregado || 0) + monto;
       const nuevoRestante = (pedido.precio || 0) - nuevoEntregado;
-      const fecha_pago = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const { timestamp: fecha_pago } = obtenerFechaLocal();
 
       await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, medio_pago = ?, fecha_pago = ?, estado_pago = CASE WHEN ? <= 0 THEN "PAGADO" ELSE estado_pago END, estado = CASE WHEN ? <= 0 THEN "ENTREGADO" ELSE estado END WHERE id = ?', nuevoEntregado, nuevoRestante, medio, fecha_pago, nuevoRestante, nuevoRestante, id);
 
@@ -379,7 +395,7 @@ module.exports = (db) => {
 
       // Si hay dinero entregado, crear movimiento de egreso (devolución)
       if (pedido.monto_entregado > 0) {
-        const fecha_ahora = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const { timestamp: fecha_ahora } = obtenerFechaLocal();
         const concepto = `Devolución - Pedido #${pedidoId} Cancelado`;
         await db.run(
           'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)',

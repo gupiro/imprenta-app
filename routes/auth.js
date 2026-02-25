@@ -39,6 +39,7 @@ module.exports = (db) => {
 
         // Guardar en sesión
         req.session.user = {
+            id:       user.id,        // Agregar ID del usuario
             username: user.username,
             rol:      user.rol,
             permisos  // ← lista de permisos asignada

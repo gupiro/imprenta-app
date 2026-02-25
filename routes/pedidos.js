@@ -76,14 +76,16 @@ module.exports = (db) => {
       const entregado = parseFloat(monto_entregado) || 0;
       const restante = precio - entregado;
       const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
-      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null);
+      const usuarioId = req.session.user?.id || null;
+
+      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId);
       const pedidoId = infoPed.lastID;
 
       // 💰 REGISTRAR ADELANTO EN CAJA DIARIA (si hay monto adelantado)
       if (entregado > 0) {
         const nombreCliente = clienteInput || (clienteExistente ? 'Cliente' : 'Cliente');
         const concepto = `Adelanto Pedido #${pedidoId} - ${nombreCliente}`;
-        await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)', 'ingreso', concepto, 'Ventas - Adelanto', entregado, medio_pago || 'Efectivo', pedidoId, fecha);
+        await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, fecha, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 'ingreso', concepto, 'Ventas - Adelanto', entregado, medio_pago || 'Efectivo', pedidoId, fecha, usuarioId);
       }
 
       const anchos = [].concat(req.body.ancho || []).map(v => parseFloat(v) || 0);
@@ -114,7 +116,7 @@ module.exports = (db) => {
   // 3) Listar Pendientes
   router.get('/pendientes', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.estado = ? ORDER BY p.id ASC', 'PENDIENTE');
+      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'PENDIENTE');
       for (let p of pedidos) {
         const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
         p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
@@ -164,7 +166,7 @@ module.exports = (db) => {
       await db.run('UPDATE revision_comments SET leido = 1 WHERE pedido_id = ?', id);
       await db.run('UPDATE pedidos SET unread_comments = 0 WHERE id = ?', id);
 
-      const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ?', id);
+      const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id);
       if (!pedido) {
         req.flash('error', 'Pedido no encontrado');
         return res.redirect('/pedidos/pendientes');
@@ -196,7 +198,7 @@ module.exports = (db) => {
       const { id } = req.params;
       const { monto_a_pagar, metodo_pago } = req.body;
 
-      const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ?', id);
+      const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id);
 
       if (!pedido) {
         req.flash('error', 'Pedido no encontrado');
@@ -253,7 +255,7 @@ module.exports = (db) => {
   router.get('/:id/completar-pago', checkPermission, async (req, res) => {
     try {
       const { id } = req.params;
-      const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ?', id);
+      const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id);
       if (!pedido) {
         req.flash('error', 'Pedido no encontrado.');
         return res.redirect('/pedidos/entregados');
@@ -308,7 +310,7 @@ module.exports = (db) => {
   // 9) Ver En Producción
   router.get('/en-produccion', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.estado = ? ORDER BY p.id ASC', 'EN_PRODUCCION');
+      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'EN_PRODUCCION');
       for (let p of pedidos) {
         const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
         p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
@@ -328,7 +330,7 @@ module.exports = (db) => {
   // 10) Ver Listos
   router.get('/listos', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.estado = ? ORDER BY p.id ASC', 'LISTO');
+      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'LISTO');
       for (let p of pedidos) {
         const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
         p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
@@ -348,7 +350,7 @@ module.exports = (db) => {
   // 11) Ver Entregados
   router.get('/entregados', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.estado = ? ORDER BY p.id ASC', 'ENTREGADO');
+      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'ENTREGADO');
       for (let p of pedidos) {
         const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
         p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
@@ -436,7 +438,7 @@ module.exports = (db) => {
     try {
       const { id } = req.params;
       const pedido = await db.get(
-        'SELECT p.*, c.name AS cliente_nombre FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id WHERE p.id = ?', id
+        'SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id
       );
       if (!pedido) {
         req.flash('error', 'Pedido no encontrado');

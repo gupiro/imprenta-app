@@ -32,6 +32,9 @@
             </div>
             <div class="card-body">
               <p><strong>Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <% if (p.username) { %>
+                <p class="mb-2"><small class="text-muted"><i class="bi bi-person"></i> Creado por: <strong><%= p.username %></strong></small></p>
+              <% } %>
               <p><strong>Fecha:</strong> <%= new Date(p.fecha).toLocaleDateString('es-AR') %></p>
               <p><strong>Total:</strong> $<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
               

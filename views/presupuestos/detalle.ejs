@@ -72,6 +72,9 @@
         <% if (presupuesto.telefono_cliente) { %>
           <p><strong>Teléfono:</strong> <%= presupuesto.telefono_cliente %></p>
         <% } %>
+        <% if (presupuesto.username) { %>
+          <p><small class="text-muted"><i class="bi bi-person"></i> <strong>Creado por:</strong> <%= presupuesto.username %></small></p>
+        <% } %>
       </div>
       <div class="col-md-6 text-end">
         <form action="/presupuestos/<%= presupuesto.id %>/cambiar-estado" method="POST" class="mb-3">

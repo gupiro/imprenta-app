@@ -417,6 +417,27 @@ async function initDb() {
             console.log('✅ Columna presupuestos.precio_extra agregada');
         }
 
+        // pedidos.usuario_id (migración)
+        const pedidosInfo = await db.all("PRAGMA table_info(pedidos)");
+        if (!pedidosInfo.some(c => c.name === 'usuario_id')) {
+            await db.run("ALTER TABLE pedidos ADD COLUMN usuario_id INTEGER REFERENCES users(id)");
+            console.log('✅ Columna pedidos.usuario_id agregada');
+        }
+
+        // presupuestos.usuario_id (migración)
+        const presupuestosInfo2 = await db.all("PRAGMA table_info(presupuestos)");
+        if (!presupuestosInfo2.some(c => c.name === 'usuario_id')) {
+            await db.run("ALTER TABLE presupuestos ADD COLUMN usuario_id INTEGER REFERENCES users(id)");
+            console.log('✅ Columna presupuestos.usuario_id agregada');
+        }
+
+        // movimientos_caja.usuario_id (migración - para futuro)
+        const cajaInfo = await db.all("PRAGMA table_info(movimientos_caja)");
+        if (!cajaInfo.some(c => c.name === 'usuario_id')) {
+            await db.run("ALTER TABLE movimientos_caja ADD COLUMN usuario_id INTEGER REFERENCES users(id)");
+            console.log('✅ Columna movimientos_caja.usuario_id agregada');
+        }
+
         console.log('✅ Base de datos lista\n');
         return db;
 

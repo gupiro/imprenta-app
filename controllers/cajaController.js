@@ -20,12 +20,38 @@ module.exports = (db) => {
   return {
     mostrarCajaDiaria: async (req, res) => {
       try {
-        const hoy = obtenerFechaLocal().fecha;
-        
-        const movimientos = await db.all(
-          'SELECT * FROM movimientos_caja WHERE DATE(fecha) = ? ORDER BY fecha DESC',
-          hoy
-        ) || [];
+        // Leer fecha de query string o usar hoy
+        const fechaParam = req.query.fecha;
+        const hoy = fechaParam || obtenerFechaLocal().fecha;
+
+        // Filtros opcionales
+        const tipo = req.query.tipo || '';
+        const concepto = req.query.concepto || '';
+        const metodo = req.query.metodo || '';
+
+        // Construir query dinámica con JOIN a users para obtener username
+        let query = `
+          SELECT m.*, u.username FROM movimientos_caja m
+          LEFT JOIN users u ON m.usuario_id = u.id
+          WHERE DATE(m.fecha) = ?
+        `;
+        const params = [hoy];
+
+        if (tipo) {
+          query += ' AND m.tipo = ?';
+          params.push(tipo);
+        }
+        if (concepto) {
+          query += ' AND m.concepto LIKE ?';
+          params.push(`%${concepto}%`);
+        }
+        if (metodo) {
+          query += ' AND m.metodo_pago = ?';
+          params.push(metodo);
+        }
+
+        query += ' ORDER BY m.fecha DESC';
+        const movimientos = await db.all(query, params) || [];
 
         const totales = {
           ingresos: 0,
@@ -42,7 +68,7 @@ module.exports = (db) => {
           } else {
             totales.egresos += m.monto;
           }
-          
+
           // Desglosar por método
           if (m.metodo_pago === 'Efectivo') totales.efectivo += m.monto;
           else if (m.metodo_pago === 'Transferencia') totales.transferencia += m.monto;
@@ -56,6 +82,8 @@ module.exports = (db) => {
           title: 'Caja Diaria',
           movimientos,
           totales,
+          fechaSeleccionada: hoy,
+          filtros: { tipo, concepto, metodo },
           error: req.flash('error'),
           success: req.flash('success')
         });
@@ -77,14 +105,17 @@ module.exports = (db) => {
         }
 
         const { timestamp } = obtenerFechaLocal();
+        const usuarioId = req.session.user?.id || null;
+
         await db.run(
-          'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha) VALUES (?, ?, ?, ?, ?, ?)',
+          'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
           tipo,
           concepto.trim(),
           categoria || 'General',
           montoNum,
           metodo_pago || 'Efectivo',
-          timestamp
+          timestamp,
+          usuarioId
         );
 
         req.flash('success', `✅ ${tipo === 'ingreso' ? 'Ingreso' : 'Egreso'} de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado`);

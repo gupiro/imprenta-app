@@ -53,6 +53,7 @@
           <th style="width: 60px;">#</th>
           <th>Cliente</th>
           <th>Teléfono</th>
+          <th style="width: 100px;">Usuario</th>
           <th>Fecha</th>
           <th class="text-end">Precio</th>
           <th>Estado</th>
@@ -74,6 +75,7 @@
               <% } %>
             </td>
             <td><%= p.telefono_cliente || '-' %></td>
+            <td><small><% if (p.username) { %><i class="bi bi-person"></i> <%= p.username %><% } else { %><em class="text-muted">-</em><% } %></small></td>
             <td><small><%= new Date(p.fecha_creacion).toLocaleDateString('es-AR') %></small></td>
             <td class="text-end">
               <strong>$<%= (parseFloat(p.precio_estimado) || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>

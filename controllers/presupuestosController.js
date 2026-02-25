@@ -89,12 +89,14 @@ module.exports = (db) => {
 
             // Crear presupuesto
             const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            const usuarioId = req.session.user?.id || null;
+
             const presupuestoResult = await db.run(`
                 INSERT INTO presupuestos (
                     cliente_id, nombre_cliente, email_cliente, telefono_cliente,
-                    precio_estimado, detalle, precio_extra, estado, fecha_creacion
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?)
-            `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, fecha);
+                    precio_estimado, detalle, precio_extra, estado, fecha_creacion, usuario_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?, ?)
+            `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, fecha, usuarioId);
 
             const presupuestoId = presupuestoResult.lastID;
 
@@ -131,7 +133,7 @@ module.exports = (db) => {
             const filtroFecha = req.query.fecha?.trim() || '';
             const filtroBusqueda = req.query.busqueda?.trim() || '';
             
-            let query = 'SELECT p.* FROM presupuestos p WHERE 1=1';
+            let query = 'SELECT p.*, u.username FROM presupuestos p LEFT JOIN users u ON p.usuario_id = u.id WHERE 1=1';
             const params = [];
             
             if (filtroNombre) {
@@ -173,7 +175,7 @@ module.exports = (db) => {
     const verDetallePresupuesto = async (req, res) => {
         const id = req.params.id;
         try {
-            const presupuesto = await db.get('SELECT * FROM presupuestos WHERE id = ?', id);
+            const presupuesto = await db.get('SELECT p.*, u.username FROM presupuestos p LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id);
             if (!presupuesto) {
                 return res.status(404).send('Presupuesto no encontrado');
             }

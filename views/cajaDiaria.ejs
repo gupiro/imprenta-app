@@ -154,10 +154,54 @@
     </div>
   </div>
 
-  <!-- TABLA DE MOVIMIENTOS DEL DÍA -->
+  <!-- PANEL DE FILTROS -->
+  <form method="GET" action="/caja-diaria" class="card mb-4">
+    <div class="card-body">
+      <h6 class="mb-3">🔍 Filtros</h6>
+      <div class="row g-2">
+        <!-- Selector de fecha -->
+        <div class="col-md-3">
+          <label class="form-label">Fecha</label>
+          <input type="date" name="fecha" value="<%= fechaSeleccionada %>" class="form-control">
+        </div>
+        <!-- Tipo -->
+        <div class="col-md-2">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos</option>
+            <option value="ingreso" <%= filtros.tipo==='ingreso' ? 'selected':'' %>>➕ Ingreso</option>
+            <option value="egreso" <%= filtros.tipo==='egreso' ? 'selected':'' %>>➖ Egreso</option>
+          </select>
+        </div>
+        <!-- Concepto/búsqueda -->
+        <div class="col-md-3">
+          <label class="form-label">Buscar concepto</label>
+          <input type="text" name="concepto" value="<%= filtros.concepto %>" class="form-control" placeholder="Ej: Pedido #123">
+        </div>
+        <!-- Método de pago -->
+        <div class="col-md-2">
+          <label class="form-label">Método</label>
+          <select name="metodo" class="form-select">
+            <option value="">Todos</option>
+            <option value="Efectivo" <%= filtros.metodo==='Efectivo' ? 'selected':'' %>>Efectivo</option>
+            <option value="Transferencia" <%= filtros.metodo==='Transferencia' ? 'selected':'' %>>Transferencia</option>
+            <option value="Tarjeta" <%= filtros.metodo==='Tarjeta' ? 'selected':'' %>>Tarjeta</option>
+            <option value="QR" <%= filtros.metodo==='QR' ? 'selected':'' %>>QR</option>
+          </select>
+        </div>
+        <!-- Botones -->
+        <div class="col-md-2 d-flex align-items-end gap-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100">🔍 Filtrar</button>
+          <a href="/caja-diaria" class="btn btn-secondary btn-sm w-100">Limpiar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- TABLA DE MOVIMIENTOS -->
   <div class="card">
     <div class="card-header bg-light">
-      <h6 class="mb-0">📊 Movimientos de Hoy</h6>
+      <h6 class="mb-0">📊 Movimientos - <%= new Date(fechaSeleccionada).toLocaleDateString('es-AR', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) %></h6>
     </div>
     <div class="card-body p-0">
       <% if (movimientos && movimientos.length > 0) { %>
@@ -170,6 +214,7 @@
                 <th>Categoría</th>
                 <th style="width: 100px;">Método</th>
                 <th style="width: 120px;">Monto</th>
+                <th style="width: 100px;">Usuario</th>
                 <th>Hora</th>
                 <% if (user && user.rol === 'admin') { %>
                   <th style="width: 80px;">Acciones</th>
@@ -210,8 +255,17 @@
                   </td>
                   <td>
                     <small class="text-muted">
+                      <% if (mov.username) { %>
+                        <%= mov.username %>
+                      <% } else { %>
+                        <em>-</em>
+                      <% } %>
+                    </small>
+                  </td>
+                  <td>
+                    <small class="text-muted">
                       <% if (mov.fecha) { %>
-                        <%= new Date(mov.fecha).toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'}) %>
+                        <%= new Date(mov.fecha.replace(' ', 'T')).toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'}) %>
                       <% } %>
                     </small>
                   </td>

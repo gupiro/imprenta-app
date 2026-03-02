@@ -19,8 +19,8 @@
     </div>
   <% } %>
 
-  <!-- BOTONES DE ACCIÓN - SOLO PARA ADMIN/VENDEDOR/RECEPCIONISTA -->
-  <% if (puedeVerMovimientos) { %>
+  <!-- BOTONES DE ACCIÓN - SOLO PARA ADMIN -->
+  <% if (puedeVerNumeros) { %>
   <div class="row g-2 mb-4">
     <div class="col-auto">
       <button onclick="imprimirCaja()" class="btn btn-primary">
@@ -34,7 +34,7 @@
     </div>
   </div>
 
-  <!-- RESUMEN FINANCIERO - SOLO PARA ADMIN/VENDEDOR/RECEPCIONISTA -->
+  <!-- RESUMEN FINANCIERO - SOLO PARA ADMIN -->
   <div class="row g-3 mb-5">
     <div class="col-md-3">
       <div class="card bg-success text-white">
@@ -96,7 +96,7 @@
       </div>
     </div>
   </div>
-  <% } %> <!-- Fin de puedeVerMovimientos -->
+  <% } %> <!-- Fin de puedeVerNumeros -->
 
   <!-- FORMULARIO PARA AGREGAR MOVIMIENTO -->
   <div class="card mb-5">
@@ -202,8 +202,8 @@
   </form>
   <% } %>
 
-  <!-- TABLA DE MOVIMIENTOS - SOLO PARA ADMIN/VENDEDOR/RECEPCIONISTA -->
-  <% if (puedeVerMovimientos) { %>
+  <!-- TABLA DE MOVIMIENTOS - SOLO PARA ADMIN -->
+  <% if (puedeVerNumeros) { %>
   <div class="card">
     <div class="card-header bg-light">
       <h6 class="mb-0">📊 Movimientos - <%= new Date(fechaSeleccionada).toLocaleDateString('es-AR', {weekday:'long', year:'numeric', month:'long', day:'numeric'}) %></h6>
@@ -309,7 +309,7 @@
       <% } %>
     </div>
   </div>
-  <% } %> <!-- Fin de puedeVerMovimientos -->
+  <% } %> <!-- Fin de puedeVerNumeros -->
 </div>
 
 <script>

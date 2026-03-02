@@ -185,7 +185,7 @@ async function startServer() {
 
     app.post('/caja-diaria/agregar',
         authMiddleware.isAuthenticated,
-        permitirRoles('admin'),
+        permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
         async (req, res, next) => {
             return cajaController.agregarMovimiento(req, res);
         }
@@ -200,8 +200,10 @@ async function startServer() {
 
     app.use('/caja-diaria',
         authMiddleware.isAuthenticated,
-        permitirRoles('admin'),
+        permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
         async (req, res, next) => {
+            // Flag para mostrar/ocultar números contables: solo admin ve los números
+            res.locals.puedeVerNumeros = req.session.user?.rol === 'admin';
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );

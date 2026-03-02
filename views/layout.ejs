@@ -363,7 +363,8 @@
             </ul>
           </li>
 
-          <!-- ▼ ADMINISTRACIÓN -->
+          <!-- ▼ ADMINISTRACIÓN - SOLO PARA ADMIN -->
+          <% if (user && user.rol === 'admin') { %>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-gear-fill"></i> Admin
@@ -394,6 +395,7 @@
               </a></li>
             </ul>
           </li>
+          <% } %>
 
         </ul>
 
@@ -408,7 +410,7 @@
                   </div>
                   <div class="user-info">
                     <div class="username"><%= user.username %></div>
-                    <div class="role">Admin</div>
+                    <div class="role"><%= user.rol ? user.rol.charAt(0).toUpperCase() + user.rol.slice(1) : 'Usuario' %></div>
                   </div>
                 </div>
               </a>

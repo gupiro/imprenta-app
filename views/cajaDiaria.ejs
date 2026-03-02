@@ -310,6 +310,49 @@
     </div>
   </div>
   <% } %> <!-- Fin de puedeVerNumeros -->
+
+  <!-- TABLA DE ÚLTIMOS 10 MOVIMIENTOS - PARA NO-ADMIN -->
+  <% if (!puedeVerNumeros && movimientos && movimientos.length > 0) { %>
+  <div class="card">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">📋 Últimos 10 Movimientos Registrados</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 table-sm">
+          <thead class="table-light">
+            <tr>
+              <th>Tipo</th>
+              <th>Concepto</th>
+              <th>Método de Pago</th>
+              <th style="width: 100px;">Usuario</th>
+              <th>Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% movimientos.slice(0, 10).forEach(mov => { %>
+              <tr>
+                <td>
+                  <% if (mov.tipo === 'ingreso') { %>
+                    <span class="badge bg-success">➕ Ingreso</span>
+                  <% } else { %>
+                    <span class="badge bg-danger">➖ Egreso</span>
+                  <% } %>
+                </td>
+                <td><strong><%= mov.concepto %></strong></td>
+                <td>
+                  <% if (mov.metodo_pago === 'Efectivo') { %>💵 Efectivo<% } else if (mov.metodo_pago === 'Transferencia') { %>🏦 Transferencia<% } else if (mov.metodo_pago === 'Tarjeta') { %>💳 Tarjeta<% } else if (mov.metodo_pago === 'QR') { %>📱 QR<% } else { %><%= mov.metodo_pago %><% } %>
+                </td>
+                <td><small class="text-muted"><%= mov.username || 'Sistema' %></small></td>
+                <td><small><%= mov.fecha ? mov.fecha.slice(11, 16) : '' %></small></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } %>
 </div>
 
 <script>

@@ -173,6 +173,9 @@
        SECCIÓN 3: INFORMACIÓN FINANCIERA (ADMIN/VENDEDOR)
        ═══════════════════════════════════════════════════════ -->
   <div class="row g-3 mb-4">
+    <!-- TARJETA INGRESOS: Diferente para Admin vs No-Admin -->
+    <% if (user && user.rol === 'admin') { %>
+    <!-- Admin: Muestra número de ingresos -->
     <div class="col-md-6 col-lg-3">
       <a href="/caja-diaria" class="text-decoration-none">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer;">
@@ -184,6 +187,19 @@
         </div>
       </a>
     </div>
+    <% } else { %>
+    <!-- No-Admin: Solo botón simple -->
+    <div class="col-md-6 col-lg-3">
+      <a href="/caja-diaria" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 150px;">
+          <div class="card-body text-center">
+            <h2 style="font-size: 3rem; margin: 0;"><i class="bi bi-cash-coin"></i></h2>
+            <p class="small mt-3 mb-0">Caja Diaria</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <% } %>
 
     <% if (!isRecepcionista) { %>
     <div class="col-md-6 col-lg-3">

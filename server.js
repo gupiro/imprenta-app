@@ -185,7 +185,7 @@ async function startServer() {
 
     app.post('/caja-diaria/agregar',
         authMiddleware.isAuthenticated,
-        permitirRoles('admin','vendedor','empleado','recepcionista'),
+        permitirRoles('admin'),
         async (req, res, next) => {
             return cajaController.agregarMovimiento(req, res);
         }
@@ -200,10 +200,8 @@ async function startServer() {
 
     app.use('/caja-diaria',
         authMiddleware.isAuthenticated,
-        permitirRoles('admin','vendedor','empleado','recepcionista'),
+        permitirRoles('admin'),
         async (req, res, next) => {
-            // Pasar flag indicando si puede ver los movimientos (solo admin y vendedor)
-            res.locals.puedeVerMovimientos = ['admin', 'vendedor', 'recepcionista'].includes(req.session.user?.rol);
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );

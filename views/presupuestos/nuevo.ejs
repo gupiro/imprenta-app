@@ -9,6 +9,7 @@
   <% } %>
 
   <form action="/presupuestos/nuevo" method="POST" enctype="multipart/form-data" id="formPresupuesto">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     
     <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
     <div class="card mb-4">

@@ -216,7 +216,8 @@
         <h5 class="modal-title"><i class="bi bi-cash-coin"></i> Cobrar Deuda</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-deuda">
+      <form method="POST" action="/pedidos/<%= pedido.id %>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">/cancelar-deuda">
         <div class="modal-body">
           <div class="alert alert-info mb-3">
             <strong>Deuda a cobrar:</strong> $<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
@@ -272,7 +273,8 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No, volver</button>
-        <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-pedido" class="d-inline">
+        <form method="POST" action="/pedidos/<%= pedido.id %>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">/cancelar-pedido" class="d-inline">
           <button type="submit" class="btn btn-danger btn-lg">
             <i class="bi bi-check"></i> Sí, Cancelar
           </button>

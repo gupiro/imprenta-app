@@ -168,6 +168,7 @@
           ⚠️ Esta acción no se puede deshacer.
         </p>
         <form id="formEliminarCliente" action="" method="POST" class="needs-validation">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="mb-3">
             <label for="claveEliminar" class="form-label fw-bold">Ingresa la clave para confirmar:</label>
             <input type="password" id="claveEliminar" name="clave" class="form-control" required

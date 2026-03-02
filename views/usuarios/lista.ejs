@@ -26,7 +26,8 @@
           </button>
 
           <!-- Botón Eliminar -->
-          <form method="POST" action="/usuarios/eliminar/<%= user.id %>" style="display: inline;"
+          <form method="POST" action="/usuarios/eliminar/<%= user.id %>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">" style="display: inline;"
                 onsubmit="return confirm('¿Eliminar usuario <%= user.username %>? Esta acción no se puede deshacer.')">
             <button class="btn btn-sm btn-danger">🗑️ Eliminar</button>
           </form>
@@ -45,6 +46,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formCambiarRol">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <p>Usuario: <strong id="usernameTxt"></strong></p>
           <p>Rol actual: <span class="badge bg-info" id="rolActual"></span></p>

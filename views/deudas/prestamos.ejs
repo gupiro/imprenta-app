@@ -109,7 +109,8 @@
                                 onclick="preLlenarEditar(<%= JSON.stringify(pr) %>)">
                           <i class="bi bi-pencil"></i>
                         </button>
-                        <form method="POST" action="/deudas/prestamos/<%= pr.id %>/eliminar" style="display: inline;"
+                        <form method="POST" action="/deudas/prestamos/<%= pr.id %>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">/eliminar" style="display: inline;"
                               onsubmit="return confirm('¿Eliminar préstamo?');">
                           <button type="submit" class="btn btn-sm btn-danger">
                             <i class="bi bi-trash"></i>
@@ -137,6 +138,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/deudas/prestamos">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="row">
             <div class="col-md-12 mb-3">
@@ -199,6 +201,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formEditar">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="row">
             <div class="col-md-12 mb-3">
@@ -272,6 +275,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formPagar">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Monto a Pagar *</label>

@@ -105,6 +105,7 @@
     </div>
     <div class="card-body">
       <form action="/caja-diaria/agregar" method="POST">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="row">
           <div class="col-md-3 mb-3">
             <label class="form-label fw-bold">Tipo *</label>
@@ -291,7 +292,8 @@
                   </td>
                   <% if (user && user.rol === 'admin') { %>
                     <td>
-                      <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
+                      <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">" style="display: inline;"
                             onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
                         <button type="submit" class="btn btn-sm btn-outline-danger">🗑️</button>
                       </form>

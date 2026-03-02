@@ -1,10 +1,14 @@
 // server.js
+require('dotenv').config();
+
 const express        = require('express');
 const session        = require('express-session');
 const flash          = require('connect-flash');
 const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
+const rateLimit      = require('express-rate-limit');
+const csrf           = require('csurf');
 
 // Swagger UI deshabilitado (archivo openapi.yaml removido)
 // const swaggerUi       = require('swagger-ui-express');
@@ -33,11 +37,20 @@ app.set('layout', 'layout');
 app.locals.basedir = app.get('views');
 
 app.use(session({
-    secret: 'elgrafico_secreto_2026',
+    secret: process.env.SESSION_SECRET || 'default_unsafe_secret_change_env',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'strict'
+    }
 }));
 app.use(flash());
+
+// CSRF Protection middleware
+const csrfProtection = csrf({ cookie: false });
+app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════
 // VARIABLES GLOBALES PARA VISTAS
@@ -48,6 +61,7 @@ app.use((req, res, next) => {
     res.locals.success     = req.flash('success') || [];
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
+    res.locals.csrfToken   = req.csrfToken();
     res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
     next();
 });
@@ -144,9 +158,19 @@ async function startServer() {
     app.use('/api/pedidos',      apiPedidosRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
-    // AUTH (Público)
+    // AUTH (Público) - Con protección de rate limiting
     // ────────────────────────────────────────────────────────────────────
 
+    // Rate limiting: máximo 5 intentos de login por 15 minutos
+    const loginLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000, // 15 minutos
+        max: 5,                    // 5 intentos máximo
+        message: 'Demasiados intentos de login. Intenta más tarde.',
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+
+    app.post('/auth/login', loginLimiter);
     app.use('/auth', authRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
@@ -157,7 +181,7 @@ async function startServer() {
     const presupuestosControllerPublico = require('./controllers/presupuestosController')(dbInstance);
     const upload = require('./config/multer');
     app.get('/presupuestos/publico', presupuestosControllerPublico.formPresupuestoPublico);
-    app.post('/presupuestos/publico', upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
+    app.post('/presupuestos/publico', csrfProtection, upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
 
     // ────────────────────────────────────────────────────────────────────
     // RUTAS PROTEGIDAS

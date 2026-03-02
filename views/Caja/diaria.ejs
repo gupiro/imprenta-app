@@ -49,6 +49,7 @@
     </div>
     <div class="card-body">
       <form action="/caja-diaria/agregar" method="POST" id="formMovimiento">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="mb-3">
           <label class="form-label fw-semibold">Tipo *</label>
           <select name="tipo" id="tipoMovimiento" class="form-select" required onchange="toggleCampos()">

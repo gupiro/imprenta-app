@@ -4,6 +4,7 @@
   <h1 class="mb-4">➕ Nuevo Cliente</h1>
 
   <form action="/clientes" method="POST">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="mb-3">
       <label for="name" class="form-label">Nombre</label>
       <input

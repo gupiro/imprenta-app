@@ -1,6 +1,7 @@
 <h1>➕ Nuevo Pedido</h1>
 
 <form method="POST" action="/pedidos/nuevo" id="pedidoForm">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <input type="hidden" name="productos" id="productos_json">
 
   <!-- PASO 1: CLIENTE AUTOCOMPLETE -->

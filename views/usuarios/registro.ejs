@@ -3,6 +3,7 @@
   <h1 class="mb-4 text-center">🧑‍💻 Crear Usuario</h1>
 
   <form action="/usuarios/registro" method="POST" class="mx-auto" style="max-width: 400px;">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="mb-3">
       <label class="form-label">Nombre de usuario</label>
       <input type="text" name="username" class="form-control" required>

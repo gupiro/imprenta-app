@@ -21,6 +21,7 @@
   <% } %>
 
   <form action="/pedidos/nuevo" method="POST" enctype="multipart/form-data" id="formPedido">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="row g-4">
       <!-- ═════════════════════════════════════════
            SECCIÓN 1: CLIENTE

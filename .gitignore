@@ -2,3 +2,7 @@
 # evita subir dependencias y archivos de BD
 node_modules/
 *.db*
+
+# Ambiente - contiene secretos sensibles
+.env
+!.env.example

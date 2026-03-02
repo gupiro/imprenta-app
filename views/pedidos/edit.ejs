@@ -113,6 +113,24 @@
       </div>
     </div>
 
+    <!-- ═══ AGREGAR NUEVOS PRODUCTOS ════════════════════════════════ -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Agregar Nuevos Productos</h6>
+        <button type="button" class="btn btn-sm btn-warning" onclick="agregarNuevoProducto()">
+          <i class="bi bi-plus"></i> Agregar Producto
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="nuevosProductos">
+          <!-- Filas dinámicas agregadas por JS -->
+        </div>
+        <p id="sinNuevos" class="text-muted text-center py-2 mb-0">
+          Hacé click en "Agregar Producto" para añadir ítems al pedido.
+        </p>
+      </div>
+    </div>
+
     <!-- ═══ BOTONES ═══════════════════════════════════════════════════ -->
     <div class="d-flex gap-3">
       <a href="/pedidos/detalle/<%= pedido.id %>" class="btn btn-secondary btn-lg">
@@ -124,3 +142,138 @@
     </div>
   </form>
 </div>
+
+<script>
+let nuevoIdx = 0;
+let productosCache = {}; // Almacenar productos por idx para evitar problemas con HTML escaping
+
+function agregarNuevoProducto() {
+  document.getElementById('sinNuevos').style.display = 'none';
+  const idx = nuevoIdx++;
+  const html = `
+    <div id="np_row_${idx}" class="card mb-3 border border-warning">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h6 class="mb-0 text-muted">Nuevo Producto</h6>
+          <button type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  onclick="eliminarNuevoProducto(${idx})">
+            <i class="bi bi-trash"></i> Eliminar
+          </button>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Producto / Material *</label>
+            <input type="text" id="np_buscar_${idx}" class="form-control" placeholder="Busca producto..."
+                   oninput="buscarProductoNuevo(${idx}, this.value)">
+            <small class="text-muted" id="np_hint_${idx}" style="display:none;">
+              Selecciona de la lista de sugerencias
+            </small>
+            <div id="np_dropdown_${idx}" class="list-group mt-2" style="max-height:200px; overflow-y:auto;"></div>
+            <input type="hidden" id="np_producto_id_${idx}" name="nuevo_producto_id[]" value="">
+            <input type="hidden" id="np_material_${idx}" name="nuevo_material[]" value="">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Cantidad</label>
+            <input type="number" step="1" name="nuevo_cantidad[]" class="form-control" value="1" min="1">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Ancho (m)</label>
+            <input type="number" step="0.01" name="nuevo_ancho[]" class="form-control" placeholder="0.00">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">Alto (m)</label>
+            <input type="number" step="0.01" name="nuevo_alto[]" class="form-control" placeholder="0.00">
+          </div>
+        </div>
+        <div class="row g-3 mt-2">
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Precio ($) *</label>
+            <input type="number" step="0.01" name="nuevo_precio[]" class="form-control" placeholder="0.00" min="0" required>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">Descripción</label>
+            <textarea name="nuevo_descripcion[]" class="form-control" rows="2" placeholder="Notas adicionales..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('nuevosProductos').insertAdjacentHTML('beforeend', html);
+}
+
+async function buscarProductoNuevo(idx, q) {
+  const dropdown = document.getElementById('np_dropdown_' + idx);
+  const hint = document.getElementById('np_hint_' + idx);
+
+  if (q.length < 2) {
+    dropdown.innerHTML = '';
+    hint.style.display = 'none';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/autocomplete/productos?q=' + encodeURIComponent(q));
+    const productos = await res.json();
+
+    if (productos.length === 0) {
+      dropdown.innerHTML = '<div class="list-group-item text-muted">No hay resultados</div>';
+      hint.style.display = 'none';
+      return;
+    }
+
+    // Guardar productos en cache para evitar problemas con caracteres especiales en HTML
+    productosCache[idx] = productos;
+
+    hint.style.display = '';
+    dropdown.innerHTML = productos.map((p, pidx) => `
+      <div class="list-group-item list-group-item-action text-start np-producto-item" data-idx="${idx}" data-pidx="${pidx}" style="cursor: pointer;">
+        <div class="fw-bold">${p.nombre}</div>
+        <small class="text-muted">
+          $${parseFloat(p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}
+          ${p.codigo ? ' • Código: ' + p.codigo : ''}
+        </small>
+      </div>
+    `).join('');
+
+    // Event delegation para items del dropdown
+    dropdown.querySelectorAll('.np-producto-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = item.getAttribute('data-idx');
+        const pidx = item.getAttribute('data-pidx');
+        seleccionarProductoDesdeDropdown(parseInt(idx), parseInt(pidx));
+      });
+    });
+  } catch (err) {
+    console.error('Error buscando productos:', err);
+    dropdown.innerHTML = '<div class="list-group-item text-danger">Error en la búsqueda</div>';
+  }
+}
+
+function seleccionarProductoDesdeDropdown(idx, pidx) {
+  const p = productosCache[idx] && productosCache[idx][pidx];
+  if (!p) {
+    console.error('Producto no encontrado');
+    return;
+  }
+  seleccionarProductoNuevo(idx, null, p.nombre, p.precio);
+}
+
+function seleccionarProductoNuevo(idx, id, nombre, precio) {
+  document.getElementById('np_material_' + idx).value = nombre;
+  document.getElementById('np_precio_' + idx).value = precio;
+  document.getElementById('np_buscar_' + idx).value = nombre;
+  document.getElementById('np_dropdown_' + idx).innerHTML = '';
+  document.getElementById('np_hint_' + idx).style.display = 'none';
+}
+
+function eliminarNuevoProducto(idx) {
+  document.getElementById('np_row_' + idx).remove();
+  delete productosCache[idx];
+  if (document.getElementById('nuevosProductos').children.length === 0) {
+    document.getElementById('sinNuevos').style.display = '';
+  }
+}
+</script>

@@ -504,6 +504,32 @@ module.exports = (db) => {
         );
       }
 
+      // Procesar nuevos productos agregados desde la edición
+      const nuevosMateriales = [].concat(req.body.nuevo_material || []);
+      const nuevosCantidades = [].concat(req.body.nuevo_cantidad || []);
+      const nuevosAnchos = [].concat(req.body.nuevo_ancho || []);
+      const nuevosAltos = [].concat(req.body.nuevo_alto || []);
+      const nuevosPrecios = [].concat(req.body.nuevo_precio || []);
+      const nuevasDescripciones = [].concat(req.body.nuevo_descripcion || []);
+
+      for (let i = 0; i < nuevosMateriales.length; i++) {
+        const material = (nuevosMateriales[i] || '').trim();
+        const cantidad = parseFloat(nuevosCantidades[i]) || 1;
+        const ancho = parseFloat(nuevosAnchos[i]) || 0;
+        const alto = parseFloat(nuevosAltos[i]) || 0;
+        const precio = parseFloat(nuevosPrecios[i]) || 0;
+        const descripcion = (nuevasDescripciones[i] || '').trim();
+
+        // Ignorar filas vacías o sin precio
+        if (!material || precio <= 0) continue;
+
+        await db.run(
+          'INSERT INTO productos (pedido_id, material, cantidad, ancho, alto, precio, descripcion) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          id, material, cantidad, ancho, alto, precio, descripcion
+        );
+        totalItems += precio;
+      }
+
       // Recalcular totales
       const nuevoEntregado = parseFloat(monto_entregado) || pedido.monto_entregado || 0;
       const nuevoRestante  = Math.max(0, totalItems - nuevoEntregado);

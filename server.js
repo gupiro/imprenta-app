@@ -202,6 +202,8 @@ async function startServer() {
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista'),
         async (req, res, next) => {
+            // Pasar flag indicando si puede ver los movimientos (solo admin y vendedor)
+            res.locals.puedeVerMovimientos = ['admin', 'vendedor', 'recepcionista'].includes(req.session.user?.rol);
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );

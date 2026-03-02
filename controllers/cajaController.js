@@ -29,6 +29,22 @@ module.exports = (db) => {
         const concepto = req.query.concepto || '';
         const metodo = req.query.metodo || '';
 
+        // Ordenamiento (todos los usuarios)
+        const sortBy = req.query.sortBy || 'fecha';
+        const sortDir = req.query.sortDir === 'asc' ? 'ASC' : 'DESC';
+
+        // Whitelist de columnas para seguridad (evitar SQL injection)
+        const columnasPermitidas = {
+          'tipo':     'm.tipo',
+          'concepto': 'm.concepto',
+          'categoria':'m.categoria',
+          'metodo':   'm.metodo_pago',
+          'monto':    'm.monto',
+          'usuario':  'u.username',
+          'fecha':    'm.fecha'
+        };
+        const columnaSQL = columnasPermitidas[sortBy] || 'm.fecha';
+
         // Construir query dinámica con JOIN a users para obtener username
         let query = `
           SELECT m.*, u.username FROM movimientos_caja m
@@ -50,7 +66,7 @@ module.exports = (db) => {
           params.push(metodo);
         }
 
-        query += ' ORDER BY m.fecha DESC';
+        query += ` ORDER BY ${columnaSQL} ${sortDir}`;
         const movimientos = await db.all(query, params) || [];
 
         const totales = {
@@ -84,6 +100,8 @@ module.exports = (db) => {
           totales,
           fechaSeleccionada: hoy,
           filtros: { tipo, concepto, metodo },
+          sortBy,
+          sortDir: sortDir.toLowerCase(),
           error: req.flash('error'),
           success: req.flash('success')
         });

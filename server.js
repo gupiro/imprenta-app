@@ -214,18 +214,18 @@ async function startServer() {
             return cajaController.agregarMovimiento(req, res);
         }
     );
-    app.post('/caja-diaria/:id/editar',
-        authMiddleware.isAuthenticated,
-        permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
-        async (req, res, next) => {
-            return cajaController.editarMovimiento(req, res);
-        }
-    );
     app.post('/caja-diaria/eliminar/:id',
         authMiddleware.isAuthenticated,
         permitirRoles('admin'),
         async (req, res, next) => {
             return cajaController.eliminarMovimiento(req, res);
+        }
+    );
+    app.post('/caja-diaria/:id/editar',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
+        async (req, res, next) => {
+            return cajaController.editarMovimiento(req, res);
         }
     );
 

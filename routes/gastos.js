@@ -79,6 +79,41 @@ module.exports = (db) => {
         res.redirect('/gastos');
     });
 
+    // Editar gasto
+    router.post('/:id/editar', checkPermission, async (req, res) => {
+        const { fecha, categoria, descripcion, monto, estado_pago, proveedor_id } = req.body;
+        try {
+            const id = parseInt(req.params.id);
+
+            if (!fecha || !categoria || !descripcion || !monto) {
+                req.flash('error', 'Todos los campos son requeridos');
+                return res.redirect('/gastos');
+            }
+
+            const montoNum = parseFloat(monto);
+            if (isNaN(montoNum) || montoNum <= 0) {
+                req.flash('error', 'Monto inválido');
+                return res.redirect('/gastos');
+            }
+
+            await db.run(
+                "UPDATE gastos SET fecha = ?, categoria = ?, descripcion = ?, monto = ?, estado_pago = ?, proveedor_id = ? WHERE id = ?",
+                fecha,
+                categoria,
+                descripcion.trim(),
+                montoNum,
+                estado_pago || 'pendiente',
+                proveedor_id || null,
+                id
+            );
+            req.flash('success', `✅ Gasto actualizado correctamente`);
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error al actualizar gasto: ' + err.message);
+        }
+        res.redirect('/gastos');
+    });
+
     // Marcar gasto como pagado
     router.post('/:id/pagar', checkPermission, async (req, res) => {
         try {

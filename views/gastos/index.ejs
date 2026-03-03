@@ -75,15 +75,25 @@
             <% } %>
           </td>
           <td class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalEditar"
+                    onclick="editarGasto(<%= g.id %>, '<%= g.fecha %>', '<%= g.categoria %>', '<%= g.descripcion %>', <%= g.monto %>, '<%= g.estado_pago %>', <%= g.proveedor_id || 'null' %>)"
+                    title="Editar">
+              <i class="bi bi-pencil"></i>
+            </button>
             <% if (g.estado_pago !== 'pagado') { %>
-            <form action="/gastos/pagar/<%= g.id %>" method="POST">
+            <form action="/gastos/<%= g.id %>/pagar" method="POST" style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button class="btn btn-sm btn-success" title="Marcar como pagado">
                 <i class="bi bi-check-lg"></i>
               </button>
             </form>
             <% } %>
-            <form action="/gastos/eliminar/<%= g.id %>" method="POST"
-                  onsubmit="return confirm('¿Eliminar este gasto?')">
+            <form action="/gastos/<%= g.id %>/eliminar" method="POST"
+                  onsubmit="return confirm('¿Eliminar este gasto?')"
+                  style="display:inline;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button class="btn btn-sm btn-outline-danger">
                 <i class="bi bi-trash"></i>
               </button>
@@ -156,3 +166,73 @@
     </div>
   </div>
 </div>
+
+<!-- Modal Editar Gasto -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditar" action="" method="POST">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Gasto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Fecha *</label>
+            <input type="date" id="editFecha" name="fecha" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Categoría *</label>
+            <select id="editCategoria" name="categoria" class="form-select" required>
+              <option value="">Seleccioná</option>
+              <% CATEGORIAS.forEach(c => { %>
+                <option value="<%= c %>"><%= c %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción *</label>
+            <input type="text" id="editDescripcion" name="descripcion" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Monto $*</label>
+            <input type="number" id="editMonto" name="monto" step="0.01" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Estado</label>
+            <select id="editEstado" name="estado_pago" class="form-select">
+              <option value="pendiente">Pendiente</option>
+              <option value="pagado">Pagado</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Proveedor (opcional)</label>
+            <select id="editProveedor" name="proveedor_id" class="form-select">
+              <option value="">Ninguno</option>
+              <% proveedores.forEach(p => { %>
+                <option value="<%= p.id %>"><%= p.nombre %></option>
+              <% }) %>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function editarGasto(id, fecha, categoria, descripcion, monto, estado, proveedor) {
+  document.getElementById('editFecha').value = fecha;
+  document.getElementById('editCategoria').value = categoria;
+  document.getElementById('editDescripcion').value = descripcion;
+  document.getElementById('editMonto').value = monto;
+  document.getElementById('editEstado').value = estado;
+  document.getElementById('editProveedor').value = proveedor || '';
+  document.getElementById('formEditar').action = '/gastos/' + id + '/editar';
+}
+</script>

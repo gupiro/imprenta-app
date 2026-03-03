@@ -1,9 +1,14 @@
 <!-- views/pedidos/en-produccion.ejs -->
 <div class="container-fluid py-4">
   <div class="row mb-4">
-    <div class="col-12">
+    <div class="col-md-8">
       <h1 class="display-6"><i class="bi bi-gear"></i> Trabajos en Producción</h1>
       <p class="text-muted">Actualmente en proceso</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <span class="badge bg-info fs-6">
+        <i class="bi bi-collection"></i> <%= pedidos.length %> trabajos
+      </span>
     </div>
   </div>
 
@@ -20,6 +25,60 @@
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   <% } %>
+
+  <!-- CONTROLES: BÚSQUEDA, FILTRO Y VISTAS -->
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+      <form method="GET" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">🔍 Buscar por Cliente o ID</label>
+          <input type="text" name="search" class="form-control" placeholder="Ej: Juan, #123" value="<%= search %>">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">📊 Ordenar por</label>
+          <select name="sortBy" class="form-select">
+            <option value="fecha" <%= sortBy === 'fecha' ? 'selected' : '' %>>📅 Fecha</option>
+            <option value="cliente" <%= sortBy === 'cliente' ? 'selected' : '' %>>👤 Cliente</option>
+            <option value="monto" <%= sortBy === 'monto' ? 'selected' : '' %>>💰 Monto</option>
+            <option value="id" <%= sortBy === 'id' ? 'selected' : '' %>>🏷️ ID</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">⬆️⬇️ Dirección</label>
+          <select name="sortDir" class="form-select">
+            <option value="desc" <%= sortDir === 'desc' ? 'selected' : '' %>>↓ Descendente</option>
+            <option value="asc" <%= sortDir === 'asc' ? 'selected' : '' %>>↑ Ascendente</option>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-funnel"></i> Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE VISTA -->
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=cards"
+         class="btn <%= view === 'cards' ? 'btn-primary' : 'btn-outline-primary' %>">
+        <i class="bi bi-grid-3x2-gap"></i> Tarjetas
+      </a>
+      <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=tabla"
+         class="btn <%= view === 'tabla' ? 'btn-primary' : 'btn-outline-primary' %>">
+        <i class="bi bi-table"></i> Tabla
+      </a>
+      <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=compacto"
+         class="btn <%= view === 'compacto' ? 'btn-primary' : 'btn-outline-primary' %>">
+        <i class="bi bi-list-ul"></i> Compacto
+      </a>
+    </div>
+  </div>
 
   <!-- LISTA DE PEDIDOS -->
   <% if (pedidos && pedidos.length > 0) { %>

@@ -31,6 +31,43 @@ module.exports = (db) => {
     fs.mkdirSync(thumbsDir, { recursive: true });
   }
 
+  // ==================== FUNCIONES AUXILIARES ====================
+
+  // Función para obtener pedidos con filtrado, búsqueda y ordenamiento
+  async function obtenerPedidosFiltrados(estado, search = '', sortBy = 'fecha', sortDir = 'desc') {
+    let query = 'SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ?';
+    const params = [estado];
+
+    // Filtro de búsqueda
+    if (search.trim()) {
+      const searchTerm = `%${search}%`;
+      query += ' AND (p.id LIKE ? OR c.name LIKE ?)';
+      params.push(searchTerm, searchTerm);
+    }
+
+    // Ordenamiento
+    const columnasPermitidas = {
+      'fecha': 'p.fecha',
+      'cliente': 'c.name',
+      'monto': 'p.precio',
+      'id': 'p.id'
+    };
+    const columnaSQL = columnasPermitidas[sortBy] || 'p.fecha';
+    const direccion = sortDir === 'asc' ? 'ASC' : 'DESC';
+
+    query += ` ORDER BY ${columnaSQL} ${direccion}`;
+
+    const pedidos = await db.all(query, params);
+
+    // Cargar productos para cada pedido
+    for (let p of pedidos) {
+      const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
+      p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
+    }
+
+    return pedidos;
+  }
+
   // ==================== RUTAS ====================
 
   // 0) Raíz → pendientes (navbar apunta a /pedidos)
@@ -132,14 +169,20 @@ module.exports = (db) => {
   // 3) Listar Pendientes
   router.get('/pendientes', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'PENDIENTE');
-      for (let p of pedidos) {
-        const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
-        p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
-      }
+      const search = req.query.search || '';
+      const sortBy = req.query.sortBy || 'fecha';
+      const sortDir = req.query.sortDir || 'desc';
+      const view = req.query.view || 'cards'; // cards, tabla, lista
+
+      const pedidos = await obtenerPedidosFiltrados('PENDIENTE', search, sortBy, sortDir);
+
       res.render('pedidos/pendientes', {
         title: 'Trabajos Encargados',
         pedidos,
+        search,
+        sortBy,
+        sortDir,
+        view,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -326,14 +369,20 @@ module.exports = (db) => {
   // 9) Ver En Producción
   router.get('/en-produccion', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'EN_PRODUCCION');
-      for (let p of pedidos) {
-        const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
-        p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
-      }
+      const search = req.query.search || '';
+      const sortBy = req.query.sortBy || 'fecha';
+      const sortDir = req.query.sortDir || 'desc';
+      const view = req.query.view || 'cards';
+
+      const pedidos = await obtenerPedidosFiltrados('EN_PRODUCCION', search, sortBy, sortDir);
+
       res.render('pedidos/en-produccion', {
         title: 'Trabajos en Producción',
         pedidos,
+        search,
+        sortBy,
+        sortDir,
+        view,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -346,14 +395,20 @@ module.exports = (db) => {
   // 10) Ver Listos
   router.get('/listos', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'LISTO');
-      for (let p of pedidos) {
-        const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
-        p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
-      }
+      const search = req.query.search || '';
+      const sortBy = req.query.sortBy || 'fecha';
+      const sortDir = req.query.sortDir || 'desc';
+      const view = req.query.view || 'cards';
+
+      const pedidos = await obtenerPedidosFiltrados('LISTO', search, sortBy, sortDir);
+
       res.render('pedidos/listos', {
         title: 'Trabajos Listos para Entregar',
         pedidos,
+        search,
+        sortBy,
+        sortDir,
+        view,
         success: req.flash('success'),
         error: req.flash('error')
       });

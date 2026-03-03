@@ -115,9 +115,9 @@
                                 onclick="preLlenarEditar(<%= JSON.stringify(d) %>)">
                           <i class="bi bi-pencil"></i>
                         </button>
-                        <form method="POST" action="/deudas/proveedores-deuda/<%= d.id %>
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">/eliminar" style="display: inline;"
+                        <form method="POST" action="/deudas/proveedores-deuda/<%= d.id %>/eliminar" style="display: inline;"
                               onsubmit="return confirm('¿Eliminar deuda?');">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                           <button type="submit" class="btn btn-sm btn-danger">
                             <i class="bi bi-trash"></i>
                           </button>

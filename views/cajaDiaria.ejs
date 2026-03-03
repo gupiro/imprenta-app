@@ -292,9 +292,9 @@
                   </td>
                   <% if (user && user.rol === 'admin') { %>
                     <td>
-                      <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">" style="display: inline;"
+                      <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
                             onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                         <button type="submit" class="btn btn-sm btn-outline-danger">🗑️</button>
                       </form>
                     </td>

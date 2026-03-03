@@ -421,14 +421,56 @@ module.exports = (db) => {
   // 11) Ver Entregados
   router.get('/entregados', checkPermission, async (req, res) => {
     try {
-      const pedidos = await db.all('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ? ORDER BY p.id ASC', 'ENTREGADO');
-      for (let p of pedidos) {
-        const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
-        p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
+      const search = req.query.search || '';
+      const sortBy = req.query.sortBy || 'fecha';
+      const sortDir = req.query.sortDir || 'desc';
+      const view = req.query.view || 'cards';
+      const groupBy = req.query.groupBy || 'none'; // none, semana
+
+      const pedidos = await obtenerPedidosFiltrados('ENTREGADO', search, sortBy, sortDir);
+
+      // Función auxiliar para obtener número de semana
+      function getWeekNumber(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const dayNum = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
       }
+
+      // Agrupar si está solicitado
+      let pedidosAgrupados = pedidos;
+      if (groupBy === 'semana') {
+        const grupos = {};
+        pedidos.forEach(p => {
+          const fecha = new Date(p.fecha);
+          const semana = getWeekNumber(fecha);
+          const año = fecha.getFullYear();
+          const key = `${año}-S${String(semana).padStart(2, '0')}`;
+
+          if (!grupos[key]) {
+            grupos[key] = {
+              label: `Semana ${semana} de ${año}`,
+              fecha: fecha,
+              pedidos: []
+            };
+          }
+          grupos[key].pedidos.push(p);
+        });
+
+        // Ordenar grupos por fecha
+        pedidosAgrupados = Object.values(grupos).sort((a, b) => b.fecha - a.fecha);
+      }
+
       res.render('pedidos/entregados', {
         title: 'Trabajos Entregados',
         pedidos,
+        pedidosAgrupados,
+        search,
+        sortBy,
+        sortDir,
+        view,
+        groupBy,
         success: req.flash('success'),
         error: req.flash('error')
       });

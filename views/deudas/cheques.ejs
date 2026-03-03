@@ -103,9 +103,9 @@
                                 onclick="preLlenarEditar(<%= JSON.stringify(ch) %>)">
                           <i class="bi bi-pencil"></i>
                         </button>
-                        <form method="POST" action="/deudas/cheques/<%= ch.id %>
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">/eliminar" style="display: inline;"
+                        <form method="POST" action="/deudas/cheques/<%= ch.id %>/eliminar" style="display: inline;"
                               onsubmit="return confirm('¿Eliminar cheque?');">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                           <button type="submit" class="btn btn-sm btn-danger">
                             <i class="bi bi-trash"></i>
                           </button>

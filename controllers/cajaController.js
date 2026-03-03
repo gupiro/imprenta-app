@@ -145,6 +145,36 @@ module.exports = (db) => {
       }
     },
 
+    editarMovimiento: async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { tipo, concepto, categoria, monto, metodo_pago } = req.body;
+        const montoNum = parseFloat(monto);
+
+        if (!tipo || !concepto || isNaN(montoNum) || montoNum <= 0) {
+          req.flash('error', 'Datos inválidos. Verificá que todos los campos estén completos');
+          return res.redirect('/caja-diaria');
+        }
+
+        await db.run(
+          'UPDATE movimientos_caja SET tipo = ?, concepto = ?, categoria = ?, monto = ?, metodo_pago = ? WHERE id = ?',
+          tipo,
+          concepto.trim(),
+          categoria || 'General',
+          montoNum,
+          metodo_pago || 'Efectivo',
+          id
+        );
+
+        req.flash('success', `✅ Movimiento actualizado correctamente`);
+        res.redirect('/caja-diaria');
+      } catch (err) {
+        console.error('Error:', err);
+        req.flash('error', 'Error: ' + err.message);
+        res.redirect('/caja-diaria');
+      }
+    },
+
     eliminarMovimiento: async (req, res) => {
       try {
         const { id } = req.params;

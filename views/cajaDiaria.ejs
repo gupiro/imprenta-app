@@ -237,9 +237,7 @@
                 <th style="width: 120px;"><a href="<%= buildSortUrl('monto') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Monto<%= sortIcon('monto') %></a></th>
                 <th style="width: 100px;"><a href="<%= buildSortUrl('usuario') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Usuario<%= sortIcon('usuario') %></a></th>
                 <th><a href="<%= buildSortUrl('fecha') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Hora<%= sortIcon('fecha') %></a></th>
-                <% if (user && user.rol === 'admin') { %>
-                  <th style="width: 80px;">Acciones</th>
-                <% } %>
+                <th style="width: 160px;">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -290,15 +288,33 @@
                       <% } %>
                     </small>
                   </td>
-                  <% if (user && user.rol === 'admin') { %>
-                    <td>
-                      <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
-                            onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">🗑️</button>
-                      </form>
-                    </td>
-                  <% } %>
+                  <td class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEditar"
+                            onclick="editarMovimiento(<%= mov.id %>, '<%= mov.tipo %>', '<%= mov.concepto %>', '<%= mov.categoria || '' %>', <%= mov.monto %>, '<%= mov.metodo_pago || '' %>')"
+                            title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <% if (mov.pedido_id) { %>
+                    <button class="btn btn-sm btn-outline-info"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalDetalle"
+                            onclick="verDetallePedido(<%= mov.pedido_id %>)"
+                            title="Ver detalle del pedido">
+                      <i class="bi bi-info-circle"></i>
+                    </button>
+                    <% } %>
+                    <% if (user && user.rol === 'admin') { %>
+                    <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
+                          onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    <% } %>
+                  </td>
                 </tr>
               <% }); %>
             </tbody>
@@ -355,6 +371,77 @@
     </div>
   </div>
   <% } %>
+</div>
+
+<!-- Modal Editar Movimiento -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditar" action="" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Movimiento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo *</label>
+            <select id="editTipo" name="tipo" class="form-select" required>
+              <option value="ingreso">➕ Ingreso</option>
+              <option value="egreso">➖ Egreso</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Categoría</label>
+            <input type="text" id="editCategoria" name="categoria" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Concepto *</label>
+            <input type="text" id="editConcepto" name="concepto" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Monto $ *</label>
+            <input type="number" id="editMonto" name="monto" step="0.01" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Método de Pago</label>
+            <select id="editMetodo" name="metodo_pago" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="QR">📱 QR</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle Pedido -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle del Pedido</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detallePedidoContent">
+          <div class="text-center">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -437,5 +524,102 @@ function exportarPDF() {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function editarMovimiento(id, tipo, concepto, categoria, monto, metodo) {
+  document.getElementById('editTipo').value = tipo;
+  document.getElementById('editConcepto').value = concepto;
+  document.getElementById('editCategoria').value = categoria || '';
+  document.getElementById('editMonto').value = monto;
+  document.getElementById('editMetodo').value = metodo || '';
+  document.getElementById('formEditar').action = '/caja-diaria/' + id + '/editar';
+}
+
+async function verDetallePedido(pedidoId) {
+  const content = document.getElementById('detallePedidoContent');
+  content.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+
+  try {
+    const res = await fetch('/api/pedidos/' + pedidoId);
+    const pedido = await res.json();
+
+    if (!pedido) {
+      content.innerHTML = '<div class="alert alert-warning">Pedido no encontrado</div>';
+      return;
+    }
+
+    const html = `
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <strong>Pedido #${pedido.id}</strong>
+          <p class="text-muted mb-0">Fecha: ${new Date(pedido.fecha).toLocaleDateString('es-AR')}</p>
+        </div>
+        <div class="col-md-6 text-end">
+          <span class="badge bg-primary">${pedido.estado}</span>
+          <span class="badge bg-${pedido.estado_pago === 'PAGADO' ? 'success' : 'warning'}">${pedido.estado_pago}</span>
+        </div>
+      </div>
+
+      <hr>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <h6 class="fw-bold">Cliente</h6>
+          <p class="mb-0">${pedido.cliente_nombre || 'Sin especificar'}</p>
+        </div>
+        <div class="col-md-6">
+          <h6 class="fw-bold">Monto Total</h6>
+          <p class="mb-0">$${parseFloat(pedido.precio).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <h6 class="fw-bold">Adelantado</h6>
+          <p class="mb-0">$${parseFloat(pedido.monto_entregado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+        </div>
+        <div class="col-md-6">
+          <h6 class="fw-bold">Restante</h6>
+          <p class="mb-0">$${parseFloat(pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</p>
+        </div>
+      </div>
+
+      <hr>
+
+      <div>
+        <h6 class="fw-bold mb-2">Productos</h6>
+        <div class="list-group list-group-sm">
+          ${pedido.productos && pedido.productos.length > 0 ?
+            pedido.productos.map(p => `
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between">
+                  <strong>${p.material || 'Producto'}</strong>
+                  <span>$${parseFloat(p.precio).toLocaleString('es-AR', {minimumFractionDigits: 2})}</span>
+                </div>
+                <small class="text-muted">
+                  ${p.cantidad ? 'Cant: ' + p.cantidad : ''}
+                  ${p.ancho ? 'Ancho: ' + p.ancho + 'm' : ''}
+                  ${p.alto ? 'Alto: ' + p.alto + 'm' : ''}
+                </small>
+                ${p.descripcion ? '<small class="text-muted d-block">' + p.descripcion + '</small>' : ''}
+              </div>
+            `).join('')
+            : '<p class="text-muted">Sin productos registrados</p>'
+          }
+        </div>
+      </div>
+
+      <hr>
+
+      <a href="/pedidos/detalle/${pedido.id}" class="btn btn-primary btn-sm" target="_blank">
+        <i class="bi bi-arrow-up-right"></i> Ver Pedido Completo
+      </a>
+    `;
+
+    content.innerHTML = html;
+  } catch (err) {
+    console.error('Error:', err);
+    content.innerHTML = '<div class="alert alert-danger">Error al cargar el detalle</div>';
+  }
 }
 </script>

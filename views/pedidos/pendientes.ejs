@@ -109,6 +109,7 @@
                 </div>
               </div>
               <form action="/pedidos/<%= p.id %>/cambiar-estado" method="POST" class="mb-2">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
                   <option value="PENDIENTE" selected>📋 Pendiente</option>
                   <option value="EN_PRODUCCION">⚙️ Producción</option>

@@ -726,13 +726,14 @@ function toggleProximos() {
   contenedor.style.transition = 'max-height 0.3s ease';
 }
 
-// Inicialmente contraídos
+// Inicialmente contraídos (excepto Próximos 5 que está EXPANDIDO)
 document.addEventListener('DOMContentLoaded', function() {
   const deudoresDiv = document.getElementById('contenedorDeudores');
   const stockDiv = document.getElementById('contenedorStock');
   const proximosDiv = document.getElementById('contenedorProximos');
   if (deudoresDiv) deudoresDiv.style.maxHeight = '0px';
   if (stockDiv) stockDiv.style.maxHeight = '0px';
-  if (proximosDiv) proximosDiv.style.maxHeight = '0px';
+  // proximosDiv EXPANDIDO - comentado
+  // if (proximosDiv) proximosDiv.style.maxHeight = '0px';
 });
 </script>

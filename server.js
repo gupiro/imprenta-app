@@ -80,10 +80,10 @@ app.use((req, res, next) => {
         { name: 'pedidos',       label: 'Pedidos',      url: '/pedidos',       icon: 'bi-kanban-fill',    roles: ['admin','vendedor','operador','empleado','recepcionista'] },
         { name: 'presupuestos',  label: 'Presupuestos', url: '/presupuestos',  icon: 'bi-calculator',     roles: ['admin','vendedor','empleado','recepcionista'] },
         { name: 'catalogo',      label: 'Catálogo',     url: '/catalogo',      icon: 'bi-card-list',      roles: ['admin','vendedor','operador','empleado','recepcionista'] },
-        { name: 'pagos',         label: 'Centro Pagos', url: '/pagos',         icon: 'bi-calendar-check', roles: ['admin'] },
+        { name: 'pagos',         label: '💳 Centro Pagos', url: '/pagos',       icon: 'bi-calendar-check', roles: ['admin'] },
+        { name: 'gastos',        label: '💰 Gastos',      url: '/gastos',      icon: 'bi-receipt',        roles: ['admin'] },
         { name: 'proveedores',   label: 'Proveedores',  url: '/proveedores',   icon: 'bi-truck',          roles: ['admin'] },
         { name: 'stock',         label: 'Stock',        url: '/stock',         icon: 'bi-boxes',          roles: ['admin'] },
-        { name: 'gastos',        label: 'Gastos',       url: '/gastos',        icon: 'bi-receipt',        roles: ['admin'] },
         { name: 'caja-diaria',   label: 'Caja',         url: '/caja-diaria',   icon: 'bi-cash-coin',      roles: ['admin','vendedor','empleado','recepcionista'] },
         { name: 'reportes',      label: 'Reportes',     url: '/reportes',      icon: 'bi-bar-chart-fill', roles: ['admin'] },
         { name: 'usuarios',      label: 'Usuarios',     url: '/usuarios',      icon: 'bi-gear-fill',      roles: ['admin'] },
@@ -451,10 +451,28 @@ async function startServer() {
                 deudores: [],
                 stockBajo: [],
                 ultimosPedidos: [],
+                proximos5Vencimientos: [],
+                deudasVencidas: [],
+                deudasProximas: [],
                 isEmpleado,
                 isRecepcionista
             });
         }
+    });
+
+    // ────────────────────────────────────────────────────────────────────
+    // DEBUG: Ver conteos en consola
+    // ────────────────────────────────────────────────────────────────────
+
+    app.get('/debug/counts', async (_, res) => {
+        const counts = {
+            pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
+            en_produccion: (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,
+            listos:        (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO'"))?.c || 0,
+            entregados:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'"))?.c || 0,
+        };
+        const allEstados = await dbInstance.all("SELECT DISTINCT estado FROM pedidos");
+        res.json({ counts, allEstados });
     });
 
     // ────────────────────────────────────────────────────────────────────

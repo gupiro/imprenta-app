@@ -40,6 +40,18 @@
     </div>
   </div>
 
+  <!-- Toggle Ver Todos / Solo Pendientes -->
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      <a href="?ver=pendientes" class="btn btn-sm <%= (!verTodos) ? 'btn-warning' : 'btn-outline-warning' %>">
+        ⏳ Solo Pendientes
+      </a>
+      <a href="?ver=todos" class="btn btn-sm <%= verTodos ? 'btn-secondary' : 'btn-outline-secondary' %>">
+        📋 Ver Todos
+      </a>
+    </div>
+  </div>
+
   <!-- TABLA DE CHEQUES -->
   <div class="row">
     <div class="col-md-12">

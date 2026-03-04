@@ -20,6 +20,7 @@ const initCajaController = require('./controllers/cajaController');
 const authMiddleware     = require('./middleware/authMiddleware');
 const permitirRoles      = require('./middleware/roles');
 const checkPermission    = require('./middleware/permissions');
+const { calcularFechaVencTarjeta, calcularProximaCuota, diasHasta, calcularPrioridad } = require('./utils/pagosHelper');
 
 const app = express();
 
@@ -79,6 +80,7 @@ app.use((req, res, next) => {
         { name: 'pedidos',       label: 'Pedidos',      url: '/pedidos',       icon: 'bi-kanban-fill',    roles: ['admin','vendedor','operador','empleado','recepcionista'] },
         { name: 'presupuestos',  label: 'Presupuestos', url: '/presupuestos',  icon: 'bi-calculator',     roles: ['admin','vendedor','empleado','recepcionista'] },
         { name: 'catalogo',      label: 'Catálogo',     url: '/catalogo',      icon: 'bi-card-list',      roles: ['admin','vendedor','operador','empleado','recepcionista'] },
+        { name: 'pagos',         label: 'Centro Pagos', url: '/pagos',         icon: 'bi-calendar-check', roles: ['admin'] },
         { name: 'proveedores',   label: 'Proveedores',  url: '/proveedores',   icon: 'bi-truck',          roles: ['admin'] },
         { name: 'stock',         label: 'Stock',        url: '/stock',         icon: 'bi-boxes',          roles: ['admin'] },
         { name: 'gastos',        label: 'Gastos',       url: '/gastos',        icon: 'bi-receipt',        roles: ['admin'] },
@@ -136,6 +138,7 @@ async function startServer() {
     const apiProductosRouterConfigured = require('./routes/api/productos')(dbInstance);
     const apiAutocompleteConfigured    = require('./routes/api/autocomplete')(dbInstance);
     const apiPedidosRouterConfigured   = require('./routes/api/pedidos')(dbInstance);
+    const iaApiRouterConfigured        = require('./routes/api/ia')(dbInstance);
     const productosRouterConfigured    = require('./routes/productos')(dbInstance);
     const pedidosRouterConfigured      = require('./routes/pedidos')(dbInstance);
     const usuariosRouterConfigured     = require('./routes/usuarios')(dbInstance);
@@ -147,6 +150,7 @@ async function startServer() {
     const reportesRouterConfigured     = require('./routes/reportes')(dbInstance);
     const dashboardRouterConfigured    = require('./routes/dashboard')(dbInstance);
     const deudasRouterConfigured       = require('./routes/deudas')(dbInstance);
+    const pagosRouterConfigured        = require('./routes/pagos')(dbInstance);
 
     // ────────────────────────────────────────────────────────────────────
     // APIS INTERNAS (Autocomplete, etc)
@@ -156,6 +160,7 @@ async function startServer() {
     app.use('/api/productos',    apiProductosRouterConfigured);
     app.use('/api/autocomplete', apiAutocompleteConfigured);
     app.use('/api/pedidos',      apiPedidosRouterConfigured);
+    app.use('/api/ia',           authMiddleware.isAuthenticated, iaApiRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // AUTH (Público) - Con protección de rate limiting
@@ -199,6 +204,7 @@ async function startServer() {
     app.use('/gastos',       permitirRoles('admin'),                       gastosRouterConfigured);
     app.use('/reportes',     permitirRoles('admin','vendedor'),                       reportesRouterConfigured);
     app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
+    app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA
@@ -290,6 +296,96 @@ async function startServer() {
                 ORDER BY p.fecha DESC LIMIT 10
             `) || [];
 
+            // Próximos 5 vencimientos (solo admin)
+            let proximos5Vencimientos = [];
+            if (req.session.user?.rol === 'admin') {
+                // Cheques pendientes
+                const cheques = await dbInstance.all(`
+                    SELECT 'cheque' AS source_tipo, id, numero_cheque AS titulo,
+                           monto, fecha_vencimiento, banco AS subtitulo, estado
+                    FROM deudas_cheques
+                    WHERE estado = 'pendiente'
+                `) || [];
+
+                // Proveedores pendientes
+                const proveedores = await dbInstance.all(`
+                    SELECT 'proveedor' AS source_tipo, dp.id,
+                           COALESCE(p.nombre, 'Sin proveedor') || ' - ' || dp.concepto AS titulo,
+                           (dp.monto_total - dp.monto_pagado) AS monto,
+                           dp.fecha_vencimiento, dp.concepto AS subtitulo, dp.estado
+                    FROM deudas_proveedores dp
+                    LEFT JOIN proveedores p ON dp.proveedor_id = p.id
+                    WHERE dp.estado != 'pagado'
+                `) || [];
+
+                // Préstamos activos
+                const prestamosRaw = await dbInstance.all(`
+                    SELECT 'prestamo' AS source_tipo, id, descripcion AS titulo,
+                           cuota_mensual AS monto, dia_vencimiento_mensual,
+                           entidad AS subtitulo, estado
+                    FROM deudas_prestamos
+                    WHERE estado = 'activo'
+                `) || [];
+
+                // Tarjetas activas
+                const tarjetasRaw = await dbInstance.all(`
+                    SELECT 'tarjeta' AS source_tipo, id, nombre AS titulo,
+                           monto_minimo AS monto, fecha_vencimiento,
+                           entidad AS subtitulo, estado
+                    FROM deudas_tarjetas
+                    WHERE estado = 'activa'
+                `) || [];
+
+                // Enriquecer cheques y proveedores (ya tienen fecha completa)
+                const chequesMejorados = cheques.map(c => ({
+                    ...c,
+                    fecha_calculada: c.fecha_vencimiento ? new Date(c.fecha_vencimiento) : null,
+                    dias_restantes: diasHasta(c.fecha_vencimiento),
+                    prioridad: calcularPrioridad(diasHasta(c.fecha_vencimiento))
+                }));
+
+                const proveedoresMejorados = proveedores.map(p => ({
+                    ...p,
+                    fecha_calculada: p.fecha_vencimiento ? new Date(p.fecha_vencimiento) : null,
+                    dias_restantes: diasHasta(p.fecha_vencimiento),
+                    prioridad: calcularPrioridad(diasHasta(p.fecha_vencimiento))
+                }));
+
+                // Enriquecer préstamos (tienen día del mes)
+                const prestamosMejorados = prestamosRaw.map(p => ({
+                    ...p,
+                    fecha_calculada: calcularProximaCuota(p.dia_vencimiento_mensual),
+                    dias_restantes: diasHasta(calcularProximaCuota(p.dia_vencimiento_mensual)),
+                    prioridad: calcularPrioridad(diasHasta(calcularProximaCuota(p.dia_vencimiento_mensual)))
+                }));
+
+                // Enriquecer tarjetas (tienen día del mes)
+                const tarjetasMejoradas = tarjetasRaw.map(t => ({
+                    ...t,
+                    fecha_calculada: calcularFechaVencTarjeta(t.fecha_vencimiento),
+                    dias_restantes: diasHasta(calcularFechaVencTarjeta(t.fecha_vencimiento)),
+                    prioridad: calcularPrioridad(diasHasta(calcularFechaVencTarjeta(t.fecha_vencimiento)))
+                }));
+
+                // Consolidar todos
+                const todos = [
+                    ...chequesMejorados,
+                    ...proveedoresMejorados,
+                    ...prestamosMejorados,
+                    ...tarjetasMejoradas
+                ];
+
+                // Ordenar por dias_restantes y agrupar por urgencia
+                todos.sort((a, b) => {
+                    if (a.dias_restantes === null && b.dias_restantes === null) return 0;
+                    if (a.dias_restantes === null) return 1;
+                    if (b.dias_restantes === null) return -1;
+                    return a.dias_restantes - b.dias_restantes;
+                });
+
+                proximos5Vencimientos = todos.slice(0, 5);
+            }
+
             // Deudas vencidas (solo admin puede verlas)
             let deudasVencidas = [];
             if (req.session.user?.rol === 'admin') {
@@ -337,6 +433,7 @@ async function startServer() {
                 deudores,
                 stockBajo,
                 ultimosPedidos,
+                proximos5Vencimientos,
                 deudasVencidas,
                 deudasProximas,
                 isEmpleado,

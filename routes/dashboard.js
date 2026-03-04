@@ -32,9 +32,9 @@ module.exports = (db) => {
         fechaInicio
       ))?.total || 0;
 
-      // Gastos del mes
+      // Gastos del mes (solo negocio)
       const gastosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')"
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')"
       ))?.total || 0;
 
       // Saldo neto
@@ -47,10 +47,10 @@ module.exports = (db) => {
         AND strftime('%Y-%m', fecha) = strftime('%Y-%m', date('now', '-1 month'))
       `))?.total || 0;
 
-      // Gastos mes anterior
+      // Gastos mes anterior (solo negocio)
       const gastosMesAnterior = (await db.get(`
         SELECT COALESCE(SUM(monto), 0) AS total FROM gastos
-        WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', date('now', '-1 month'))
+        WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) = strftime('%Y-%m', date('now', '-1 month'))
       `))?.total || 0;
 
       // Pedidos completados este mes
@@ -68,10 +68,10 @@ module.exports = (db) => {
         "SELECT COUNT(*) AS c FROM pedidos WHERE estado IN ('PENDIENTE','EN_PRODUCCION','LISTO')"
       ))?.c || 0;
 
-      // Gastos por categoría (mes actual)
+      // Gastos por categoría (mes actual, solo negocio)
       const gastosPorCategoria = await db.all(`
         SELECT categoria, SUM(monto) as total
-        FROM gastos WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')
+        FROM gastos WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')
         GROUP BY categoria ORDER BY total DESC
       `) || [];
 
@@ -100,7 +100,7 @@ module.exports = (db) => {
         ))?.total || 0;
 
         const egresos = (await db.get(
-          "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos WHERE strftime('%Y-%m', fecha) = ?",
+          "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) = ?",
           mes
         ))?.total || 0;
 

@@ -271,12 +271,21 @@ module.exports = (db) => {
 
     router.get('/cheques', checkPermission, async (req, res) => {
         try {
-            const cheques = await db.all(`
+            const verTodos = req.query.ver === 'todos';
+
+            let query = `
                 SELECT c.*, p.nombre AS proveedor_nombre
                 FROM deudas_cheques c
                 LEFT JOIN proveedores p ON c.proveedor_id = p.id
-                ORDER BY c.fecha_vencimiento ASC
-            `) || [];
+            `;
+
+            if (!verTodos) {
+                query += ` WHERE c.estado = 'pendiente'`;
+            }
+
+            query += ` ORDER BY c.fecha_vencimiento ASC`;
+
+            const cheques = await db.all(query) || [];
 
             const proveedores = await db.all("SELECT id, nombre FROM proveedores ORDER BY nombre ASC") || [];
 
@@ -287,6 +296,7 @@ module.exports = (db) => {
                 title: 'Cheques Diferidos',
                 cheques,
                 proveedores,
+                verTodos,
                 vencidos,
                 proximos,
                 success: req.flash('success'),
@@ -431,7 +441,8 @@ module.exports = (db) => {
     router.get('/prestamos', checkPermission, async (req, res) => {
         try {
             const prestamos = await db.all(`
-                SELECT * FROM deudas_prestamos ORDER BY fecha_primer_vencimiento ASC
+                SELECT * FROM deudas_prestamos
+                ORDER BY CASE estado WHEN 'activo' THEN 0 ELSE 1 END, dia_vencimiento_mensual ASC
             `) || [];
 
             const totalActivos = prestamos.filter(p => p.estado === 'activo').reduce((s, p) => s + p.monto_pendiente, 0);
@@ -612,12 +623,21 @@ module.exports = (db) => {
 
     router.get('/proveedores-deuda', checkPermission, async (req, res) => {
         try {
-            const deudas = await db.all(`
+            const verTodos = req.query.ver === 'todos';
+
+            let query = `
                 SELECT d.*, p.nombre AS proveedor_nombre
                 FROM deudas_proveedores d
                 LEFT JOIN proveedores p ON d.proveedor_id = p.id
-                ORDER BY d.fecha_vencimiento ASC
-            `) || [];
+            `;
+
+            if (!verTodos) {
+                query += ` WHERE d.estado != 'pagado'`;
+            }
+
+            query += ` ORDER BY d.fecha_vencimiento ASC NULLS LAST`;
+
+            const deudas = await db.all(query) || [];
 
             const proveedores = await db.all("SELECT id, nombre FROM proveedores ORDER BY nombre ASC") || [];
             const totalPendiente = deudas.filter(d => d.estado !== 'pagado').reduce((s, d) => s + (d.monto_total - d.monto_pagado), 0);
@@ -626,6 +646,7 @@ module.exports = (db) => {
                 title: 'Deudas con Proveedores',
                 deudas,
                 proveedores,
+                verTodos,
                 totalPendiente,
                 success: req.flash('success'),
                 error: req.flash('error')

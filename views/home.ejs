@@ -297,7 +297,88 @@
   <% } %>
 
   <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 5: ALERTAS Y DEUDORES (DESPLEGABLES)
+       SECCIÓN 5: PRÓXIMOS 5 VENCIMIENTOS (ADMIN ONLY)
+       ═══════════════════════════════════════════════════════ -->
+  <% if (!isEmpleado && user && user.rol === 'admin') { %>
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-info text-white" style="cursor: pointer;" onclick="toggleProximos()">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-calendar-check"></i> 📋 PRÓXIMOS 5 VENCIMIENTOS</h6>
+            <i class="bi bi-chevron-down" id="iconProximos"></i>
+          </div>
+        </div>
+        <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
+          <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
+            <div class="list-group list-group-flush">
+              <% proximos5Vencimientos.forEach((p, idx) => { %>
+                <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div style="flex: 1;">
+                      <div class="d-flex gap-2 align-items-start mb-2">
+                        <span class="badge <%= p.prioridad.clase %>" style="white-space: nowrap;">
+                          <%= p.prioridad.label %>
+                        </span>
+                        <span class="badge bg-secondary"><%= p.source_tipo === 'cheque' ? 'Cheque' : (p.source_tipo === 'proveedor' ? 'Proveedor' : (p.source_tipo === 'prestamo' ? 'Préstamo' : 'Tarjeta')) %></span>
+                      </div>
+                      <h6 class="mb-1"><%= p.titulo %></h6>
+                      <small class="text-muted">
+                        <% if (p.fecha_calculada) { %>
+                          Vence: <%= p.fecha_calculada.toLocaleDateString('es-AR') %>
+                          <% if (p.dias_restantes !== null) { %>
+                            • <%= p.dias_restantes < 0 ? Math.abs(p.dias_restantes) + ' días vencido' : (p.dias_restantes + ' días') %>
+                          <% } %>
+                        <% } else { %>
+                          Sin fecha definida
+                        <% } %>
+                      </small>
+                    </div>
+                    <span class="badge bg-dark fs-6 ms-2" style="white-space: nowrap;">
+                      $<%= p.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                    </span>
+                  </div>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <% if (p.source_tipo === 'cheque') { %>
+                      <a href="/deudas/cheques" class="btn btn-outline-info">
+                        <i class="bi bi-arrow-right"></i> Ver Cheques
+                      </a>
+                    <% } else if (p.source_tipo === 'proveedor') { %>
+                      <a href="/deudas/proveedores-deuda" class="btn btn-outline-info">
+                        <i class="bi bi-arrow-right"></i> Ver Proveedores
+                      </a>
+                    <% } else if (p.source_tipo === 'prestamo') { %>
+                      <a href="/deudas/prestamos" class="btn btn-outline-info">
+                        <i class="bi bi-arrow-right"></i> Ver Préstamos
+                      </a>
+                    <% } else { %>
+                      <a href="/deudas/tarjetas" class="btn btn-outline-info">
+                        <i class="bi bi-arrow-right"></i> Ver Tarjetas
+                      </a>
+                    <% } %>
+                  </div>
+                </div>
+              <% }); %>
+            </div>
+          <% } else { %>
+            <div class="card-body text-center py-4">
+              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+              <p class="text-success mt-2 mb-0"><strong>✓ ¡Sin pagos próximos!</strong></p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+      <div class="mt-2 text-end">
+        <a href="/pagos" class="btn btn-sm btn-outline-info">
+          <i class="bi bi-calendar-check"></i> Centro de Pagos Completo
+        </a>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECCIÓN 6: ALERTAS Y DEUDORES (DESPLEGABLES)
        ═══════════════════════════════════════════════════════ -->
   <% if (!isEmpleado) { %>
   <div class="row g-3 mb-4">
@@ -476,7 +557,7 @@
   <% } %>
 
   <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 6: ÚLTIMO RESUMEN
+       SECCIÓN 8: ÚLTIMO RESUMEN
        ═══════════════════════════════════════════════════════ -->
   <% if (!isEmpleado) { %>
   <div class="row">
@@ -626,11 +707,32 @@ function toggleDeudasProximas() {
   contenedor.style.transition = 'max-height 0.3s ease';
 }
 
+let proximosExpandido = false;
+
+function toggleProximos() {
+  const contenedor = document.getElementById('contenedorProximos');
+  const icon = document.getElementById('iconProximos');
+
+  proximosExpandido = !proximosExpandido;
+
+  if (proximosExpandido) {
+    contenedor.style.maxHeight = '10000px';
+    icon.style.transform = 'rotate(180deg)';
+  } else {
+    contenedor.style.maxHeight = '0px';
+    icon.style.transform = 'rotate(0deg)';
+  }
+
+  contenedor.style.transition = 'max-height 0.3s ease';
+}
+
 // Inicialmente contraídos
 document.addEventListener('DOMContentLoaded', function() {
   const deudoresDiv = document.getElementById('contenedorDeudores');
   const stockDiv = document.getElementById('contenedorStock');
+  const proximosDiv = document.getElementById('contenedorProximos');
   if (deudoresDiv) deudoresDiv.style.maxHeight = '0px';
   if (stockDiv) stockDiv.style.maxHeight = '0px';
+  if (proximosDiv) proximosDiv.style.maxHeight = '0px';
 });
 </script>

@@ -40,6 +40,18 @@
     </div>
   </div>
 
+  <!-- Toggle Ver Todos / Solo Pendientes -->
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      <a href="?ver=pendientes" class="btn btn-sm <%= (!verTodos) ? 'btn-warning' : 'btn-outline-warning' %>">
+        ⏳ Solo Pendientes
+      </a>
+      <a href="?ver=todos" class="btn btn-sm <%= verTodos ? 'btn-secondary' : 'btn-outline-secondary' %>">
+        📋 Ver Todos
+      </a>
+    </div>
+  </div>
+
   <!-- TABLA DE DEUDAS -->
   <div class="row">
     <div class="col-md-12">
@@ -69,10 +81,15 @@
                     const pendiente = d.monto_total - d.monto_pagado;
                     const porcentajePagado = (d.monto_pagado / d.monto_total) * 100;
                     let colorEstado = 'danger';
+                    const hoy = new Date();
+                    hoy.setHours(0,0,0,0);
+                    const vencDate = d.fecha_vencimiento ? new Date(d.fecha_vencimiento) : null;
+                    if (vencDate) vencDate.setHours(0,0,0,0);
+                    const esVencido = d.estado !== 'pagado' && vencDate && vencDate < hoy;
                     if (d.estado === 'pagado') colorEstado = 'success';
                     else if (d.estado === 'pagado_parcial') colorEstado = 'warning';
                   %>
-                    <tr>
+                    <tr class="<%= esVencido ? 'table-danger' : '' %>">
                       <td><strong><%= d.proveedor_nombre || 'Sin asignar' %></strong></td>
                       <td><%= d.concepto %></td>
                       <td>$<%= d.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>

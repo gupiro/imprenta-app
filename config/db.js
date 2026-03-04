@@ -438,6 +438,13 @@ async function initDb() {
             console.log('✅ Columna movimientos_caja.usuario_id agregada');
         }
 
+        // gastos.tipo (migración - separar gastos personales de negocio)
+        const gastosInfo2 = await db.all("PRAGMA table_info(gastos)");
+        if (!gastosInfo2.some(c => c.name === 'tipo')) {
+            await db.run("ALTER TABLE gastos ADD COLUMN tipo TEXT DEFAULT 'negocio' CHECK(tipo IN ('negocio', 'personal'))");
+            console.log('✅ Columna gastos.tipo agregada');
+        }
+
         console.log('✅ Base de datos lista\n');
         return db;
 

@@ -39,6 +39,7 @@ module.exports = (db) => {
         items: items || [],
         productos,
         clientes,
+        csrfToken: 'disabled',
         error: req.flash('error'),
         success: req.flash('success')
       });
@@ -66,7 +67,7 @@ module.exports = (db) => {
       let telefonoFinal = telefono_cliente || presupuesto.telefono_cliente;
       let clienteIdFinal = cliente_id ? parseInt(cliente_id, 10) : presupuesto.cliente_id;
 
-      // Calcular total de items
+      // Calcular total de items con validaciones
       let totalPresupuesto = 0;
       const descripciones = Array.isArray(descripcion) ? descripcion : [descripcion];
       const cantidades = Array.isArray(cantidad) ? cantidad : [cantidad];
@@ -78,6 +79,21 @@ module.exports = (db) => {
           const cant = parseFloat(cantidades[i]) || 0;
           const precio = parseFloat(preciosUnit[i]) || 0;
           const desc = parseFloat(descuentos[i]) || 0;
+
+          // Validar valores positivos
+          if (cant <= 0) {
+            req.flash('error', `Cantidad debe ser mayor a 0 en item "${descripciones[i]}"`);
+            return res.redirect(`/presupuestos/${id}/editar`);
+          }
+          if (precio < 0) {
+            req.flash('error', `Precio no puede ser negativo en item "${descripciones[i]}"`);
+            return res.redirect(`/presupuestos/${id}/editar`);
+          }
+          if (desc < 0) {
+            req.flash('error', `Descuento no puede ser negativo en item "${descripciones[i]}"`);
+            return res.redirect(`/presupuestos/${id}/editar`);
+          }
+
           totalPresupuesto += (cant * precio) - desc;
         }
       }
@@ -97,10 +113,10 @@ module.exports = (db) => {
           detalle = ?,
           precio_extra = ?
         WHERE id = ?
-      `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id);
+      `, [clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id]);
 
       // ELIMINAR items viejos
-      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);
+      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', [id]);
 
       // CREAR items nuevos
       for (let i = 0; i < descripciones.length; i++) {
@@ -114,7 +130,7 @@ module.exports = (db) => {
           await db.run(`
             INSERT INTO presupuesto_items (presupuesto_id, producto_id, descripcion, cantidad, precio_unitario, descuento_item, subtotal)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-          `, id, prodId, descripciones[i], cant, precio, desc, subtotal);
+          `, [id, prodId, descripciones[i], cant, precio, desc, subtotal]);
         }
       }
 
@@ -142,7 +158,7 @@ module.exports = (db) => {
         return res.redirect(`/presupuestos/${presupuestoId}`);
       }
 
-      await db.run('UPDATE presupuestos SET estado = ? WHERE id = ?', estado, presupuestoId);
+      await db.run('UPDATE presupuestos SET estado = ? WHERE id = ?', [estado, presupuestoId]);
 
       req.flash('success', `Presupuesto actualizado a ${estado}`);
       res.redirect(`/presupuestos/${presupuestoId}`);
@@ -221,7 +237,7 @@ module.exports = (db) => {
       }
 
       // Marcar presupuesto como convertido
-      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', presupuestoId);
+      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', [presupuestoId]);
 
       req.flash('success', `✅ Pedido #${pedidoId} creado desde presupuesto`);
       res.redirect(`/pedidos/detalle/${pedidoId}`);
@@ -239,8 +255,8 @@ module.exports = (db) => {
   router.post('/:id/eliminar', checkPermission, async (req, res) => {
     const id = req.params.id;
     try {
-      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);
-      await db.run('DELETE FROM presupuestos WHERE id = ?', id);
+      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', [id]);
+      await db.run('DELETE FROM presupuestos WHERE id = ?', [id]);
       req.flash('success', 'Presupuesto eliminado');
     } catch (err) {
       req.flash('error', 'Error: ' + err.message);

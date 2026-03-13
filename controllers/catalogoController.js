@@ -51,11 +51,11 @@ module.exports = (db) => {
             
             await db.run(
                 'INSERT INTO catalogo_productos (codigo, nombre, tipo, precio_base, minimo) VALUES (?, ?, ?, ?, ?)',
-                codigo || null, 
-                nombre.trim(), 
-                tipo, 
-                parseFloat(precio_base) || 0, 
-                parseInt(minimo) || 1
+                codigo || null,
+                nombre.trim(),
+                tipo,
+                parseFloat(precio_base) || 0,
+                parseFloat(minimo) || 1
             );
             req.flash('success', 'Producto creado correctamente');
             res.redirect('/catalogo');
@@ -102,10 +102,10 @@ module.exports = (db) => {
             await db.run(
                 'UPDATE catalogo_productos SET codigo = ?, nombre = ?, tipo = ?, precio_base = ?, minimo = ? WHERE id = ?',
                 codigo || null,
-                nombre.trim(), 
-                tipo, 
-                parseFloat(precio_base) || 0, 
-                parseInt(minimo) || 1, 
+                nombre.trim(),
+                tipo,
+                parseFloat(precio_base) || 0,
+                parseFloat(minimo) || 1,
                 id
             );
             req.flash('success', 'Producto actualizado correctamente');
@@ -120,7 +120,7 @@ module.exports = (db) => {
     const eliminarProducto = async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM catalogo_productos WHERE id = ?', id);
+            await db.run('DELETE FROM catalogo_productos WHERE id = ?', [id]);
             req.flash('success', 'Producto eliminado correctamente');
             res.redirect('/catalogo');
         } catch (err) {

@@ -196,7 +196,7 @@ module.exports = (db) => {
     router.post('/tarjetas/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_tarjetas WHERE id = ?', id);
+            await db.run('DELETE FROM deudas_tarjetas WHERE id = ?', [id]);
             req.flash('success', '✅ Tarjeta eliminada');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -377,7 +377,7 @@ module.exports = (db) => {
     router.post('/cheques/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_cheques WHERE id = ?', id);
+            await db.run('DELETE FROM deudas_cheques WHERE id = ?', [id]);
             req.flash('success', '✅ Cheque eliminado');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -424,7 +424,7 @@ module.exports = (db) => {
             );
 
             // Marcar cheque como cobrado
-            await db.run('UPDATE deudas_cheques SET estado = ? WHERE id = ?', 'cobrado', id);
+            await db.run('UPDATE deudas_cheques SET estado = ? WHERE id = ?', ['cobrado', id]);
 
             req.flash('success', `✅ Cheque marcado como cobrado`);
         } catch (err) {
@@ -541,7 +541,7 @@ module.exports = (db) => {
     router.post('/prestamos/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_prestamos WHERE id = ?', id);
+            await db.run('DELETE FROM deudas_prestamos WHERE id = ?', [id]);
             req.flash('success', '✅ Préstamo eliminado');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -606,7 +606,7 @@ module.exports = (db) => {
 
             // Si está pagado, cambiar estado
             if (nuevoSaldo <= 0) {
-                await db.run('UPDATE deudas_prestamos SET estado = ? WHERE id = ?', 'cancelado', id);
+                await db.run('UPDATE deudas_prestamos SET estado = ? WHERE id = ?', ['cancelado', id]);
             }
 
             req.flash('success', `✅ Pago de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado (Cuota ${nuevosCuotaPagadas})`);
@@ -724,7 +724,7 @@ module.exports = (db) => {
     router.post('/proveedores-deuda/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_proveedores WHERE id = ?', id);
+            await db.run('DELETE FROM deudas_proveedores WHERE id = ?', [id]);
             req.flash('success', '✅ Deuda eliminada');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);

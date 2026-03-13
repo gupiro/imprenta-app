@@ -1,8 +1,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h2 class="mb-0"><i class="bi bi-truck me-2"></i>Proveedores</h2>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevo">
-    <i class="bi bi-plus-lg me-1"></i>Nuevo Proveedor
-  </button>
+  <div class="gap-2 d-flex">
+    <button type="button" class="btn btn-info" onclick="analizarProveedores()">
+      <i class="bi bi-robot me-1"></i> Análisis de Precios
+    </button>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevo">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo Proveedor
+    </button>
+  </div>
 </div>
 
 <% if (!proveedores.length) { %>
@@ -17,6 +22,8 @@
         <span class="badge bg-secondary mb-2"><%= p.rubro || 'Sin rubro' %></span>
         <p class="mb-1 small"><i class="bi bi-telephone me-1"></i><%= p.telefono || '—' %></p>
         <p class="mb-1 small"><i class="bi bi-envelope me-1"></i><%= p.email || '—' %></p>
+        <% if (p.cuit) { %><p class="mb-1 small"><i class="bi bi-hash me-1"></i>CUIT: <strong><%= p.cuit %></strong></p><% } %>
+        <% if (p.alicuota_iva_default) { %><p class="mb-1 small"><i class="bi bi-percent me-1"></i>IVA: <strong><%= p.alicuota_iva_default %>%</strong></p><% } %>
         <% if (p.notas) { %><p class="mb-2 small text-muted"><%= p.notas %></p><% } %>
         <% if (p.saldo_deuda > 0) { %>
           <div class="alert alert-danger py-1 px-2 small mb-2">
@@ -25,10 +32,10 @@
         <% } %>
       </div>
       <div class="card-footer bg-transparent d-flex gap-2">
-        <a href="/proveedores/editar/<%= p.id %>" class="btn btn-sm btn-outline-primary w-50">
+        <a href="/proveedores/<%= p.id %>/editar" class="btn btn-sm btn-outline-primary w-50">
           <i class="bi bi-pencil me-1"></i>Editar
         </a>
-        <form action="/proveedores/eliminar/<%= p.id %>" method="POST" class="w-50"
+        <form action="/proveedores/<%= p.id %>/eliminar" method="POST" class="w-50"
               onsubmit="return confirm('¿Eliminar proveedor?')">
           <button class="btn btn-sm btn-outline-danger w-100">
             <i class="bi bi-trash me-1"></i>Eliminar
@@ -40,6 +47,105 @@
   <% }) %>
 </div>
 <% } %>
+
+<!-- Modal: Análisis de Proveedores -->
+<div class="modal fade" id="modalAnalisisProveedores" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-graph-up"></i> Análisis Comparativo de Proveedores</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="proveedoresCargando" class="text-center py-4">
+          <div class="spinner-border text-info" role="status">
+            <span class="visually-hidden">Analizando...</span>
+          </div>
+          <p class="mt-2 text-muted">Analizando precios y comparativas...</p>
+        </div>
+
+        <div id="proveedoresResultado" style="display: none;">
+          <!-- Resumen -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card bg-success text-white">
+                <div class="card-body">
+                  <p class="text-white-50 mb-1">Proveedor Más Económico</p>
+                  <h5 id="provMasBarato" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-danger text-white">
+                <div class="card-body">
+                  <p class="text-white-50 mb-1">Proveedor Más Caro</p>
+                  <h5 id="provMasCaro" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card bg-warning text-dark">
+                <div class="card-body">
+                  <p class="mb-1 text-dark opacity-75">Ahorro Potencial</p>
+                  <h5 id="ahorroPromedio" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-secondary text-white">
+                <div class="card-body">
+                  <p class="text-white-50 mb-1">Deuda Total</p>
+                  <h5 id="deudaTotal" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabla de proveedores -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h6 class="mb-0">Detalle de Proveedores (Ordenados por Precio)</h6>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Proveedor</th>
+                      <th class="text-end">Precio Promedio</th>
+                      <th class="text-center">Compras</th>
+                      <th class="text-end">Deuda</th>
+                      <th class="text-center">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tablaProveedores"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recomendaciones -->
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Recomendaciones</h6>
+            </div>
+            <div class="card-body">
+              <p id="recomendacionesText" class="text-muted mb-0"></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="proveedoresError" class="alert alert-danger mb-0" style="display: none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Modal Nuevo Proveedor -->
 <div class="modal fade" id="modalNuevo" tabindex="-1">
@@ -64,7 +170,20 @@
             <label class="form-label fw-semibold">Email</label>
             <input type="email" name="email" class="form-control">
           </div>
-          <div class="col-12">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">CUIT/CUIL</label>
+            <input type="text" name="cuit" class="form-control" placeholder="XX-XXXXXXXX-X">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Alícuota IVA por Defecto (%)</label>
+            <select name="alicuota_iva_default" class="form-select">
+              <option value="21">21% (Normal)</option>
+              <option value="10.5">10.5% (Reducida)</option>
+              <option value="5">5% (Medicinas)</option>
+              <option value="0">0% (Exento)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
             <label class="form-label fw-semibold">Rubro</label>
             <select name="rubro" class="form-select">
               <option value="">Seleccioná un rubro</option>
@@ -89,3 +208,73 @@
     </div>
   </div>
 </div>
+
+<script>
+  let modalAnalisisProveedores = new bootstrap.Modal(document.getElementById('modalAnalisisProveedores'));
+
+  async function analizarProveedores() {
+    // Limpiar modal
+    document.getElementById('proveedoresCargando').style.display = 'block';
+    document.getElementById('proveedoresResultado').style.display = 'none';
+    document.getElementById('proveedoresError').style.display = 'none';
+
+    modalAnalisisProveedores.show();
+
+    try {
+      const response = await fetch('/api/ia/analisis-proveedores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error desconocido');
+      }
+
+      const data = await response.json();
+
+      if (data.ok) {
+        // Mostrar resumen
+        document.getElementById('provMasBarato').textContent =
+          '$' + data.resumen.precioMasBarato.toLocaleString('es-AR');
+        document.getElementById('provMasCaro').textContent =
+          '$' + data.resumen.precioMasCaro.toLocaleString('es-AR');
+        document.getElementById('ahorroPromedio').textContent =
+          '$' + data.resumen.ahorroPromedio.toLocaleString('es-AR');
+        document.getElementById('deudaTotal').textContent =
+          '$' + data.resumen.totalDeudas.toLocaleString('es-AR');
+
+        // Mostrar tabla de proveedores
+        const tablaHTML = data.proveedores.map((p, idx) => `
+          <tr>
+            <td><strong>${p.nombre}</strong></td>
+            <td class="text-end">$${p.precioPromedio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+            <td class="text-center"><span class="badge bg-secondary">${p.cantidadCompras}</span></td>
+            <td class="text-end text-danger">$${p.deudaPendiente.toLocaleString('es-AR')}</td>
+            <td class="text-center">
+              <span class="badge ${p.estado === 'PAGADO' ? 'bg-success' : 'bg-warning'}">
+                ${p.estado === 'PAGADO' ? '✓' : '⚠'}
+              </span>
+            </td>
+          </tr>
+        `).join('');
+        document.getElementById('tablaProveedores').innerHTML = tablaHTML;
+
+        // Mostrar recomendaciones
+        document.getElementById('recomendacionesText').textContent = data.recomendaciones;
+
+        document.getElementById('proveedoresCargando').style.display = 'none';
+        document.getElementById('proveedoresResultado').style.display = 'block';
+      } else {
+        throw new Error(data.error || 'Error en la respuesta');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('proveedoresError').textContent = error.message || 'Error al analizar proveedores';
+      document.getElementById('proveedoresError').style.display = 'block';
+      document.getElementById('proveedoresCargando').style.display = 'none';
+    }
+  }
+</script>

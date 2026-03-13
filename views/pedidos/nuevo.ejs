@@ -149,11 +149,11 @@
             <div class="row g-3">
               <div class="col-md-4">
                 <label class="form-label fw-bold">💰 Total del Pedido ($) *</label>
-                <input type="number" id="totalPedido" name="precioTotalPedido" class="form-control form-control-lg fw-bold" step="0.01" readonly style="background-color: #fff3cd; font-size: 1.3rem;">
+                <input type="number" id="totalPedido" name="precioTotalPedido" class="form-control form-control-lg fw-bold" step="0.01" readonly style="background-color: #f0f0f0; font-size: 1.3rem;">
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-bold">💵 Monto Adelantado ($)</label>
-                <input type="number" name="monto_entregado" class="form-control form-control-lg" step="0.01" value="0" required>
+                <input type="number" name="monto_entregado" class="form-control form-control-lg" step="0.01" min="0" value="0" required>
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-bold">💳 Método de Pago</label>
@@ -189,8 +189,43 @@
         </div>
       </div>
     </div>
+
+    <!-- ═════════════════════════════════════════
+         BOTÓN FLOTANTE GUARDAR
+         ════════════════════════════════════════= -->
+    <button type="submit" class="btn btn-success btn-floating" onclick="return validarFormulario()">
+      <i class="bi bi-save"></i> Guardar
+    </button>
   </form>
 </div>
+
+<style>
+  .btn-floating {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 999;
+    border-radius: 50px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+  }
+
+  .btn-floating:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    .btn-floating {
+      bottom: 16px;
+      right: 16px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+    }
+  }
+</style>
 
 
 <script>
@@ -298,12 +333,12 @@ function agregarProducto() {
 
         <div class="col-md-1 campos-lona-${idx}" style="display:none;">
           <label class="form-label">Ancho (m)</label>
-          <input type="number" name="ancho[]" class="form-control" step="0.01" onchange="calcularPrecio(${idx})">
+          <input type="number" name="ancho[]" class="form-control" step="0.01" min="0" onchange="calcularPrecio(${idx})">
         </div>
 
         <div class="col-md-1 campos-lona-${idx}" style="display:none;">
           <label class="form-label">Alto (m)</label>
-          <input type="number" name="alto[]" class="form-control" step="0.01" onchange="calcularPrecio(${idx})">
+          <input type="number" name="alto[]" class="form-control" step="0.01" min="0" onchange="calcularPrecio(${idx})">
         </div>
 
         <div class="col-md-1">

@@ -1,0 +1,425 @@
+<!-- views/finanzas/vencimientos-fiscales.ejs -->
+<div class="container-fluid py-4">
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-calendar-x me-2"></i>Vencimientos Fiscales</h1>
+      <p class="text-muted">Calendario de obligaciones impositivas</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevo">
+        <i class="bi bi-plus-lg me-1"></i>Agregar Vencimiento
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- CARDS RESUMEN -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-danger bg-light">
+        <div class="card-body">
+          <h6 class="card-title text-danger"><i class="bi bi-exclamation-circle me-1"></i>Vencidos</h6>
+          <h3 class="text-danger mb-0"><%= resumen.vencidos %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-warning bg-light">
+        <div class="card-body">
+          <h6 class="card-title text-warning"><i class="bi bi-clock me-1"></i>Urgentes (≤7 días)</h6>
+          <h3 class="text-warning mb-0"><%= resumen.urgentes %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-info bg-light">
+        <div class="card-body">
+          <h6 class="card-title text-info"><i class="bi bi-calendar me-1"></i>Próximos (≤30 días)</h6>
+          <h3 class="text-info mb-0"><%= resumen.proximos %></h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-success bg-light">
+        <div class="card-body">
+          <h6 class="card-title text-success"><i class="bi bi-check-circle me-1"></i>Pagados</h6>
+          <h3 class="text-success mb-0"><%= resumen.pagados %></h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD: Total Estimado Pendiente -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h6 class="card-title mb-1"><i class="bi bi-cash-coin me-1"></i>Total Estimado Pendiente</h6>
+          <h2 class="mb-0">$<%= resumen.total_pendiente.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS TABS -->
+  <div class="mb-3">
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="filtrarTabla('todos')">Todos</button>
+      <button type="button" class="btn btn-sm btn-outline-danger" onclick="filtrarTabla('vencido')">Vencidos</button>
+      <button type="button" class="btn btn-sm btn-outline-warning" onclick="filtrarTabla('urgente')">Urgentes</button>
+      <button type="button" class="btn btn-sm btn-outline-primary" onclick="filtrarTabla('pendientes')">Pendientes</button>
+      <button type="button" class="btn btn-sm btn-outline-success" onclick="filtrarTabla('pagado')">Pagados</button>
+    </div>
+  </div>
+
+  <!-- TABLA DE VENCIMIENTOS -->
+  <% if (vencimientos && vencimientos.length > 0) { %>
+    <div class="card border-0 shadow-sm">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Categoría</th>
+              <th>Descripción</th>
+              <th>Período</th>
+              <th class="text-center">Vencimiento</th>
+              <th class="text-center">Días</th>
+              <th class="text-end">Monto Estimado</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%
+              const colores = {
+                'IVA': 'bg-info',
+                'Ingresos Brutos': 'bg-primary',
+                'Ganancias': 'bg-warning text-dark',
+                'Monotributo': 'bg-success',
+                'Autónomos': 'bg-secondary',
+                'Cargas Sociales': 'bg-dark text-white',
+                'Bienes Personales': 'bg-danger',
+                'Balance': 'bg-dark text-white',
+                'Inscripción': 'bg-info text-dark',
+                'Otros': 'bg-light text-dark'
+              };
+            %>
+            <% vencimientos.forEach(v => { %>
+              <tr data-urgencia="<%= v.urgencia %>"
+                  <% if (v.urgencia === 'vencido') { %>class="table-danger"<% } %>
+                  <% if (v.urgencia === 'urgente') { %>class="table-warning"<% } %>
+                  <% if (v.urgencia === 'proximo') { %>style="background:#fff3cd;"<% } %>
+                  <% if (v.urgencia === 'pagado') { %>class="table-success opacity-75"<% } %>>
+                <td>
+                  <span class="badge <%= colores[v.categoria] || 'bg-light text-dark' %>">
+                    <%= v.categoria %>
+                  </span>
+                </td>
+                <td>
+                  <strong><%= v.descripcion %></strong>
+                  <% if (v.notas) { %><br/><small class="text-muted"><%= v.notas %></small><% } %>
+                </td>
+                <td><small><%= v.periodo || '—' %></small></td>
+                <td class="text-center"><strong><%= new Date(v.fecha_vencimiento).toLocaleDateString('es-AR') %></strong></td>
+                <td class="text-center">
+                  <% if (v.urgencia === 'pagado') { %>
+                    <span class="badge bg-success">✓</span>
+                  <% } else if (v.dias_restantes < 0) { %>
+                    <span class="badge bg-danger"><%= Math.abs(v.dias_restantes) %> días atrás</span>
+                  <% } else { %>
+                    <span class="badge bg-info"><%= v.dias_restantes %></span>
+                  <% } %>
+                </td>
+                <td class="text-end">
+                  <strong>$<%= (v.monto_estimado || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></strong>
+                </td>
+                <td class="text-center">
+                  <% if (v.estado === 'pagado') { %>
+                    <span class="badge bg-success">Pagado</span>
+                  <% } else if (v.estado === 'vencido') { %>
+                    <span class="badge bg-danger">Vencido</span>
+                  <% } else { %>
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                  <% } %>
+                </td>
+                <td class="text-center">
+                  <% if (v.estado !== 'pagado') { %>
+                    <form action="/finanzas/vencimientos-fiscales/<%= v.id %>/pagar" method="POST" style="display:inline;">
+                      <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado">
+                        <i class="bi bi-check-circle"></i>
+                      </button>
+                    </form>
+                  <% } %>
+                  <button type="button" class="btn btn-sm btn-primary" onclick="abrirEditar(<%= JSON.stringify(v) %>)" data-bs-toggle="modal" data-bs-target="#modalEditar">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#modalEliminar<%= v.id %>">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="alert alert-info text-center py-5">
+      <i class="bi bi-inbox" style="font-size: 3rem; color: #0dcaf0;"></i>
+      <p class="mt-3 mb-0"><strong>No hay vencimientos registrados</strong></p>
+      <small class="text-muted">Agrega el primer vencimiento fiscal usando el botón superior</small>
+    </div>
+  <% } %>
+
+  <div class="mt-4">
+    <a href="/" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Volver al Inicio
+    </a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Agregar Vencimiento -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalNuevo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Agregar Vencimiento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/finanzas/vencimientos-fiscales/crear" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Descripción *</label>
+            <input type="text" name="descripcion" class="form-control" placeholder="Ej: Pago IVA Enero 2026" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Categoría *</label>
+            <select name="categoria" class="form-select" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="IVA">IVA</option>
+              <option value="Ingresos Brutos">Ingresos Brutos (IIBB)</option>
+              <option value="Ganancias">Ganancias</option>
+              <option value="Monotributo">Monotributo</option>
+              <option value="Autónomos">Autónomos</option>
+              <option value="Cargas Sociales">Cargas Sociales</option>
+              <option value="Bienes Personales">Bienes Personales</option>
+              <option value="Balance">Balance/Memoria</option>
+              <option value="Inscripción">Inscripción</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fecha de Vencimiento *</label>
+            <input type="date" name="fecha_vencimiento" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Período</label>
+            <input type="text" name="periodo" class="form-control" placeholder="Ej: Enero 2026, 2026-01">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Monto Estimado ($)</label>
+            <input type="number" name="monto_estimado" class="form-control" placeholder="0.00" step="0.01" min="0">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Notas adicionales"></textarea>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="es_recurrente" id="es_recurrente" onchange="togglePeriodicidad()">
+            <label class="form-check-label" for="es_recurrente">
+              Es recurrente
+            </label>
+          </div>
+
+          <div class="mb-3" id="periodicidadDiv" style="display: none;">
+            <label class="form-label fw-semibold">Periodicidad</label>
+            <select name="periodicidad" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="mensual">Mensual</option>
+              <option value="bimestral">Bimestral</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="semestral">Semestral</option>
+              <option value="anual">Anual</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Editar Vencimiento -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar Vencimiento</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditar" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Descripción *</label>
+            <input type="text" name="descripcion" id="edit_descripcion" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Categoría *</label>
+            <select name="categoria" id="edit_categoria" class="form-select" required>
+              <option value="IVA">IVA</option>
+              <option value="Ingresos Brutos">Ingresos Brutos (IIBB)</option>
+              <option value="Ganancias">Ganancias</option>
+              <option value="Monotributo">Monotributo</option>
+              <option value="Autónomos">Autónomos</option>
+              <option value="Cargas Sociales">Cargas Sociales</option>
+              <option value="Bienes Personales">Bienes Personales</option>
+              <option value="Balance">Balance/Memoria</option>
+              <option value="Inscripción">Inscripción</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Fecha de Vencimiento *</label>
+            <input type="date" name="fecha_vencimiento" id="edit_fecha_vencimiento" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Período</label>
+            <input type="text" name="periodo" id="edit_periodo" class="form-control">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Monto Estimado ($)</label>
+            <input type="number" name="monto_estimado" id="edit_monto_estimado" class="form-control" step="0.01" min="0">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Notas</label>
+            <textarea name="notas" id="edit_notas" class="form-control" rows="2"></textarea>
+          </div>
+
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="es_recurrente" id="edit_es_recurrente" onchange="togglePeriodicidadEdit()">
+            <label class="form-check-label" for="edit_es_recurrente">
+              Es recurrente
+            </label>
+          </div>
+
+          <div class="mb-3" id="periodicidadEditDiv" style="display: none;">
+            <label class="form-label fw-semibold">Periodicidad</label>
+            <select name="periodicidad" id="edit_periodicidad" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="mensual">Mensual</option>
+              <option value="bimestral">Bimestral</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="semestral">Semestral</option>
+              <option value="anual">Anual</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-info">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODALES: Eliminar (dinámicos) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<% if (vencimientos && vencimientos.length > 0) { %>
+  <% vencimientos.forEach(v => { %>
+    <div class="modal fade" id="modalEliminar<%= v.id %>" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-trash me-2"></i>Eliminar Vencimiento</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>¿Eliminar el vencimiento "<strong><%= v.descripcion %></strong>"?</p>
+            <p class="text-muted small">Esta acción no se puede deshacer.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <form action="/finanzas/vencimientos-fiscales/<%= v.id %>/eliminar" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-danger">Eliminar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% }); %>
+<% } %>
+
+<script>
+function togglePeriodicidad() {
+  const check = document.getElementById('es_recurrente').checked;
+  document.getElementById('periodicidadDiv').style.display = check ? 'block' : 'none';
+}
+
+function togglePeriodicidadEdit() {
+  const check = document.getElementById('edit_es_recurrente').checked;
+  document.getElementById('periodicidadEditDiv').style.display = check ? 'block' : 'none';
+}
+
+function abrirEditar(vencimiento) {
+  document.getElementById('formEditar').action = '/finanzas/vencimientos-fiscales/' + vencimiento.id + '/editar';
+  document.getElementById('edit_descripcion').value = vencimiento.descripcion || '';
+  document.getElementById('edit_categoria').value = vencimiento.categoria || '';
+  document.getElementById('edit_fecha_vencimiento').value = vencimiento.fecha_vencimiento || '';
+  document.getElementById('edit_periodo').value = vencimiento.periodo || '';
+  document.getElementById('edit_monto_estimado').value = vencimiento.monto_estimado || 0;
+  document.getElementById('edit_notas').value = vencimiento.notas || '';
+  document.getElementById('edit_es_recurrente').checked = vencimiento.es_recurrente ? true : false;
+  document.getElementById('edit_periodicidad').value = vencimiento.periodicidad || '';
+  togglePeriodicidadEdit();
+}
+
+function filtrarTabla(tipo) {
+  document.querySelectorAll('tbody tr[data-urgencia]').forEach(tr => {
+    const urgencia = tr.dataset.urgencia;
+    let mostrar = false;
+
+    if (tipo === 'todos') {
+      mostrar = true;
+    } else if (tipo === 'pendientes') {
+      mostrar = urgencia !== 'pagado';
+    } else if (tipo === urgencia) {
+      mostrar = true;
+    }
+
+    tr.style.display = mostrar ? '' : 'none';
+  });
+}
+</script>

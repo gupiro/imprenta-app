@@ -127,6 +127,9 @@ module.exports = (db) => {
         ORDER BY cantidad ASC LIMIT 5
       `) || [];
 
+      // Total de artículos en stock
+      const totalStock = (await db.get("SELECT COUNT(*) AS c FROM stock"))?.c || 0;
+
       // Presupuestos pendientes sin respuesta hace más de 3 días
       const presupuestosPendientes = await db.all(`
         SELECT p.id, p.precio_estimado, p.fecha_creacion, c.name AS cliente
@@ -202,6 +205,7 @@ module.exports = (db) => {
         deudores,
         presupuestosPendientes,
         stockBajo,
+        totalStock,
         ultimosPedidos,
         graficoLabels: JSON.stringify(graficoLabels),
         graficoDatos: JSON.stringify(graficoDatos),

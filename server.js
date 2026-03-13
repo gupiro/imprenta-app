@@ -3,12 +3,13 @@ require('dotenv').config();
 
 const express        = require('express');
 const session        = require('express-session');
+const cookieParser   = require('cookie-parser');
 const flash          = require('connect-flash');
 const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
 const rateLimit      = require('express-rate-limit');
-const csrf           = require('csurf');
+// const csrf           = require('csurf'); // DESACTIVADO TEMPORALMENTE
 
 // Swagger UI deshabilitado (archivo openapi.yaml removido)
 // const swaggerUi       = require('swagger-ui-express');
@@ -30,6 +31,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -44,14 +46,15 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        sameSite: 'strict'
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 // 24 horas
     }
 }));
 app.use(flash());
 
-// CSRF Protection middleware
-const csrfProtection = csrf({ cookie: false });
-app.use(csrfProtection);
+// CSRF Protection middleware (DESACTIVADO TEMPORALMENTE)
+// const csrfProtection = csrf({ cookie: false });
+// app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════
 // VARIABLES GLOBALES PARA VISTAS
@@ -62,7 +65,7 @@ app.use((req, res, next) => {
     res.locals.success     = req.flash('success') || [];
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
-    res.locals.csrfToken   = req.csrfToken();
+    res.locals.csrfToken   = 'disabled'; // CSRF temporalmente desactivado
     res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
     next();
 });
@@ -151,6 +154,7 @@ async function startServer() {
     const dashboardRouterConfigured    = require('./routes/dashboard')(dbInstance);
     const deudasRouterConfigured       = require('./routes/deudas')(dbInstance);
     const pagosRouterConfigured        = require('./routes/pagos')(dbInstance);
+    const finanzasRouterConfigured     = require('./routes/finanzas')(dbInstance);
 
     // ────────────────────────────────────────────────────────────────────
     // APIS INTERNAS (Autocomplete, etc)
@@ -186,7 +190,7 @@ async function startServer() {
     const presupuestosControllerPublico = require('./controllers/presupuestosController')(dbInstance);
     const upload = require('./config/multer');
     app.get('/presupuestos/publico', presupuestosControllerPublico.formPresupuestoPublico);
-    app.post('/presupuestos/publico', csrfProtection, upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
+    app.post('/presupuestos/publico', upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
 
     // ────────────────────────────────────────────────────────────────────
     // RUTAS PROTEGIDAS
@@ -205,6 +209,7 @@ async function startServer() {
     app.use('/reportes',     permitirRoles('admin','vendedor'),                       reportesRouterConfigured);
     app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
     app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
+    app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA
@@ -232,6 +237,22 @@ async function startServer() {
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
         async (req, res, next) => {
             return cajaController.editarMovimiento(req, res);
+        }
+    );
+
+    app.post('/caja-diaria/cerrar-turno',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
+        async (req, res, next) => {
+            return cajaController.cerrarTurno(req, res);
+        }
+    );
+
+    app.post('/caja-diaria/reabrir-turno',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin'),
+        async (req, res, next) => {
+            return cajaController.reabrirTurno(req, res);
         }
     );
 
@@ -329,9 +350,9 @@ async function startServer() {
 
                 // Tarjetas activas
                 const tarjetasRaw = await dbInstance.all(`
-                    SELECT 'tarjeta' AS source_tipo, id, nombre AS titulo,
+                    SELECT 'tarjeta' AS source_tipo, id, nombre_tarjeta AS titulo,
                            monto_minimo AS monto, fecha_vencimiento,
-                           entidad AS subtitulo, estado
+                           'Tarjeta' AS subtitulo, estado
                     FROM deudas_tarjetas
                     WHERE estado = 'activa'
                 `) || [];
@@ -440,12 +461,23 @@ async function startServer() {
                 isRecepcionista
             });
         } catch (err) {
-            console.error('Error en dashboard:', err);
+            console.error('❌ Error en dashboard:', err.message);
             const isEmpleado = req.session.user?.rol === 'empleado';
             const isRecepcionista = req.session.user?.rol === 'recepcionista';
+
+            // Intentar recuperar al menos los counts
+            const counts = {
+                pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
+                en_produccion: (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,
+                listos:        (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO'"))?.c || 0,
+                entregados:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'"))?.c || 0,
+                presupuestos:  (await dbInstance.get("SELECT COUNT(*) AS c FROM presupuestos WHERE estado = 'PENDIENTE'"))?.c || 0,
+                clientes:      (await dbInstance.get("SELECT COUNT(*) AS c FROM clients"))?.c || 0,
+            };
+
             res.render('home', {
                 title: 'Panel Principal',
-                counts: {},
+                counts,
                 ingresosHoy: 0,
                 ingresosMes: 0,
                 deudores: [],

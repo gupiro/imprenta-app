@@ -45,7 +45,7 @@
       background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       padding: 0.75rem 0;
-      border-bottom: 3px solid var(--secondary-color);
+      border-bottom: 3px solid #495057;
     }
 
     .navbar-brand {
@@ -269,6 +269,63 @@
     footer a:hover {
       color: white;
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TARJETAS CLICABLES CON HOVER EFFECT
+       ═══════════════════════════════════════════════════════════════ */
+
+    .card {
+      transition: all 0.3s ease;
+    }
+
+    a > .card,
+    a .card {
+      cursor: pointer;
+    }
+
+    a:hover > .card,
+    a:hover .card {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BADGES DE COLOR PARA ESTADOS
+       ═══════════════════════════════════════════════════════════════ */
+
+    .estado-select {
+      font-weight: 600;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    /* PENDIENTE - Rojo claro */
+    .estado-select[data-estado="PENDIENTE"] {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
+
+    /* EN_PRODUCCION - Amarillo claro */
+    .estado-select[data-estado="EN_PRODUCCION"] {
+      background-color: #fff3cd;
+      color: #856404;
+      border-color: #ffeaa7;
+    }
+
+    /* LISTO - Verde claro */
+    .estado-select[data-estado="LISTO"] {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
+    }
+
+    /* ENTREGADO - Gris claro */
+    .estado-select[data-estado="ENTREGADO"] {
+      background-color: #e2e3e5;
+      color: #383d41;
+      border-color: #d6d8db;
+    }
   </style>
 </head>
 
@@ -307,12 +364,14 @@
             </a>
           </li>
 
-          <!-- DASHBOARD FINANCIERO -->
+          <!-- DASHBOARD FINANCIERO - SOLO ADMIN Y VENDEDOR -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
           <li class="nav-item">
             <a class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>" href="/dashboard">
               <i class="bi bi-graph-up"></i> Dashboard
             </a>
           </li>
+          <% } %>
 
           <!-- ▼ VENTAS -->
           <li class="nav-item dropdown">
@@ -380,6 +439,9 @@
               <li><a class="dropdown-item" href="/reportes">
                 <i class="bi bi-bar-chart-fill"></i> Reportes
               </a></li>
+              <li><a class="dropdown-item" href="/reportes/deudores">
+                <i class="bi bi-currency-dollar"></i> Cuentas por Cobrar
+              </a></li>
               <li><hr class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="/usuarios">
                 <i class="bi bi-person-gear"></i> Usuarios
@@ -392,6 +454,19 @@
               </a></li>
               <li><a class="dropdown-item" href="/deudas">
                 <i class="bi bi-cash-stack"></i> Deudas
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/finanzas/gastos-fijos">
+                <i class="bi bi-receipt"></i> Gastos Fijos
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/compras-cuotas">
+                <i class="bi bi-cart-check"></i> Compras en Cuotas
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/facturas-recibidas">
+                <i class="bi bi-receipt-cutoff"></i> Facturas Recibidas
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/vencimientos-fiscales">
+                <i class="bi bi-calendar-x"></i> Vencimientos Fiscales
               </a></li>
             </ul>
           </li>
@@ -533,6 +608,18 @@
         }
         lastScrollTop = window.scrollY <= 0 ? 0 : window.scrollY;
       }, { passive: true });
+
+      // ═════════════════════════════════════════════════════════════
+      // ACTUALIZAR COLORES DE ESTADOS EN SELECT
+      // ═════════════════════════════════════════════════════════════
+      document.querySelectorAll('.estado-select').forEach(select => {
+        // Establecer color inicial
+        const updateColor = () => {
+          select.setAttribute('data-estado', select.value);
+        };
+        updateColor();
+        select.addEventListener('change', updateColor);
+      });
     })();
   </script>
 

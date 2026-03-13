@@ -17,7 +17,9 @@
       "Bash(done)",
       "Bash(find:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(wmic process where \"name=''node.exe''\" delete)",
+      "Bash(wmic process where \"name=''npm.exe''\" delete)"
     ]
   }
 }

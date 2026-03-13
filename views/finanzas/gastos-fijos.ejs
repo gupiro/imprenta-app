@@ -1,0 +1,437 @@
+<!-- views/finanzas/gastos-fijos.ejs -->
+
+<div class="container-fluid py-4">
+  <!-- HEADER -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-receipt"></i> Gastos Fijos</h1>
+      <p class="text-muted">Gestión de gastos periódicos y recurrentes</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevoGastoFijo">
+        <i class="bi bi-plus-circle"></i> Agregar Gasto Fijo
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- BLOQUE INFORMATIVO COLAPSABLE -->
+  <div class="card mb-4 border-start border-info border-5">
+    <div class="card-header bg-light cursor-pointer" data-bs-toggle="collapse" data-bs-target="#infoBlock">
+      <h6 class="mb-0">
+        <i class="bi bi-info-circle"></i> ¿Para qué sirve esta sección?
+        <span class="float-end"><i class="bi bi-chevron-down"></i></span>
+      </h6>
+    </div>
+    <div class="collapse show" id="infoBlock">
+      <div class="card-body text-muted">
+        <p class="mb-0">
+          <strong>Registrá todos tus gastos que se repiten periódicamente</strong> como alquiler, servicios (luz, gas, internet),
+          sueldos, seguros, mantenimiento, y otros gastos recurrentes. Así sabés exactamente cuánto dinero necesitás tener
+          disponible cada mes antes de contar tus ganancias.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TARJETAS RESUMEN -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="card bg-primary text-white border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">
+            <i class="bi bi-calendar-month"></i> Total Mensual Equivalente
+          </p>
+          <h3 class="mb-0">$<%= totalMensual.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="opacity-75">Todos los gastos anualizados / 12</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card bg-success text-white border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">
+            <i class="bi bi-list-check"></i> Gastos Activos
+          </p>
+          <h3 class="mb-0"><%= cantidadActivos %></h3>
+          <small class="opacity-75">Registrados en el sistema</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card bg-warning text-dark border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">
+            <i class="bi bi-hourglass-split"></i> Próximo Vencimiento
+          </p>
+          <% if (proximoVencimiento) { %>
+            <h3 class="mb-0">Día <%= proximoVencimiento.dia_vencimiento %></h3>
+            <small class="opacity-75"><%= proximoVencimiento.nombre %></small>
+          <% } else { %>
+            <h3 class="mb-0">-</h3>
+            <small class="opacity-75">Sin vencimientos próximos</small>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE GASTOS FIJOS -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light">
+      <h6 class="mb-0"><i class="bi bi-table"></i> Gastos Registrados</h6>
+    </div>
+    <div class="card-body">
+      <% if (gastosFijos && gastosFijos.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Estado</th>
+                <th>Nombre</th>
+                <th>Monto</th>
+                <th>Progreso del Mes</th>
+                <th>Vencimiento</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% gastosFijos.forEach(gf => { %>
+                <tr>
+                  <td>
+                    <span title="<%= gf.estado %>" style="font-size: 1.2rem;">
+                      <%= gf.iconoEstado %>
+                    </span>
+                  </td>
+                  <td>
+                    <strong><%= gf.nombre %></strong><br>
+                    <small class="text-muted"><%= gf.categoria %> • <%= gf.frecuencia %></small>
+                    <% if (gf.notas) { %>
+                      <br><small class="text-muted">📝 <%= gf.notas %></small>
+                    <% } %>
+                  </td>
+                  <td>
+                    <strong class="text-primary">$<%= gf.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+                  </td>
+                  <td>
+                    <div class="progress" style="height: 24px;">
+                      <div class="progress-bar" role="progressbar" style="width: <%= gf.porcentaje_pagado %>%" aria-valuenow="<%= gf.porcentaje_pagado %>" aria-valuemin="0" aria-valuemax="100">
+                        <%= gf.porcentaje_pagado %>%
+                      </div>
+                    </div>
+                    <small class="text-muted">
+                      Pagado: $<%= gf.pagado_mes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %> / Falta: $<%= gf.falta_pagar.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                    </small>
+                  </td>
+                  <td>
+                    Día <%= gf.dia_vencimiento %>
+                  </td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalPagoParcial" onclick="abrirModalPago(<%= gf.id %>, '<%= gf.nombre %>', <%= gf.falta_pagar %>)">
+                        <i class="bi bi-plus-circle"></i> Pago
+                      </button>
+                      <button class="btn btn-sm btn-outline-success" onclick="marcarPagado(<%= gf.id %>, '<%= gf.nombre %>')">
+                        <i class="bi bi-check-circle"></i> Completo
+                      </button>
+                      <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditarGastoFijo" onclick="abrirEditar(<%= gf.id %>)">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-danger" onclick="eliminar(<%= gf.id %>, '<%= gf.nombre %>')">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-info-circle"></i> No hay gastos fijos registrados. ¡Comenzá agregando uno!
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NUEVO GASTO FIJO ===== -->
+<div class="modal fade" id="modalNuevoGastoFijo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nuevo Gasto Fijo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/finanzas/gastos-fijos/crear" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nombre del Gasto *</label>
+            <input type="text" name="nombre" class="form-control form-control-lg"
+                   placeholder="Ej: Alquiler Oficina" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select name="categoria" class="form-select form-select-lg" required>
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Frecuencia *</label>
+              <select name="frecuencia" class="form-select form-select-lg" required>
+                <option value="">-- Seleccionar --</option>
+                <% FRECUENCIAS.forEach(freq => { %>
+                  <option value="<%= freq.value %>"><%= freq.label %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto ($) *</label>
+              <input type="number" name="monto" class="form-control form-control-lg"
+                     step="0.01" min="0" placeholder="0.00" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Día de Vencimiento (1-31) *</label>
+              <input type="number" name="dia_vencimiento" class="form-control form-control-lg"
+                     min="1" max="31" placeholder="Ej: 15" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-save"></i> Guardar Gasto Fijo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: PAGO PARCIAL ===== -->
+<div class="modal fade" id="modalPagoParcial" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Registrar Pago Parcial</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formPagoParcial" method="POST">
+        <div class="modal-body">
+          <div class="alert alert-info mb-3">
+            <strong id="gastoNombreLabel"></strong><br>
+            <small>Pendiente: <strong id="montoFaltaLabel"></strong></small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a Pagar ($) *</label>
+            <input type="number" id="inputMontoPago" name="monto" class="form-control form-control-lg"
+                   step="0.01" min="0.01" placeholder="0.00" required>
+            <small class="text-muted">Dejar en blanco para pagar el monto faltante</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Método de Pago</label>
+            <select id="selectMetodoPago" name="metodo_pago" class="form-select form-select-lg">
+              <option value="efectivo">💵 Efectivo</option>
+              <option value="transferencia">🏦 Transferencia</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+              <option value="qr">📱 QR</option>
+              <option value="cheque">📝 Cheque</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea id="inputNotas" name="notas" class="form-control" rows="2" placeholder="Detalles del pago..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-info btn-lg">
+            <i class="bi bi-check-circle"></i> Registrar Pago
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDITAR GASTO FIJO ===== -->
+<div class="modal fade" id="modalEditarGastoFijo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Gasto Fijo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarGasto" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Nombre del Gasto *</label>
+            <input type="text" id="editNombre" name="nombre" class="form-control form-control-lg" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select id="editCategoria" name="categoria" class="form-select form-select-lg" required>
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Frecuencia *</label>
+              <select id="editFrecuencia" name="frecuencia" class="form-select form-select-lg" required>
+                <option value="">-- Seleccionar --</option>
+                <% FRECUENCIAS.forEach(freq => { %>
+                  <option value="<%= freq.value %>"><%= freq.label %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto ($) *</label>
+              <input type="number" id="editMonto" name="monto" class="form-control form-control-lg"
+                     step="0.01" min="0" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Día de Vencimiento (1-31) *</label>
+              <input type="number" id="editDiaVencimiento" name="dia_vencimiento" class="form-control form-control-lg"
+                     min="1" max="31" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea id="editNotas" name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning btn-lg">
+            <i class="bi bi-save"></i> Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+let pagoEnProceso = { id: null, nombre: '', falta: 0 };
+
+function abrirEditar(id) {
+  const formEditarGasto = document.getElementById('formEditarGasto');
+  formEditarGasto.action = `/finanzas/gastos-fijos/${id}/editar`;
+}
+
+function abrirModalPago(id, nombre, falta) {
+  pagoEnProceso = { id, nombre, falta };
+  document.getElementById('gastoNombreLabel').textContent = nombre;
+  document.getElementById('montoFaltaLabel').textContent =
+    '$' + falta.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+  document.getElementById('inputMontoPago').value = falta.toFixed(2);
+  document.getElementById('inputMontoPago').max = falta;
+
+  const formPago = document.getElementById('formPagoParcial');
+  formPago.action = `/finanzas/gastos-fijos/${id}/pago-parcial`;
+}
+
+document.getElementById('formPagoParcial')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const monto = document.getElementById('inputMontoPago').value;
+  const metodo = document.getElementById('selectMetodoPago').value;
+  const notas = document.getElementById('inputNotas').value;
+
+  if (!monto || monto <= 0) {
+    alert('❌ El monto debe ser mayor a 0');
+    return;
+  }
+
+  const response = await fetch(`/finanzas/gastos-fijos/${pagoEnProceso.id}/pago-parcial`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ monto: parseFloat(monto), metodo_pago: metodo, notas })
+  });
+
+  const data = await response.json();
+  if (data.success) {
+    alert(`✅ ${data.message}`);
+    bootstrap.Modal.getInstance(document.getElementById('modalPagoParcial')).hide();
+    location.reload();
+  } else {
+    alert('❌ Error: ' + data.error);
+  }
+});
+
+function marcarPagado(id, nombre) {
+  if (confirm(`¿Marcar "${nombre}" como COMPLETAMENTE pagado hoy? Se registrará en Caja Diaria.`)) {
+    fetch(`/finanzas/gastos-fijos/${id}/marcar-pagado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ Gasto marcado como pagado. Se registró en Caja Diaria.');
+        location.reload();
+      } else {
+        alert('❌ Error: ' + data.error);
+      }
+    })
+    .catch(e => alert('Error: ' + e));
+  }
+}
+
+function eliminar(id, nombre) {
+  if (confirm(`¿Eliminar el gasto "${nombre}"? No se puede deshacer.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/finanzas/gastos-fijos/${id}/eliminar`;
+    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">';
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>

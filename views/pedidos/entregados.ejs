@@ -26,6 +26,30 @@
     </div>
   <% } %>
 
+  <!-- NAVEGACIÓN RÁPIDA ENTRE ESTADOS -->
+  <div class="mb-4 d-flex gap-2 flex-wrap">
+    <a href="/pedidos/pendientes"
+       class="btn btn-sm <%= estadoActual === 'PENDIENTE' ? 'btn-danger' : 'btn-outline-danger' %>">
+      📋 Pendientes
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['PENDIENTE']) || 0 %></span>
+    </a>
+    <a href="/pedidos/en-produccion"
+       class="btn btn-sm <%= estadoActual === 'EN_PRODUCCION' ? 'btn-warning' : 'btn-outline-warning' %>">
+      ⚙️ En Producción
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['EN_PRODUCCION']) || 0 %></span>
+    </a>
+    <a href="/pedidos/listos"
+       class="btn btn-sm <%= estadoActual === 'LISTO' ? 'btn-info' : 'btn-outline-info' %>">
+      ✅ Listos
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['LISTO']) || 0 %></span>
+    </a>
+    <a href="/pedidos/entregados"
+       class="btn btn-sm <%= estadoActual === 'ENTREGADO' ? 'btn-success' : 'btn-outline-success' %>">
+      🎉 Entregados
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['ENTREGADO']) || 0 %></span>
+    </a>
+  </div>
+
   <!-- CONTROLES: BÚSQUEDA, FILTRO Y VISTAS -->
   <div class="card mb-4 border-0 shadow-sm">
     <div class="card-body">
@@ -53,7 +77,12 @@
           </select>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">📅 Mes/Año</label>
+          <input type="month" name="mes" class="form-control" value="<%= mes %>">
+        </div>
+
+        <div class="col-md-1">
           <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-funnel"></i> Filtrar
           </button>
@@ -67,15 +96,15 @@
     <div class="col-md-6">
       <label class="form-label fw-semibold small">Vista</label>
       <div class="btn-group d-flex" role="group" style="width: 100%;">
-        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=cards&groupBy=<%= groupBy %>"
+        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=cards&groupBy=<%= groupBy %>&mes=<%= mes %>"
            class="btn <%= view === 'cards' ? 'btn-primary' : 'btn-outline-primary' %>" style="flex: 1;">
           <i class="bi bi-grid-3x2-gap"></i> Tarjetas
         </a>
-        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=tabla&groupBy=<%= groupBy %>"
+        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=tabla&groupBy=<%= groupBy %>&mes=<%= mes %>"
            class="btn <%= view === 'tabla' ? 'btn-primary' : 'btn-outline-primary' %>" style="flex: 1;">
           <i class="bi bi-table"></i> Tabla
         </a>
-        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=compacto&groupBy=<%= groupBy %>"
+        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=compacto&groupBy=<%= groupBy %>&mes=<%= mes %>"
            class="btn <%= view === 'compacto' ? 'btn-primary' : 'btn-outline-primary' %>" style="flex: 1;">
           <i class="bi bi-list-ul"></i> Compacto
         </a>
@@ -84,11 +113,11 @@
     <div class="col-md-6">
       <label class="form-label fw-semibold small">Agrupar por</label>
       <div class="btn-group d-flex" role="group" style="width: 100%;">
-        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=<%= view %>&groupBy=none"
+        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=<%= view %>&groupBy=none&mes=<%= mes %>"
            class="btn <%= groupBy === 'none' ? 'btn-success' : 'btn-outline-success' %>" style="flex: 1;">
           <i class="bi bi-layout-split"></i> Sin Agrupar
         </a>
-        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=<%= view %>&groupBy=semana"
+        <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=<%= view %>&groupBy=semana&mes=<%= mes %>"
            class="btn <%= groupBy === 'semana' ? 'btn-success' : 'btn-outline-success' %>" style="flex: 1;">
           <i class="bi bi-calendar-week"></i> Por Semana
         </a>
@@ -98,20 +127,26 @@
 
   <!-- CONTENIDO AGRUPADO -->
   <% if (groupBy === 'semana' && pedidosAgrupados && pedidosAgrupados.length > 0) { %>
-    <% pedidosAgrupados.forEach(grupo => { %>
-      <!-- HEADER DE SEMANA -->
+    <% pedidosAgrupados.forEach((grupo, idx) => { %>
+      <!-- HEADER DE SEMANA - COLAPSABLE -->
       <div class="mb-4">
-        <div class="card border-0 bg-light mb-3">
-          <div class="card-body py-3">
-            <h5 class="mb-0">
-              <i class="bi bi-calendar-week"></i> <%= grupo.label %>
-              <span class="badge bg-secondary"><%= grupo.pedidos.length %> entregados</span>
-            </h5>
-          </div>
-        </div>
+        <button class="btn btn-light w-100 text-start border-0 shadow-sm week-header"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#week-<%= idx %>"
+                aria-expanded="true"
+                aria-controls="week-<%= idx %>"
+                style="border-radius: 8px; padding: 12px 15px; transition: all 0.2s;">
+          <i class="bi bi-chevron-down" style="display: inline-block; margin-right: 8px; transition: transform 0.2s;"></i>
+          <i class="bi bi-calendar-week"></i> <%= grupo.label %>
+          <span class="badge bg-secondary ms-2"><%= grupo.pedidos.length %> entregados</span>
+        </button>
 
-        <!-- VISTA: TARJETAS (AGRUPADAS) -->
-        <% if (view === 'cards') { %>
+        <!-- CONTENIDO COLAPSABLE -->
+        <div class="collapse show" id="week-<%= idx %>">
+          <div style="margin-top: 12px;">
+            <!-- VISTA: TARJETAS (AGRUPADAS) -->
+            <% if (view === 'cards') { %>
           <div class="row g-4 mb-4">
             <% grupo.pedidos.forEach(p => { %>
               <div class="col-md-6 col-lg-4">
@@ -240,6 +275,8 @@
             <% }); %>
           </div>
         <% } %>
+          </div>
+        </div>
       </div>
     <% }); %>
 
@@ -392,6 +429,69 @@
 </div>
 
 <script>
+  // Lógica para colapsar/expandir semanas
+  document.addEventListener('DOMContentLoaded', function() {
+    // Obtener la semana actual
+    function getWeekNumber(date) {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    }
+
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+    const currentWeek = getWeekNumber(now);
+    const currentYear = now.getFullYear();
+
+    // Procesar cada botón de semana
+    const headers = document.querySelectorAll('.week-header');
+    headers.forEach((btn, idx) => {
+      const collapseElement = document.getElementById(`week-${idx}`);
+      if (!collapseElement) return;
+
+      const label = btn.textContent;
+      const weekMatch = label.match(/Semana\s+(\d+)\s+de\s+(\d+)/);
+
+      if (weekMatch) {
+        const weekNum = parseInt(weekMatch[1], 10);
+        const yearNum = parseInt(weekMatch[2], 10);
+
+        // Si es la semana actual del año actual, expandir; si no, colapsar
+        if (weekNum === currentWeek && yearNum === currentYear) {
+          collapseElement.classList.add('show');
+          btn.setAttribute('aria-expanded', 'true');
+        } else {
+          collapseElement.classList.remove('show');
+          btn.setAttribute('aria-expanded', 'false');
+        }
+      }
+
+      // Cambiar el ícono del chevron cuando se colapsa/expande
+      btn.addEventListener('click', function() {
+        const icon = btn.querySelector('i.bi-chevron-down');
+        if (icon) {
+          if (collapseElement.classList.contains('show')) {
+            icon.style.transform = 'rotate(0deg)';
+          } else {
+            icon.style.transform = 'rotate(-180deg)';
+          }
+        }
+      });
+
+      // Manejar cambios en el collapse para rotar el ícono
+      collapseElement.addEventListener('show.bs.collapse', function() {
+        const icon = btn.querySelector('i.bi-chevron-down');
+        if (icon) icon.style.transform = 'rotate(-180deg)';
+      });
+
+      collapseElement.addEventListener('hide.bs.collapse', function() {
+        const icon = btn.querySelector('i.bi-chevron-down');
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      });
+    });
+  });
+
   function enviarWhatsApp(pedidoId, cliente, deuda) {
     fetch(`/api/pedidos/${pedidoId}/cliente-phone`)
       .then(r => r.json())

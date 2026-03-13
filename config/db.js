@@ -351,6 +351,106 @@ async function initDb() {
         `);
 
         // ════════════════════════════════════════════════════════════════
+        // TABLA: GASTOS FIJOS (Módulo Finanzas)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS gastos_fijos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                frecuencia TEXT NOT NULL,
+                monto REAL NOT NULL,
+                dia_vencimiento INTEGER,
+                activo INTEGER DEFAULT 1,
+                fecha_creacion TEXT DEFAULT (datetime('now')),
+                ultima_pagada TEXT,
+                notas TEXT
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: PAGOS DE GASTOS FIJOS (Pagos parciales)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS pagos_gastos_fijos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                gasto_fijo_id INTEGER NOT NULL REFERENCES gastos_fijos(id) ON DELETE CASCADE,
+                monto_pagado REAL NOT NULL,
+                fecha_pago TEXT NOT NULL,
+                metodo_pago TEXT,
+                notas TEXT,
+                caja_id INTEGER REFERENCES movimientos_caja(id),
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: COMPRAS EN CUOTAS (Módulo Finanzas)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS compras_cuotas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                descripcion TEXT NOT NULL,
+                proveedor TEXT,
+                fecha_compra TEXT NOT NULL,
+                monto_total REAL NOT NULL,
+                cant_cuotas INTEGER NOT NULL,
+                monto_cuota REAL NOT NULL,
+                fecha_primera_cuota TEXT NOT NULL,
+                cuotas_pagadas INTEGER DEFAULT 0,
+                medio_pago TEXT,
+                categoria TEXT,
+                notas TEXT,
+                activo INTEGER DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: FACTURAS RECIBIDAS (Libro IVA Compras)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS facturas_recibidas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                tipo_comprobante TEXT NOT NULL,
+                numero_comprobante TEXT NOT NULL,
+                fecha_emision TEXT NOT NULL,
+                cuit_proveedor TEXT,
+                razon_social TEXT NOT NULL,
+                descripcion TEXT,
+                categoria_contable TEXT,
+                monto_neto REAL DEFAULT 0,
+                alicuota_iva REAL DEFAULT 21,
+                monto_iva REAL DEFAULT 0,
+                monto_total REAL NOT NULL,
+                forma_pago TEXT,
+                estado TEXT DEFAULT 'pendiente',
+                fecha_vencimiento_pago TEXT,
+                notas TEXT,
+                periodo TEXT,
+                activo INTEGER DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: PAGOS DE FACTURAS RECIBIDAS (Seguimiento de pagos)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS pagos_facturas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                factura_id INTEGER NOT NULL REFERENCES facturas_recibidas(id) ON DELETE CASCADE,
+                monto_pagado REAL NOT NULL,
+                fecha_pago TEXT NOT NULL,
+                metodo_pago TEXT,
+                notas TEXT,
+                caja_id INTEGER REFERENCES movimientos_caja(id),
+                usuario_id INTEGER REFERENCES users(id),
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
         // DATOS INICIALES
         // ════════════════════════════════════════════════════════════════
 
@@ -444,6 +544,94 @@ async function initDb() {
             await db.run("ALTER TABLE gastos ADD COLUMN tipo TEXT DEFAULT 'negocio' CHECK(tipo IN ('negocio', 'personal'))");
             console.log('✅ Columna gastos.tipo agregada');
         }
+
+        // proveedores.cuit (migración - para facturas recibidas)
+        const provInfo2 = await db.all("PRAGMA table_info(proveedores)");
+        if (!provInfo2.some(c => c.name === 'cuit')) {
+            await db.run("ALTER TABLE proveedores ADD COLUMN cuit TEXT DEFAULT ''");
+            console.log('✅ Columna proveedores.cuit agregada');
+        }
+
+        // proveedores.alicuota_iva_default (migración - alícuota por defecto)
+        const provInfo3 = await db.all("PRAGMA table_info(proveedores)");
+        if (!provInfo3.some(c => c.name === 'alicuota_iva_default')) {
+            await db.run("ALTER TABLE proveedores ADD COLUMN alicuota_iva_default REAL DEFAULT 21");
+            console.log('✅ Columna proveedores.alicuota_iva_default agregada');
+        }
+
+        // facturas_recibidas.proveedor_id (migración - referencia a proveedores)
+        const facturasInfo = await db.all("PRAGMA table_info(facturas_recibidas)");
+        if (!facturasInfo.some(c => c.name === 'proveedor_id')) {
+            await db.run("ALTER TABLE facturas_recibidas ADD COLUMN proveedor_id INTEGER REFERENCES proveedores(id)");
+            console.log('✅ Columna facturas_recibidas.proveedor_id agregada');
+        }
+
+        // facturas_recibidas.monto_pagado (migración - total pagado a la fecha)
+        const facturasInfo2 = await db.all("PRAGMA table_info(facturas_recibidas)");
+        if (!facturasInfo2.some(c => c.name === 'monto_pagado')) {
+            await db.run("ALTER TABLE facturas_recibidas ADD COLUMN monto_pagado REAL DEFAULT 0");
+            console.log('✅ Columna facturas_recibidas.monto_pagado agregada');
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: ITEMS DE FACTURAS RECIBIDAS (Para múltiples alícuotas)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS facturas_recibidas_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                factura_id INTEGER NOT NULL REFERENCES facturas_recibidas(id) ON DELETE CASCADE,
+                descripcion TEXT NOT NULL,
+                cantidad REAL DEFAULT 1,
+                precio_unitario REAL NOT NULL,
+                monto_neto REAL NOT NULL,
+                alicuota_iva REAL DEFAULT 21,
+                monto_iva REAL DEFAULT 0,
+                subtotal REAL NOT NULL,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: VENCIMIENTOS FISCALES
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS vencimientos_fiscales (
+                id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                descripcion       TEXT NOT NULL,
+                categoria         TEXT NOT NULL,
+                fecha_vencimiento TEXT NOT NULL,
+                periodo           TEXT DEFAULT '',
+                monto_estimado    REAL DEFAULT 0,
+                estado            TEXT DEFAULT 'pendiente' CHECK(estado IN ('pendiente', 'pagado', 'vencido')),
+                notas             TEXT DEFAULT '',
+                es_recurrente     INTEGER DEFAULT 0,
+                periodicidad      TEXT DEFAULT '',
+                created_at        TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
+        // MIGRACIÓN: Columna turno en movimientos_caja
+        // ════════════════════════════════════════════════════════════════
+        const cajaCols = await db.all("PRAGMA table_info(movimientos_caja)");
+        if (!cajaCols.some(c => c.name === 'turno')) {
+            await db.run("ALTER TABLE movimientos_caja ADD COLUMN turno TEXT DEFAULT 'mañana'");
+            console.log('✅ Columna movimientos_caja.turno agregada');
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: CIERRES DE TURNO
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS cierres_turno (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                fecha      TEXT NOT NULL,
+                turno      TEXT NOT NULL CHECK(turno IN ('mañana', 'tarde')),
+                usuario_id INTEGER REFERENCES users(id),
+                cerrado_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(fecha, turno)
+            )
+        `);
 
         console.log('✅ Base de datos lista\n');
         return db;

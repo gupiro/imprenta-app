@@ -1,0 +1,612 @@
+<!-- views/finanzas/facturas-recibidas.ejs -->
+
+<div class="container-fluid py-4">
+  <!-- HEADER -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-receipt-cutoff"></i> Facturas Recibidas</h1>
+      <p class="text-muted">Libro IVA Compras - Crédito Fiscal</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
+        <i class="bi bi-plus-circle"></i> Nueva Factura
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- BLOQUE INFORMATIVO -->
+  <div class="card mb-4 border-start border-info border-5">
+    <div class="card-header bg-light cursor-pointer" data-bs-toggle="collapse" data-bs-target="#infoBlock">
+      <h6 class="mb-0">
+        <i class="bi bi-info-circle"></i> ¿Para qué sirve esta sección?
+        <span class="float-end"><i class="bi bi-chevron-down"></i></span>
+      </h6>
+    </div>
+    <div class="collapse show" id="infoBlock">
+      <div class="card-body text-muted">
+        <p class="mb-2">
+          <strong>Registrá acá TODAS las facturas que te llegan</strong> cuando comprás insumos, servicios o equipos para tu imprenta.
+          Esto es lo que le pasás a tu contador cada mes para que liquide el IVA.
+        </p>
+        <p class="mb-0">
+          <strong>TIPOS DE FACTURA:</strong><br>
+          • <strong>Factura A</strong> → RI con IVA discriminado. Podés usarla como crédito fiscal.<br>
+          • <strong>Factura B</strong> → RI a consumidor final. Sin IVA discriminado.<br>
+          • <strong>Factura C</strong> → Monotributista. Sin IVA.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card mb-4 border-0 shadow-sm">
+    <div class="card-body">
+      <form method="GET" class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Período (Año-Mes)</label>
+          <input type="month" name="periodo" class="form-control form-control-lg" value="<%= periodo %>">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Estado</label>
+          <select name="estado" class="form-select form-select-lg">
+            <option value="todos" <%= estado === 'todos' ? 'selected' : '' %>>Todos</option>
+            <option value="pendiente" <%= estado === 'pendiente' ? 'selected' : '' %>>Pendiente de Pago</option>
+            <option value="pagada" <%= estado === 'pagada' ? 'selected' : '' %>>Pagada</option>
+            <option value="parcial" <%= estado === 'parcial' ? 'selected' : '' %>>Pago Parcial</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold">&nbsp;</label>
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-search"></i> Filtrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PANEL RESUMEN DEL MES -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-3">
+      <div class="card bg-primary text-white border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">💰 Monto Neto</p>
+          <h3 class="mb-0">$<%= totalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="opacity-75"><%= facturas.length %> facturas</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <div class="card bg-success text-white border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">📊 IVA Crédito Fiscal</p>
+          <h3 class="mb-0">$<%= totalIva.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="opacity-75">21% promedio</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <div class="card bg-info text-white border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">💵 Total Compras</p>
+          <h3 class="mb-0">$<%= totalFacturas.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="opacity-75">Neto + IVA</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <div class="card bg-warning text-dark border-0 shadow-sm">
+        <div class="card-body">
+          <p class="mb-2 opacity-75">⏳ Pendiente de Pago</p>
+          <h3 class="mb-0">$<%= totalPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="opacity-75">Sin pagar</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE FACTURAS -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light">
+      <h6 class="mb-0"><i class="bi bi-table"></i> Facturas del Período</h6>
+    </div>
+    <div class="card-body">
+      <% if (facturas && facturas.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th>Número</th>
+                <th>Proveedor</th>
+                <th>Fecha</th>
+                <th>Neto</th>
+                <th>IVA</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% facturas.forEach(f => { %>
+                <tr>
+                  <td>
+                    <span class="badge <%= f.tipo_comprobante === 'A' ? 'bg-success' : f.tipo_comprobante === 'B' ? 'bg-warning text-dark' : 'bg-secondary' %>">
+                      <%= f.tipo_comprobante %>
+                    </span>
+                  </td>
+                  <td><strong><%= f.numero_comprobante %></strong></td>
+                  <td>
+                    <%= f.razon_social %><br>
+                    <small class="text-muted"><%= f.cuit_proveedor || '-' %></small>
+                  </td>
+                  <td><small><%= new Date(f.fecha_emision).toLocaleDateString('es-AR') %></small></td>
+                  <td>$<%= f.monto_neto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                  <td class="text-success fw-bold">$<%= f.monto_iva.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                  <td class="fw-bold">$<%= f.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                  <td>
+                    <% if (f.estado === 'pendiente') { %>
+                      <span class="badge bg-danger">⏳ Pendiente</span>
+                    <% } else if (f.estado === 'pagada') { %>
+                      <span class="badge bg-success">✅ Pagada</span>
+                    <% } else { %>
+                      <span class="badge bg-warning text-dark">📊 Parcial</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#modalPagar" onclick="abrirPagar(<%= f.id %>, '<%= f.numero_comprobante %>', <%= f.monto_total %>, <%= f.monto_pagado || 0 %>)">
+                      <i class="bi bi-cash-coin"></i> Pagar
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarFactura" onclick="abrirEditar(<%= f.id %>)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="eliminar(<%= f.id %>, '<%= f.numero_comprobante %>')">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info mb-0">
+          <i class="bi bi-info-circle"></i> No hay facturas registradas para este período.
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NUEVA FACTURA ===== -->
+<div class="modal fade" id="modalNuevaFactura" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg" style="max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nueva Factura Recibida</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formNuevaFactura" action="/finanzas/facturas-recibidas/crear" method="POST" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <input type="hidden" id="proveedor_id_hidden" name="proveedor_id" value="">
+        <div class="modal-body" style="overflow-y: auto; flex: 1; max-height: calc(90vh - 120px);">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Tipo de Comprobante *</label>
+              <select name="tipo_comprobante" class="form-select form-select-lg" required>
+                <option value="">-- Seleccionar --</option>
+                <% TIPOS_COMPROBANTE.forEach(tipo => { %>
+                  <option value="<%= tipo.value %>"><%= tipo.label %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Número de Comprobante *</label>
+              <input type="text" name="numero_comprobante" class="form-control form-control-lg"
+                     placeholder="Ej: 0001-00000123" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Emisión *</label>
+              <input type="date" name="fecha_emision" class="form-control form-control-lg" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Vencimiento Pago</label>
+              <input type="date" name="fecha_vencimiento_pago" class="form-control form-control-lg">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Proveedor *</label>
+            <input type="text" id="inputRazonSocial" name="razon_social" class="form-control form-control-lg"
+                   placeholder="Escribe el nombre del proveedor" list="proveedoresList" required>
+            <datalist id="proveedoresList">
+              <% (proveedores || []).forEach(p => { %>
+                <option value="<%= p.nombre %>" data-id="<%= p.id %>" data-cuit="<%= p.cuit %>" data-alicuota="<%= p.alicuota_iva_default %>"></option>
+              <% }); %>
+            </datalist>
+            <small class="text-muted d-block mt-2">💡 Empieza a escribir un proveedor existente para auto-completar</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">CUIT del Proveedor</label>
+              <input type="text" id="inputCuitProveedor" name="cuit_proveedor" class="form-control form-control-lg"
+                     placeholder="XX-XXXXXXXX-X">
+              <small class="text-muted">Se auto-completa al seleccionar proveedor, o ingresa manualmente</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría Contable</label>
+              <select name="categoria_contable" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descripción General (Opcional)</label>
+            <textarea name="descripcion" class="form-control" rows="2"
+                      placeholder="Detalles generales de la compra..."></textarea>
+          </div>
+
+          <!-- ITEMS CON DIFERENTES ALÍCUOTAS -->
+          <div class="card mb-3 border-primary">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-0"><i class="bi bi-list-check"></i> Items de la Factura (puedes agregar múltiples)</h6>
+            </div>
+            <div class="card-body">
+              <div id="itemsContainer">
+                <!-- Items se agregan aquí -->
+              </div>
+
+              <button type="button" class="btn btn-outline-primary btn-sm mt-3" id="btnAgregarItem">
+                <i class="bi bi-plus-circle"></i> Agregar Item
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            <small><strong>💰 Total Neto:</strong> $<span id="totalNetoCalc">0.00</span></small><br>
+            <small><strong>📊 Total IVA:</strong> $<span id="totalIvaCalc">0.00</span></small><br>
+            <small><strong>💵 Monto Total:</strong> $<span id="totalMontoCale">0.00</span></small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Forma de Pago</label>
+              <select name="forma_pago" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <option value="Efectivo">💵 Efectivo</option>
+                <option value="Transferencia">🏦 Transferencia</option>
+                <option value="Tarjeta">💳 Tarjeta</option>
+                <option value="Cheque">📝 Cheque</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Estado de Pago</label>
+              <select name="estado" class="form-select form-select-lg">
+                <option value="pendiente">⏳ Pendiente</option>
+                <option value="pagada">✅ Pagada</option>
+                <option value="parcial">📊 Parcial</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-save"></i> Registrar Factura
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: PAGAR FACTURA ===== -->
+<div class="modal fade" id="modalPagar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-cash-coin"></i> Registrar Pago de Factura</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formRegistrarPago">
+        <div class="modal-body">
+          <div class="alert alert-light">
+            <p class="mb-2"><strong>Factura:</strong> <span id="pagoNumeroFactura"></span></p>
+            <p class="mb-2"><strong>Monto Total:</strong> $<span id="pagoMontoTotal"></span></p>
+            <p class="mb-0"><strong>Ya Pagado:</strong> $<span id="pagoMontoPagado"></span></p>
+          </div>
+
+          <div class="alert alert-info">
+            <strong>Saldo Pendiente:</strong> $<span id="pagoSaldoPendiente"></span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a Pagar ($) *</label>
+            <input type="number" id="inputMontoPago" name="monto_pagado" class="form-control form-control-lg"
+                   step="0.01" min="0.01" placeholder="0.00" required>
+            <small class="text-muted">No puede exceder el saldo pendiente</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Pago</label>
+              <input type="date" id="inputFechaPago" name="fecha_pago" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select name="metodo_pago" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <option value="Efectivo">💵 Efectivo</option>
+                <option value="Transferencia">🏦 Transferencia</option>
+                <option value="Tarjeta">💳 Tarjeta</option>
+                <option value="Cheque">📝 Cheque</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles del pago..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle"></i> Registrar Pago
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDITAR FACTURA ===== -->
+<div class="modal fade" id="modalEditarFactura" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Factura</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarFactura" method="POST">
+        <div class="modal-body">
+          <!-- Los campos se cargan dinámicamente -->
+          <p class="text-muted">Cargando datos...</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning btn-lg">
+            <i class="bi bi-save"></i> Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+// ========== DATOS DE PROVEEDORES ==========
+const proveedoresData = {
+  <% (proveedores || []).forEach(p => { %>
+    '<%= p.nombre %>': { id: <%= p.id %>, cuit: '<%= p.cuit %>', alicuota: <%= p.alicuota_iva_default %> },
+  <% }); %>
+};
+
+let itemCount = 0;
+const inputRazonSocial = document.getElementById('inputRazonSocial');
+const inputCuitProveedor = document.getElementById('inputCuitProveedor');
+const btnAgregarItem = document.getElementById('btnAgregarItem');
+const itemsContainer = document.getElementById('itemsContainer');
+
+// ========== AUTO-COMPLETAR CUIT Y ALÍCUOTA DEL PROVEEDOR ==========
+inputRazonSocial.addEventListener('input', function() {
+  const provData = proveedoresData[this.value];
+  if (provData) {
+    inputCuitProveedor.value = provData.cuit || '';
+    document.getElementById('proveedor_id_hidden').value = provData.id;
+  } else {
+    inputCuitProveedor.value = '';
+    document.getElementById('proveedor_id_hidden').value = '';
+  }
+});
+
+// ========== AGREGAR ITEMS DINÁMICAMENTE ==========
+btnAgregarItem.addEventListener('click', function() {
+  itemCount++;
+  const itemHtml = `
+    <div class="card mb-2 border-secondary" id="item-${itemCount}">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-md-4 mb-2">
+            <label class="form-label small fw-bold">Descripción *</label>
+            <input type="text" name="item_descripcion" class="form-control form-control-sm"
+                   placeholder="Ej: Tinta cian" required>
+          </div>
+          <div class="col-md-2 mb-2">
+            <label class="form-label small fw-bold">Cantidad</label>
+            <input type="number" name="item_cantidad" class="form-control form-control-sm"
+                   step="0.01" value="1" min="0.01" onchange="calcularTotales()">
+          </div>
+          <div class="col-md-2 mb-2">
+            <label class="form-label small fw-bold">Precio Unit. ($)</label>
+            <input type="number" name="item_precio_unitario" class="form-control form-control-sm"
+                   step="0.01" value="0" min="0" onchange="calcularTotales()">
+          </div>
+          <div class="col-md-2 mb-2">
+            <label class="form-label small fw-bold">Alícuota (%)</label>
+            <select name="item_alicuota" class="form-select form-select-sm" onchange="calcularTotales()">
+              <option value="21">21%</option>
+              <option value="10.5">10.5%</option>
+              <option value="5">5%</option>
+              <option value="0">0%</option>
+            </select>
+          </div>
+          <div class="col-md-2 mb-2 d-flex align-items-end">
+            <button type="button" class="btn btn-outline-danger btn-sm w-100" onclick="eliminarItem(${itemCount})">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  itemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+  calcularTotales();
+});
+
+// Agregar primer item automáticamente
+if (itemsContainer.children.length === 0) {
+  btnAgregarItem.click();
+}
+
+function eliminarItem(id) {
+  const item = document.getElementById(`item-${id}`);
+  if (item) {
+    item.remove();
+    calcularTotales();
+  }
+}
+
+// ========== CALCULAR TOTALES ==========
+function calcularTotales() {
+  let totalNeto = 0;
+  let totalIva = 0;
+
+  document.querySelectorAll('#itemsContainer .card').forEach(card => {
+    const cantidad = parseFloat(card.querySelector('[name="item_cantidad"]')?.value || 1);
+    const precioUnitario = parseFloat(card.querySelector('[name="item_precio_unitario"]')?.value || 0);
+    const alicuota = parseFloat(card.querySelector('[name="item_alicuota"]')?.value || 21);
+
+    const montoNeto = cantidad * precioUnitario;
+    const montoIva = (montoNeto * alicuota) / 100;
+
+    totalNeto += montoNeto;
+    totalIva += montoIva;
+  });
+
+  const montoTotal = totalNeto + totalIva;
+
+  document.getElementById('totalNetoCalc').textContent = totalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('totalIvaCalc').textContent = totalIva.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('totalMontoCale').textContent = montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+}
+
+// ========== FUNCIONES DE EDITAR Y ELIMINAR ==========
+function abrirEditar(id) {
+  const formEditarFactura = document.getElementById('formEditarFactura');
+  formEditarFactura.action = `/finanzas/facturas-recibidas/${id}/editar`;
+}
+
+function eliminar(id, numero) {
+  if (confirm(`¿Eliminar la factura ${numero}? No se puede deshacer.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/finanzas/facturas-recibidas/${id}/eliminar`;
+    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">';
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+// ========== FUNCIONES DE PAGO ==========
+function abrirPagar(id, numero, montoTotal, montoPagado) {
+  const saldoPendiente = montoTotal - montoPagado;
+
+  document.getElementById('pagoNumeroFactura').textContent = numero;
+  document.getElementById('pagoMontoTotal').textContent = montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('pagoMontoPagado').textContent = montoPagado.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('pagoSaldoPendiente').textContent = saldoPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+  // Set max value del input
+  document.getElementById('inputMontoPago').max = saldoPendiente;
+  document.getElementById('inputMontoPago').value = '';
+
+  // Set fecha a hoy
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inputFechaPago').value = today;
+
+  // Guardar el ID de la factura
+  document.getElementById('formRegistrarPago').dataset.facturaId = id;
+}
+
+// Validar que haya al menos un item
+document.getElementById('formNuevaFactura')?.addEventListener('submit', function(e) {
+  const items = document.querySelectorAll('#itemsContainer [name="item_descripcion"]');
+  const hasItems = Array.from(items).some(item => item.value.trim() !== '');
+
+  if (!hasItems) {
+    e.preventDefault();
+    alert('❌ Debes agregar al menos un item a la factura');
+    return;
+  }
+});
+
+// Enviar pago
+document.getElementById('formRegistrarPago')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const facturaId = e.target.dataset.facturaId;
+  const montoPagado = parseFloat(document.getElementById('inputMontoPago').value);
+  const fechaPago = document.getElementById('inputFechaPago').value;
+  const metodoPago = document.querySelector('[name="metodo_pago"]').value;
+  const notas = document.querySelector('[name="notas"]').value;
+
+  try {
+    const response = await fetch(`/finanzas/facturas-recibidas/${facturaId}/registrar-pago`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monto_pagado: montoPagado, metodo_pago: metodoPago, notas, fecha_pago: fechaPago })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ Error: ' + data.error);
+    }
+  } catch (err) {
+    alert('❌ Error al registrar pago: ' + err.message);
+  }
+});
+
+// Inicializar cálculos
+window.addEventListener('load', calcularIva);
+</script>

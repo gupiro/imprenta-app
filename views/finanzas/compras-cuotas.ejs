@@ -1,0 +1,353 @@
+<!-- views/finanzas/compras-cuotas.ejs -->
+
+<div class="container-fluid py-4">
+  <!-- HEADER -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6"><i class="bi bi-cart-check"></i> Compras en Cuotas</h1>
+      <p class="text-muted">Seguimiento de pagos de compras financiadas</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaCompra">
+        <i class="bi bi-plus-circle"></i> Nueva Compra en Cuotas
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- BLOQUE INFORMATIVO -->
+  <div class="card mb-4 border-start border-info border-5">
+    <div class="card-header bg-light cursor-pointer" data-bs-toggle="collapse" data-bs-target="#infoBlock">
+      <h6 class="mb-0">
+        <i class="bi bi-info-circle"></i> ¿Para qué sirve esta sección?
+        <span class="float-end"><i class="bi bi-chevron-down"></i></span>
+      </h6>
+    </div>
+    <div class="collapse show" id="infoBlock">
+      <div class="card-body text-muted">
+        <p class="mb-0">
+          <strong>Registrá acá cada vez que comprás algo en cuotas</strong> (con tarjeta, financiación o préstamo de proveedor).
+          El sistema te muestra automáticamente en qué cuota estás, cuánto pagaste y cuándo termina de pagarse.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPRAS EN CUOTAS (CARDS) -->
+  <% if (compras && compras.length > 0) { %>
+    <div class="row g-3">
+      <% compras.forEach(compra => { %>
+        <div class="col-lg-6 col-xl-4">
+          <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid <%= compra.estado === 'vencida' ? '#dc3545' : '#198754' %>;">
+            <div class="card-header" style="background-color: <%= compra.estado === 'vencida' ? '#f8d7da' : '#d4edda' %>;">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                  <span style="font-size: 1.5rem;"><%= compra.iconoEstado %></span>
+                  <%= compra.descripcion %>
+                </h6>
+              </div>
+              <% if (compra.proveedor) { %>
+                <small class="text-muted"><i class="bi bi-shop"></i> <%= compra.proveedor %></small>
+              <% } %>
+            </div>
+
+            <div class="card-body">
+              <!-- MONTO TOTAL -->
+              <div class="mb-3">
+                <small class="text-muted">Monto Total</small>
+                <h5 class="mb-0">$<%= compra.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+              </div>
+
+              <!-- BARRA DE PROGRESO -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <small class="text-muted">Progreso</small>
+                  <strong><%= compra.porcentaje_pagado %>%</strong>
+                </div>
+                <div class="progress" style="height: 24px;">
+                  <div class="progress-bar" role="progressbar" style="width: <%= compra.porcentaje_pagado %>%;" aria-valuenow="<%= compra.porcentaje_pagado %>" aria-valuemin="0" aria-valuemax="100">
+                    <%= compra.cuotas_pagadas %> de <%= compra.cant_cuotas %>
+                  </div>
+                </div>
+              </div>
+
+              <!-- DETALLE DE CUOTAS -->
+              <div class="row mb-3">
+                <div class="col-6">
+                  <small class="text-muted">Cuota Mensual</small>
+                  <h6 class="mb-0">$<%= compra.monto_cuota.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h6>
+                </div>
+                <div class="col-6 text-end">
+                  <small class="text-muted">Saldo Pendiente</small>
+                  <h6 class="mb-0 text-danger">$<%= compra.saldo_pendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h6>
+                </div>
+              </div>
+
+              <!-- INFORMACIÓN ADICIONAL -->
+              <div class="alert alert-light mb-3">
+                <small class="d-block"><strong>Próxima cuota:</strong> <%= compra.proxima_cuota_fecha %></small>
+                <small class="d-block"><strong>Categoría:</strong> <%= compra.categoria || '-' %></small>
+                <% if (compra.notas) { %>
+                  <small class="d-block"><strong>Notas:</strong> <%= compra.notas %></small>
+                <% } %>
+              </div>
+
+              <!-- BOTONES DE ACCIÓN -->
+              <% if (compra.cuotas_pagadas < compra.cant_cuotas) { %>
+                <button class="btn btn-success w-100 mb-2" onclick="registrarCuota(<%= compra.id %>, '<%= compra.descripcion %>')">
+                  <i class="bi bi-check-circle"></i> Marcar Cuota como Pagada
+                </button>
+              <% } else { %>
+                <div class="alert alert-success mb-2">
+                  <i class="bi bi-check-circle"></i> ¡Compra completamente pagada!
+                </div>
+              <% } %>
+
+              <div class="btn-group w-100" role="group">
+                <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarCompra" onclick="abrirEditar(<%= compra.id %>)">
+                  <i class="bi bi-pencil"></i> Editar
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="eliminar(<%= compra.id %>, '<%= compra.descripcion %>')">
+                  <i class="bi bi-trash"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i> No hay compras en cuotas registradas. ¡Comenzá agregando una!
+    </div>
+  <% } %>
+</div>
+
+<!-- ===== MODAL: NUEVA COMPRA ===== -->
+<div class="modal fade" id="modalNuevaCompra" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nueva Compra en Cuotas</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/finanzas/compras-cuotas/crear" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descripción *</label>
+            <input type="text" name="descripcion" class="form-control form-control-lg"
+                   placeholder="Ej: Compra de tinta para impresoras" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Proveedor</label>
+              <input type="text" name="proveedor" class="form-control form-control-lg"
+                     placeholder="Ej: Proveedor XYZ">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría</label>
+              <select name="categoria" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto Total ($) *</label>
+              <input type="number" name="monto_total" class="form-control form-control-lg"
+                     step="0.01" min="0" placeholder="0.00" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Cantidad de Cuotas *</label>
+              <input type="number" name="cant_cuotas" class="form-control form-control-lg"
+                     min="1" placeholder="Ej: 12" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Compra</label>
+              <input type="date" name="fecha_compra" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Primera Cuota *</label>
+              <input type="date" name="fecha_primera_cuota" class="form-control form-control-lg" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select name="medio_pago" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <option value="tarjeta">💳 Tarjeta de Crédito</option>
+                <option value="financiacion">🏦 Financiación Proveedor</option>
+                <option value="prestamo">💰 Préstamo</option>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-save"></i> Registrar Compra
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDITAR COMPRA ===== -->
+<div class="modal fade" id="modalEditarCompra" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Compra en Cuotas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarCompra" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Descripción *</label>
+            <input type="text" id="editDescripcion" name="descripcion" class="form-control form-control-lg" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Proveedor</label>
+              <input type="text" id="editProveedor" name="proveedor" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría</label>
+              <select id="editCategoria" name="categoria" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto Total ($) *</label>
+              <input type="number" id="editMontoTotal" name="monto_total" class="form-control form-control-lg"
+                     step="0.01" min="0" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Cantidad de Cuotas *</label>
+              <input type="number" id="editCantCuotas" name="cant_cuotas" class="form-control form-control-lg"
+                     min="1" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Compra</label>
+              <input type="date" id="editFechaCompra" name="fecha_compra" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha Primera Cuota *</label>
+              <input type="date" id="editFechaPrimeraCuota" name="fecha_primera_cuota" class="form-control form-control-lg" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select id="editMedioPago" name="medio_pago" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <option value="tarjeta">💳 Tarjeta de Crédito</option>
+                <option value="financiacion">🏦 Financiación Proveedor</option>
+                <option value="prestamo">💰 Préstamo</option>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea id="editNotas" name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning btn-lg">
+            <i class="bi bi-save"></i> Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+function abrirEditar(id) {
+  const formEditarCompra = document.getElementById('formEditarCompra');
+  formEditarCompra.action = `/finanzas/compras-cuotas/${id}/editar`;
+}
+
+function registrarCuota(id, descripcion) {
+  if (confirm(`¿Marcar una cuota de "${descripcion}" como pagada? Se registrará en Caja Diaria.`)) {
+    fetch(`/finanzas/compras-cuotas/${id}/registrar-cuota`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        location.reload();
+      } else {
+        alert('❌ Error: ' + data.error);
+      }
+    })
+    .catch(e => alert('Error: ' + e));
+  }
+}
+
+function eliminar(id, descripcion) {
+  if (confirm(`¿Eliminar la compra "${descripcion}"? No se puede deshacer.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/finanzas/compras-cuotas/${id}/eliminar`;
+    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">';
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>

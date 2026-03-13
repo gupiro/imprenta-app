@@ -38,7 +38,7 @@ module.exports = (db) => {
 
     // Crear proveedor
     router.post('/nuevo', checkPermission, async (req, res) => {
-        const { nombre, telefono, email, rubro, notas } = req.body;
+        const { nombre, telefono, email, rubro, notas, cuit, alicuota_iva_default } = req.body;
         try {
             if (!nombre) {
                 req.flash('error', 'El nombre del proveedor es requerido');
@@ -46,12 +46,8 @@ module.exports = (db) => {
             }
 
             await db.run(
-                "INSERT INTO proveedores (nombre, telefono, email, rubro, notas) VALUES (?,?,?,?,?)",
-                nombre.trim(), 
-                telefono || '', 
-                email || '', 
-                rubro || '', 
-                notas || ''
+                "INSERT INTO proveedores (nombre, telefono, email, rubro, notas, cuit, alicuota_iva_default) VALUES (?,?,?,?,?,?,?)",
+                [nombre.trim(), telefono || '', email || '', rubro || '', notas || '', cuit || '', parseFloat(alicuota_iva_default) || 21]
             );
             req.flash('success', 'Proveedor agregado correctamente');
             res.redirect('/proveedores');
@@ -86,7 +82,7 @@ module.exports = (db) => {
 
     // Actualizar proveedor
     router.post('/:id/editar', checkPermission, async (req, res) => {
-        const { nombre, telefono, email, rubro, notas } = req.body;
+        const { nombre, telefono, email, rubro, notas, cuit, alicuota_iva_default } = req.body;
         const id = parseInt(req.params.id);
         try {
             if (!nombre) {
@@ -95,13 +91,8 @@ module.exports = (db) => {
             }
 
             await db.run(
-                "UPDATE proveedores SET nombre=?, telefono=?, email=?, rubro=?, notas=? WHERE id=?",
-                nombre.trim(), 
-                telefono || '', 
-                email || '', 
-                rubro || '', 
-                notas || '', 
-                id
+                "UPDATE proveedores SET nombre=?, telefono=?, email=?, rubro=?, notas=?, cuit=?, alicuota_iva_default=? WHERE id=?",
+                [nombre.trim(), telefono || '', email || '', rubro || '', notas || '', cuit || '', parseFloat(alicuota_iva_default) || 21, id]
             );
             req.flash('success', 'Proveedor actualizado correctamente');
             res.redirect('/proveedores');

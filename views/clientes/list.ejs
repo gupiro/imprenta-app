@@ -1,5 +1,8 @@
 <main class="container py-4">
-  <h2 class="mb-4">Clientes</h2>
+  <div class="mb-4">
+    <h1 class="display-6 mb-2"><i class="bi bi-people-fill"></i> Clientes</h1>
+    <p class="text-muted">Gestión de clientes registrados</p>
+  </div>
 
   <div class="mb-4 text-end">
     <a href="/clientes/nuevo" class="btn btn-primary">
@@ -64,15 +67,19 @@
             </td>
             <td>
               <div class="btn-group btn-group-sm" role="group">
-                <a href="/pedidos/nuevo?clienteId=<%= client.id %>" class="btn btn-success" title="Crear pedido">
+                <a href="/pedidos/nuevo?clienteId=<%= client.id %>" class="btn btn-success" title="Nuevo Pedido">
                   <i class="bi bi-cart-plus"></i>
                 </a>
-                <a href="/clientes/editar/<%= client.id %>" class="btn btn-warning">
+                <a href="/clientes/editar/<%= client.id %>" class="btn btn-warning" title="Editar Cliente">
                   <i class="bi bi-pencil"></i>
                 </a>
-                <a href="/clientes/<%= client.id %>/historial" class="btn btn-info">
+                <a href="/clientes/<%= client.id %>/historial" class="btn btn-info" title="Ver Historial">
                   <i class="bi bi-clock-history"></i>
                 </a>
+                <button type="button" class="btn btn-outline-info" title="Alertas de Riesgo"
+                        onclick="analizarRiesgoCliente(<%= client.id %>, '<%= client.name.replace(/'/g, "\\'") %>')">
+                  <i class="bi bi-exclamation-triangle"></i>
+                </button>
                 <% if (client.phone) {
                   const tel = client.phone.replace(/\D/g,'');
                   const msgDeuda = encodeURIComponent(
@@ -81,11 +88,11 @@
                   );
                 %>
                   <a href="https://wa.me/549<%= tel %>?text=<%= msgDeuda %>"
-                     target="_blank" class="btn btn-success" title="WhatsApp">
+                     target="_blank" class="btn btn-success" title="Contactar por WhatsApp">
                     📲
                   </a>
                 <% } %>
-                <button type="button" class="btn btn-danger" title="Eliminar"
+                <button type="button" class="btn btn-danger" title="Eliminar Cliente"
                         data-bs-toggle="modal" data-bs-target="#modalEliminarCliente"
                         onclick="document.getElementById('clienteIdEliminar').value = '<%= client.id %>'; document.getElementById('clienteNombreEliminar').textContent = '<%= client.name %>'">
                   <i class="bi bi-trash"></i>
@@ -150,6 +157,93 @@
   <% } %>
 </main>
 
+<!-- Modal: Perfil de Riesgo del Cliente -->
+<div class="modal fade" id="modalPerfilRiesgo" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Análisis de Riesgo - Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="riesgoCargando" class="text-center py-4">
+          <div class="spinner-border text-warning" role="status">
+            <span class="visually-hidden">Analizando...</span>
+          </div>
+          <p class="mt-2 text-muted">Analizando perfil del cliente...</p>
+        </div>
+
+        <div id="riesgoResultado" style="display: none;">
+          <!-- Métricas -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="text-muted mb-1">Deuda Total</p>
+                  <h5 id="metricaDeuda" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="text-muted mb-1">Pedidos Totales</p>
+                  <h5 id="metricaPedidos" class="mb-0">0</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="text-muted mb-1">Días Promedio de Pago</p>
+                  <h5 id="metricaDiasPago" class="mb-0">-</h5>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="text-muted mb-1">Pedidos Vencidos</p>
+                  <h5 id="metricaVencidos" class="mb-0">0</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Score de Riesgo -->
+          <div class="card mb-4 border-warning">
+            <div class="card-body">
+              <p class="text-muted mb-2"><strong>Nivel de Riesgo:</strong> <span id="nivelRiesgo" class="badge bg-secondary">-</span></p>
+              <div class="progress">
+                <div id="barraPorcentajeRiesgo" class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              </div>
+              <small class="text-muted mt-2 d-block" id="porcentajeRiesgo">Score: 0/100</small>
+            </div>
+          </div>
+
+          <!-- Evaluación -->
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Evaluación y Recomendaciones</h6>
+            </div>
+            <div class="card-body">
+              <p id="evaluacionText" class="text-muted mb-0"></p>
+            </div>
+          </div>
+        </div>
+
+        <div id="riesgoError" class="alert alert-danger mb-0" style="display: none;"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Eliminar Cliente -->
 <div class="modal fade" id="modalEliminarCliente" tabindex="-1">
   <div class="modal-dialog">
@@ -188,6 +282,75 @@
 </div>
 
 <script>
+  let modalPerfilRiesgo = new bootstrap.Modal(document.getElementById('modalPerfilRiesgo'));
+
+  async function analizarRiesgoCliente(clienteId, clienteNombre) {
+    // Limpiar modal
+    document.getElementById('riesgoCargando').style.display = 'block';
+    document.getElementById('riesgoResultado').style.display = 'none';
+    document.getElementById('riesgoError').style.display = 'none';
+
+    modalPerfilRiesgo.show();
+
+    try {
+      const response = await fetch('/api/ia/perfil-cliente', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ cliente_id: clienteId })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error desconocido');
+      }
+
+      const data = await response.json();
+
+      if (data.ok) {
+        // Mostrar métricas
+        document.getElementById('metricaDeuda').textContent =
+          '$' + data.metricas.deudaTotal.toLocaleString('es-AR');
+        document.getElementById('metricaPedidos').textContent = data.metricas.pedidosTotales;
+        document.getElementById('metricaDiasPago').textContent =
+          data.metricas.diasPromedioPago ? data.metricas.diasPromedioPago + ' días' : '-';
+        document.getElementById('metricaVencidos').textContent = data.metricas.pedidosVencidos;
+
+        // Mostrar nivel de riesgo
+        const nivelBadge = {
+          'BAJO': 'bg-success',
+          'MEDIO': 'bg-warning',
+          'ALTO': 'bg-danger',
+          'MUY ALTO': 'bg-dark'
+        }[data.metricas.nivelRiesgo] || 'bg-secondary';
+
+        document.getElementById('nivelRiesgo').className = 'badge ' + nivelBadge;
+        document.getElementById('nivelRiesgo').textContent = data.metricas.nivelRiesgo;
+
+        // Mostrar barra de porcentaje
+        const porcentaje = data.metricas.riesgoScore;
+        document.getElementById('barraPorcentajeRiesgo').style.width = porcentaje + '%';
+        document.getElementById('barraPorcentajeRiesgo').className =
+          'progress-bar ' + (porcentaje > 70 ? 'bg-danger' : porcentaje > 50 ? 'bg-warning' : 'bg-success');
+        document.getElementById('porcentajeRiesgo').textContent = `Score: ${porcentaje}/100`;
+
+        // Mostrar evaluación
+        document.getElementById('evaluacionText').textContent = data.evaluacion;
+
+        document.getElementById('riesgoCargando').style.display = 'none';
+        document.getElementById('riesgoResultado').style.display = 'block';
+      } else {
+        throw new Error(data.error || 'Error en la respuesta');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('riesgoError').textContent = error.message || 'Error al analizar el perfil';
+      document.getElementById('riesgoError').style.display = 'block';
+      document.getElementById('riesgoCargando').style.display = 'none';
+    }
+  }
+
   document.getElementById('buscarCliente').addEventListener('input', function () {
     const filtro = this.value.trim().toLowerCase();
     document.querySelectorAll('#tablaClientes tbody tr').forEach(row => {

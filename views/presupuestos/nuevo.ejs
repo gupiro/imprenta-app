@@ -160,12 +160,12 @@
 
           <div class="row">
             <div class="col-md-3">
-              <label class="form-label">Cantidad</label>
-              <input type="number" name="cantidad[]" class="form-control cantidad" value="1" min="1" step="0.1" onchange="calcularSubtotal(${itemCounter})">
+              <label class="form-label">Cantidad *</label>
+              <input type="number" name="cantidad[]" class="form-control cantidad" value="1" min="0.01" step="any" required onchange="calcularSubtotal(${itemCounter})">
             </div>
             <div class="col-md-3">
-              <label class="form-label">Precio Unitario ($)</label>
-              <input type="number" name="precio_unitario[]" class="form-control precioUnitario" step="0.01" min="0" onchange="calcularSubtotal(${itemCounter})">
+              <label class="form-label">Precio Unitario ($) *</label>
+              <input type="number" name="precio_unitario[]" class="form-control precioUnitario" step="0.01" min="0" required onchange="calcularSubtotal(${itemCounter})">
             </div>
             <div class="col-md-3">
               <label class="form-label">Descuento ($)</label>
@@ -243,16 +243,20 @@
     // Agregar campos según tipo (LONA necesita Ancho x Alto)
     if (tipo === 'lona') {
       dinamicos.innerHTML = `
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label">Ancho (m) *</label>
           <input type="number" class="form-control ancho" step="0.01" min="0" required onchange="calcularSubtotal(${itemNum})" placeholder="0.00">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label">Alto (m) *</label>
           <input type="number" class="form-control alto" step="0.01" min="0" required onchange="calcularSubtotal(${itemNum})" placeholder="0.00">
         </div>
-        <div class="col-md-6">
-          <p class="text-muted small"><strong>📐 Tipo:</strong> Metro Cuadrado</p>
+        <div class="col-md-2">
+          <label class="form-label">Unidades *</label>
+          <input type="number" class="form-control unidades" step="1" min="1" value="1" required onchange="calcularSubtotal(${itemNum})" placeholder="1">
+        </div>
+        <div class="col-md-4">
+          <p class="text-muted small mt-3"><strong>📐 Tipo:</strong> Metro Cuadrado</p>
         </div>
       `;
     } else {
@@ -289,7 +293,8 @@
     if (esMarcaLona) {
       const ancho = parseFloat(card.querySelector('.ancho')?.value) || 0;
       const alto = parseFloat(card.querySelector('.alto')?.value) || 0;
-      cantidad = Math.max(ancho * alto, 1);
+      const unidades = parseFloat(card.querySelector('.unidades')?.value) || 1;
+      cantidad = (ancho * alto) * unidades;
     } else {
       cantidad = Math.max(parseFloat(card.querySelector('.cantidad').value) || 1, 1);
     }

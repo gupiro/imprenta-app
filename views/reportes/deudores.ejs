@@ -34,6 +34,7 @@
                 <th>Pagado</th>
                 <th>Deuda</th>
                 <th>% Deuda</th>
+                <th>Días Pendientes</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -55,9 +56,18 @@
                     </div>
                   </td>
                   <td>
-                    <a href="/pedidos/detalle/<%= d.id %>" class="btn btn-sm btn-outline-danger">
-                      <i class="bi bi-eye"></i> Cobrar
+                    <% const dias = d.dias_pendientes || 0; %>
+                    <span class="badge <%= dias > 30 ? 'bg-danger' : dias > 7 ? 'bg-warning text-dark' : 'bg-info' %>">
+                      <%= dias %> días
+                    </span>
+                  </td>
+                  <td>
+                    <a href="/pedidos/detalle/<%= d.id %>" class="btn btn-sm btn-danger">
+                      <i class="bi bi-cash-coin"></i> Cobrar
                     </a>
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalCancelarDeuda" onclick="abrirModalCancelarDeuda(<%= d.id %>, '<%= d.cliente_nombre %>', <%= d.monto_restante %>)">
+                      <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
                   </td>
                 </tr>
               <% }); %>
@@ -77,4 +87,71 @@
       <% } %>
     </div>
   </div>
+
+  <!-- MODAL: Cancelar Deuda -->
+  <div class="modal fade" id="modalCancelarDeuda" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-warning">
+          <h5 class="modal-title">⚠️ Cancelar Deuda</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>¿Deseas cancelar la deuda de <strong id="montoDeudaLabel"></strong> del cliente <strong id="clienteLabel"></strong>?</p>
+          <div class="alert alert-warning">
+            <small>Esta acción marcará el pedido como completamente pagado sin registrar el pago en Caja Diaria.</small>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="registrarPago" checked>
+            <label class="form-check-label" for="registrarPago">
+              Registrar como ingreso en Caja Diaria
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" onclick="confirmarCancelarDeuda()">
+            <i class="bi bi-check-circle"></i> Cancelar Deuda
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let deudaAuCancelar = { pedidoId: null, monto: 0 };
+
+    function abrirModalCancelarDeuda(pedidoId, cliente, monto) {
+      deudaAuCancelar = { pedidoId, monto };
+      document.getElementById('montoDeudaLabel').textContent =
+        '$' + monto.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+      document.getElementById('clienteLabel').textContent = cliente || 'Sin nombre';
+    }
+
+    function confirmarCancelarDeuda() {
+      if (!deudaAuCancelar.pedidoId) return;
+
+      const registrarPago = document.getElementById('registrarPago').checked;
+
+      fetch('/reportes/cancelar-deuda', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pedidoId: deudaAuCancelar.pedidoId,
+          monto: deudaAuCancelar.monto,
+          registrarPago: registrarPago
+        })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('modalCancelarDeuda')).hide();
+          location.reload();
+        } else {
+          alert('Error: ' + (data.error || 'Unknown error'));
+        }
+      })
+      .catch(e => alert('Error: ' + e));
+    }
+  </script>
 </div>

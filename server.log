@@ -1,193 +1,30 @@
-[dotenv@17.3.1] injecting env (5) from .env -- tip: 🔐 prevent committing .env to code: https://dotenvx.com/precommit
+
+> imprenta-app@2.0.0 start
+> node server.js
+
+[dotenv@17.3.1] injecting env (5) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
 🔍 Base de datos: C:\Users\gusta\Desktop\imprenta-app\imprenta.db
 ✅ Conexión a BD establecida
 ✅ Base de datos lista
 
 ✅ Base de datos lista.
+node:events:496
+      throw er; // Unhandled 'error' event
+      ^
 
-✅ Server corriendo en http://localhost:3000
-
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
+Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 3000
 }
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
 
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
-Error en dashboard: [Error: SQLITE_ERROR: no such column: nombre] {
-  errno: 1,
-  code: 'SQLITE_ERROR'
-}
-ReferenceError: C:\Users\gusta\Desktop\imprenta-app\views\home.ejs:313
-    311|         </div>
-    312|         <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
- >> 313|           <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-    314|             <div class="list-group list-group-flush">
-    315|               <% proximos5Vencimientos.forEach((p, idx) => { %>
-    316|                 <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-
-proximos5Vencimientos is not defined
-    at eval ("C:\\Users\\gusta\\Desktop\\imprenta-app\\views\\home.ejs":81:8)
-    at home (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:703:17)
-    at tryHandleCache (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:274:36)
-    at exports.renderFile [as engine] (C:\Users\gusta\Desktop\imprenta-app\node_modules\ejs\lib\ejs.js:491:10)
-    at View.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\view.js:135:8)
-    at tryRender (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:657:10)
-    at Function.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\application.js:609:3)
-    at ServerResponse.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express\lib\response.js:1049:7)
-    at res.render (C:\Users\gusta\Desktop\imprenta-app\node_modules\express-ejs-layouts\lib\express-layouts.js:77:18)
-    at C:\Users\gusta\Desktop\imprenta-app\server.js:446:17
+Node.js v20.18.3

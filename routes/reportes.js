@@ -8,10 +8,11 @@ module.exports = (db) => {
   // GET /reportes - Página principal de reportes
   router.get('/', async (req, res) => {
     try {
-      const hoy = new Date().toISOString().slice(0, 10);
-      const inicioMes = new Date();
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const hoy = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+      const inicioMes = new Date(_now);
       inicioMes.setDate(1);
-      const fechaInicio = inicioMes.toISOString().slice(0, 10);
+      const fechaInicio = `${inicioMes.getFullYear()}-${String(inicioMes.getMonth()+1).padStart(2,'0')}-${String(inicioMes.getDate()).padStart(2,'0')}`;
 
       // Estadísticas generales
       const totalPedidos = (await db.get("SELECT COUNT(*) AS c FROM pedidos"))?.c || 0;
@@ -19,13 +20,17 @@ module.exports = (db) => {
       const totalClientes = (await db.get("SELECT COUNT(*) AS c FROM clients"))?.c || 0;
 
       const ingresosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) >= ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) >= ?",
         fechaInicio
       ))?.total || 0;
 
       const egresosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) >= ?",
-        fechaInicio
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) >= ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) >= ?
+        )`,
+        fechaInicio, fechaInicio
       ))?.total || 0;
 
       const deudaTotal = (await db.get(
@@ -48,7 +53,8 @@ module.exports = (db) => {
   // GET /reportes/mensual - Reporte mensual
   router.get('/mensual', async (req, res) => {
     try {
-      const mes = req.query.mes || new Date().toISOString().slice(0, 7);
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const mes = req.query.mes || `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
       const [anno, mesNum] = mes.split('-');
       const fechaInicio = `${anno}-${mesNum}-01`;
       const lastDay = new Date(anno, mesNum, 0).getDate();
@@ -56,20 +62,24 @@ module.exports = (db) => {
 
       // Ingresos y egresos
       const ingresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) BETWEEN ? AND ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) BETWEEN ? AND ?",
         fechaInicio, fechaFin
       ))?.total || 0;
 
       const egresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) BETWEEN ? AND ?",
-        fechaInicio, fechaFin
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
+        )`,
+        fechaInicio, fechaFin, fechaInicio, fechaFin
       ))?.total || 0;
 
       // Detalles por categoría
       const movimientos = await db.all(`
         SELECT categoria, tipo, COUNT(*) AS cantidad, COALESCE(SUM(monto), 0) AS total
         FROM movimientos_caja
-        WHERE DATE(fecha) BETWEEN ? AND ?
+        WHERE SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
         GROUP BY categoria, tipo
         ORDER BY total DESC
       `, fechaInicio, fechaFin) || [];
@@ -103,25 +113,30 @@ module.exports = (db) => {
   // GET /reportes/diario - Reporte diario
   router.get('/diario', async (req, res) => {
     try {
-      const fecha = req.query.fecha || new Date().toISOString().slice(0, 10);
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const fecha = req.query.fecha || `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
       const fechaFormato = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
       // Ingresos y egresos del día
       const ingresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?",
         fecha
       ))?.total || 0;
 
       const egresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) = ?",
-        fecha
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) = ?
+        )`,
+        fecha, fecha
       ))?.total || 0;
 
       // Movimientos detallados
       const movimientos = await db.all(`
         SELECT tipo, concepto, categoria, monto, metodo_pago, fecha
         FROM movimientos_caja
-        WHERE DATE(fecha) = ?
+        WHERE SUBSTR(fecha, 1, 10) = ?
         ORDER BY fecha ASC
       `, fecha) || [];
 
@@ -138,7 +153,7 @@ module.exports = (db) => {
       const metodos = await db.all(`
         SELECT metodo_pago, SUM(monto) AS total
         FROM movimientos_caja
-        WHERE tipo = 'ingreso' AND DATE(fecha) = ?
+        WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?
         GROUP BY metodo_pago
       `, fecha) || [];
 
@@ -190,9 +205,10 @@ module.exports = (db) => {
   router.get('/deudores', async (req, res) => {
     try {
       const deudores = await db.all(`
-        SELECT p.id, p.precio, p.monto_entregado, p.monto_restante, p.fecha_pago,
+        SELECT p.id, p.precio, p.monto_entregado, p.monto_restante, p.fecha_pago, p.fecha,
                c.id AS cliente_id, c.name AS cliente_nombre, c.phone, c.email,
-               ROUND((p.monto_restante / p.precio) * 100) AS porcentaje_deuda
+               ROUND((p.monto_restante / p.precio) * 100) AS porcentaje_deuda,
+               CAST((julianday('now') - julianday(p.fecha)) AS INTEGER) AS dias_pendientes
         FROM pedidos p
         LEFT JOIN clients c ON p.client_id = c.id
         WHERE p.monto_restante > 0
@@ -210,6 +226,39 @@ module.exports = (db) => {
       console.error('Error:', err);
       req.flash('error', 'Error: ' + err.message);
       res.redirect('/reportes');
+    }
+  });
+
+  // POST /reportes/cancelar-deuda - Cancelar deuda de un pedido
+  router.post('/cancelar-deuda', async (req, res) => {
+    try {
+      const { pedidoId, monto, registrarPago } = req.body;
+
+      if (!pedidoId || monto <= 0) {
+        return res.json({ success: false, error: 'Datos inválidos' });
+      }
+
+      // Actualizar pedido
+      await db.run(
+        'UPDATE pedidos SET monto_restante = 0, monto_entregado = precio WHERE id = ?',
+        [pedidoId]
+      );
+
+      // Si se desea registrar el pago, agregar a caja diaria
+      if (registrarPago) {
+        const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+        const timestamp = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')} ${String(_now.getHours()).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}:${String(_now.getSeconds()).padStart(2,'0')}`;
+
+        await db.run(
+          'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha) VALUES (?, ?, ?, ?, ?, ?)',
+          ['ingreso', `Deuda cancelada - Pedido #${pedidoId}`, 'deuda_cancelada', monto, 'manual', timestamp]
+        );
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Error al cancelar deuda:', err);
+      res.json({ success: false, error: err.message });
     }
   });
 
@@ -330,18 +379,23 @@ module.exports = (db) => {
   // GET /reportes/caja/pdf/:fecha - Generar PDF de caja diaria
   router.get('/caja/pdf/:fecha', async (req, res) => {
     try {
-      const fecha = req.params.fecha || new Date().toISOString().slice(0, 10);
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const fecha = req.params.fecha || `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
       const fechaFormato = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
       // Ingresos y egresos
       const ingresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?",
         fecha
       ))?.total || 0;
 
       const egresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) = ?",
-        fecha
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) = ?
+        )`,
+        fecha, fecha
       ))?.total || 0;
 
       const saldo = ingresos - egresos;
@@ -350,7 +404,7 @@ module.exports = (db) => {
       const metodos = await db.all(`
         SELECT metodo_pago, SUM(monto) AS total
         FROM movimientos_caja
-        WHERE tipo = 'ingreso' AND DATE(fecha) = ?
+        WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?
         GROUP BY metodo_pago
         ORDER BY metodo_pago
       `, fecha) || [];
@@ -360,7 +414,7 @@ module.exports = (db) => {
         SELECT tipo, concepto, categoria, metodo_pago, monto,
                strftime('%H:%M:%S', fecha) AS hora
         FROM movimientos_caja
-        WHERE DATE(fecha) = ?
+        WHERE SUBSTR(fecha, 1, 10) = ?
         ORDER BY fecha ASC
       `, fecha) || [];
 

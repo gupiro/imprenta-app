@@ -1,318 +1,685 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0"><i class="bi bi-receipt me-2"></i>Gastos</h2>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevo">
-    <i class="bi bi-plus-lg me-1"></i>Registrar Gasto
-  </button>
-</div>
+<!-- views/gastos/index.ejs - REDISEÑO COMPLETO CON PANEL EDUCATIVO -->
 
-<!-- Filtro de mes y tipo -->
-<form method="GET" class="row g-2 align-items-end mb-4">
-  <div class="col-auto">
-    <label class="form-label fw-semibold mb-1">Mes</label>
-    <input type="month" name="mes" class="form-control" value="<%= mes %>">
+<div class="container-fluid py-4">
+
+  <!-- PANEL EDUCATIVO - SIEMPRE VISIBLE -->
+  <div class="alert alert-info border-start border-4 border-info mb-4">
+    <h5 class="alert-heading mb-3"><i class="bi bi-info-circle me-2"></i>📋 ¿Cómo registro un gasto?</h5>
+    <hr>
+    <p class="mb-3"><strong>Un gasto</strong> es cualquier dinero que <strong>SALE</strong> de tu negocio o de tu bolsillo personal.</p>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25">
+          <h6 class="fw-bold text-danger mb-2"><i class="bi bi-briefcase me-2"></i>💼 GASTO DE NEGOCIO</h6>
+          <small class="d-block text-muted mb-2">Todo lo que necesitás para producir o vender</small>
+          <small class="d-block">
+            ✓ Tinta y tonificadores<br>
+            ✓ Resmas de papel<br>
+            ✓ Sueldos de empleados<br>
+            ✓ Alquiler del local<br>
+            ✓ Luz y servicios del negocio<br>
+            ✓ Reparaciones de máquinas
+          </small>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="p-3 bg-info bg-opacity-10 rounded-3 border border-info border-opacity-25">
+          <h6 class="fw-bold text-info mb-2"><i class="bi bi-person me-2"></i>👤 GASTO PERSONAL</h6>
+          <small class="d-block text-muted mb-2">Para tu vida personal, no tiene que ver con la imprenta</small>
+          <small class="d-block">
+            ✓ Comida y almuerzo<br>
+            ✓ Ropa y zapatos<br>
+            ✓ Visita al médico<br>
+            ✓ Peluquería<br>
+            ✓ Luz de tu casa<br>
+            ✓ Transporte personal
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25">
+      <i class="bi bi-lightbulb me-2 text-warning"></i>
+      <strong class="text-dark">¿Por qué es importante separar?</strong>
+      <br><small class="text-muted d-block mt-2">
+        Mantener separados los gastos personales de los del negocio te permite saber si tu imprenta gana o pierde dinero de verdad.
+        Si mezclas todo, los reportes van a estar mal y no vas a poder tomar buenas decisiones para tu negocio.
+      </small>
+    </div>
   </div>
-  <div class="col-auto">
-    <button type="submit" class="btn btn-outline-secondary">
-      <i class="bi bi-filter me-1"></i>Filtrar
+
+  <!-- HEADER CON BOTÓN -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center gap-3" style="flex: 1;">
+      <h2 class="mb-0"><i class="bi bi-receipt me-2"></i>Gastos del Mes</h2>
+      <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+        <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+      </button>
+    </div>
+    <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevo">
+      <i class="bi bi-plus-lg me-2"></i><strong>➕ Registrar Gasto</strong>
     </button>
   </div>
-</form>
 
-<!-- Toggle Tipo -->
-<div class="btn-group mb-4" role="group">
-  <a href="?mes=<%= mes %>&tipo=todos" class="btn btn-sm <%= (!tipo || tipo==='todos') ? 'btn-secondary' : 'btn-outline-secondary' %>">
-    Todos
-  </a>
-  <a href="?mes=<%= mes %>&tipo=negocio" class="btn btn-sm <%= tipo==='negocio' ? 'btn-danger' : 'btn-outline-danger' %>">
-    Negocio
-  </a>
-  <a href="?mes=<%= mes %>&tipo=personal" class="btn btn-sm <%= tipo==='personal' ? 'btn-info' : 'btn-outline-info' %>">
-    Personal
-  </a>
+  <!-- ALERTA SI HAY PENDIENTES -->
+  <% if (totalPendiente > 0) { %>
+  <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 py-3">
+    <i class="bi bi-exclamation-triangle fs-4"></i>
+    <div>
+      <strong>Tenés $<%= totalPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %> en gastos que todavía no pagaste.</strong>
+      <br><small class="text-muted">Incluye $<%= totalPendienteNegocio.toLocaleString('es-AR', {minimumFractionDigits: 2}) %> del negocio.</small>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- RESUMEN MEJORADO -->
+  <div class="row g-3 mb-5">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="text-danger fs-5 mb-2"><i class="bi bi-briefcase-fill"></i> 💼</div>
+          <div class="text-muted small mb-1">Gastos Negocio</div>
+          <div class="fs-4 fw-bold text-danger">$<%= totalNegocio.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+          <% if (totalPendienteNegocio > 0) { %>
+          <small class="text-warning d-block mt-1">
+            <i class="bi bi-exclamation-circle"></i> $<%= totalPendienteNegocio.toLocaleString('es-AR', {minimumFractionDigits: 2}) %> pendientes
+          </small>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="text-info fs-5 mb-2"><i class="bi bi-person-fill"></i> 👤</div>
+          <div class="text-muted small mb-1">Gastos Personales</div>
+          <div class="fs-4 fw-bold text-info">$<%= totalPersonal.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+          <small class="text-muted d-block mt-1">No afectan tu negocio</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="text-warning fs-5 mb-2"><i class="bi bi-hourglass"></i> ⏳</div>
+          <div class="text-muted small mb-1">Total Pendiente</div>
+          <div class="fs-4 fw-bold text-warning">$<%= totalPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+          <small class="text-muted d-block mt-1">De cualquier tipo</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body text-center">
+          <div class="text-success fs-5 mb-2"><i class="bi bi-graph-up"></i> 📊</div>
+          <div class="text-muted small mb-1">Total Registrado</div>
+          <div class="fs-4 fw-bold"><%= gastos.length %> gastos</div>
+          <small class="text-muted d-block mt-1">En <%= mes %></small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS Y OPCIONES -->
+  <form method="GET" class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <!-- Mes -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Mes</label>
+          <input type="month" name="mes" class="form-control" value="<%= mes %>">
+        </div>
+
+        <!-- Tipo -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Filtrar por tipo</label>
+          <div class="btn-group w-100" role="group">
+            <a href="?mes=<%= mes %>&tipo=todos" class="btn btn-sm <%= (!tipo || tipo==='todos') ? 'btn-secondary' : 'btn-outline-secondary' %>">
+              Todos
+            </a>
+            <a href="?mes=<%= mes %>&tipo=negocio" class="btn btn-sm <%= tipo==='negocio' ? 'btn-danger' : 'btn-outline-danger' %>">
+              💼 Negocio
+            </a>
+            <a href="?mes=<%= mes %>&tipo=personal" class="btn btn-sm <%= tipo==='personal' ? 'btn-info' : 'btn-outline-info' %>">
+              👤 Personal
+            </a>
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="col-md-6 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
+            <i class="bi bi-funnel"></i> Filtrar
+          </button>
+          <a href="/gastos" class="btn btn-secondary flex-grow-1">
+            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+          </a>
+          <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalRevisar" title="Revisar gastos marcados como 'Otros'">
+            <i class="bi bi-search"></i> 🔍 Revisar
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- TABLA DE GASTOS -->
+  <% if (!gastos.length) { %>
+    <div class="alert alert-info text-center py-5">
+      <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+      <p class="mt-3 mb-0"><strong>No hay gastos registrados para esta selección</strong></p>
+    </div>
+  <% } else { %>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 90px;">Fecha</th>
+            <th style="width: 80px;">Tipo</th>
+            <th>Categoría</th>
+            <th style="width: 150px;">Descripción</th>
+            <th style="width: 90px;">Proveedor</th>
+            <th style="width: 100px;">Método</th>
+            <th style="width: 100px;">Monto</th>
+            <th style="width: 80px;">Estado</th>
+            <th style="width: 120px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% gastos.forEach(g => { %>
+            <tr class="<%= g.estado_pago === 'pagado' ? 'table-success' : 'table-warning' %>">
+              <td>
+                <small class="text-muted">
+                  <%= new Date(g.fecha).toLocaleDateString('es-AR', {day: '2-digit', month: '2-digit'}) %>
+                </small>
+              </td>
+              <td>
+                <% if (g.tipo === 'negocio') { %>
+                  <span class="badge bg-danger">💼 Negocio</span>
+                <% } else { %>
+                  <span class="badge bg-info">👤 Personal</span>
+                <% } %>
+              </td>
+              <td><strong><%= g.categoria %></strong></td>
+              <td>
+                <small class="text-muted"><%= g.descripcion.substring(0, 20) %><%= g.descripcion.length > 20 ? '...' : '' %></small>
+              </td>
+              <td>
+                <small class="text-muted"><%= g.proveedor_nombre || '—' %></small>
+              </td>
+              <td>
+                <% if (g.metodo_pago === 'Efectivo' || g.metodo_pago === 'efectivo') { %>
+                  💵 Efectivo
+                <% } else if (g.metodo_pago === 'Transferencia' || g.metodo_pago === 'transferencia') { %>
+                  🏦 Transfer.
+                <% } else if (g.metodo_pago === 'Tarjeta' || g.metodo_pago === 'tarjeta') { %>
+                  💳 Tarjeta
+                <% } else if (g.metodo_pago === 'Cheque' || g.metodo_pago === 'cheque') { %>
+                  📄 Cheque
+                <% } else { %>
+                  <%= g.metodo_pago || '—' %>
+                <% } %>
+                <% if (g.tiene_factura) { %>
+                  <span class="badge bg-success-subtle text-success ms-1">📋 Fact.</span>
+                <% } %>
+              </td>
+              <td class="fw-semibold">
+                <% if (g.tipo === 'negocio') { %>
+                  <span class="text-danger">-$<%= g.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                <% } else { %>
+                  <span class="text-secondary">-$<%= g.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                <% } %>
+              </td>
+              <td>
+                <% if (g.estado_pago === 'pagado') { %>
+                  <span class="badge bg-success"><i class="bi bi-check-lg"></i> Pagado</span>
+                <% } else { %>
+                  <span class="badge bg-warning text-dark"><i class="bi bi-hourglass"></i> Pendiente</span>
+                <% } %>
+              </td>
+              <td class="d-flex gap-1">
+                <button class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalEditar"
+                        onclick="editarGasto(<%= g.id %>, '<%= g.fecha %>', '<%= g.categoria %>', '<%= g.descripcion.replace(/'/g, '\\'') %>', <%= g.monto %>, '<%= g.estado_pago %>', <%= g.proveedor_id || 'null' %>, '<%= g.tipo %>', '<%= g.metodo_pago || 'efectivo' %>', <%= g.tiene_factura || 0 %>)"
+                        title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <% if (g.estado_pago !== 'pagado') { %>
+                <form action="/gastos/<%= g.id %>/pagar" method="POST" style="display:inline;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado">
+                    <i class="bi bi-check-lg"></i>
+                  </button>
+                </form>
+                <% } %>
+                <form action="/gastos/<%= g.id %>/eliminar" method="POST"
+                      onsubmit="return confirm('¿Eliminar este gasto de $<%= g.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')"
+                      style="display:inline;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <button class="btn btn-sm btn-outline-danger" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
 </div>
 
-<!-- Resumen del mes -->
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div class="text-muted small">💼 Gastos Negocio</div>
-      <div class="fs-4 fw-bold text-danger">$<%= totalNegocio.toLocaleString('es-AR') %></div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: NUEVO GASTO -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalNuevo" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form action="/gastos/nuevo" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="modal-header bg-light">
+          <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Registrar Nuevo Gasto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <!-- FECHA -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">📅 Fecha *</label>
+              <input type="date" name="fecha" class="form-control"
+                     value="<%= new Date().toISOString().slice(0,10) %>" required>
+              <small class="text-muted d-block mt-1">¿Cuándo hiciste este gasto?</small>
+            </div>
+
+            <!-- TIPO (BOTONES GRANDES) -->
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">¿De qué tipo es el gasto? *</label>
+              <div class="d-flex gap-2">
+                <input type="radio" class="btn-check" name="tipo" id="tipoNegocio" value="negocio" required checked onchange="actualizarCategorias('negocio', 'newCategoria')">
+                <label class="btn btn-outline-danger flex-fill py-3" for="tipoNegocio">
+                  <strong>💼 Negocio</strong><br><small class="text-muted">Para la imprenta</small>
+                </label>
+
+                <input type="radio" class="btn-check" name="tipo" id="tipoPersonal" value="personal" onchange="actualizarCategorias('personal', 'newCategoria')">
+                <label class="btn btn-outline-info flex-fill py-3" for="tipoPersonal">
+                  <strong>👤 Personal</strong><br><small class="text-muted">Uso propio</small>
+                </label>
+              </div>
+            </div>
+
+            <!-- CATEGORÍA DINÁMICA -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">📂 Categoría *</label>
+              <select id="newCategoria" name="categoria" class="form-select" required>
+                <option value="">— Seleccioná una categoría —</option>
+                <% CATEGORIAS_NEGOCIO.forEach(c => { %>
+                  <option value="<%= c %>"><%= c %></option>
+                <% }) %>
+              </select>
+              <small class="text-muted d-block mt-1">Esto te ayuda a clasificar los gastos. Cambia según si es de Negocio o Personal.</small>
+            </div>
+
+            <!-- DESCRIPCIÓN -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">📝 Descripción *</label>
+              <input type="text" name="descripcion" class="form-control"
+                     placeholder="Ej: Resma papel A4 80g | Sueldo completo de Ariel - marzo" required>
+              <small class="text-muted d-block mt-1">Describí qué compraste o el motivo del gasto con detalle.</small>
+            </div>
+
+            <!-- MONTO, MÉTODO DE PAGO, ESTADO -->
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">💵 Monto ($) *</label>
+              <input type="number" name="monto" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+              <small class="text-muted d-block mt-1">¿Cuánto gastaste?</small>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">💳 Método de Pago *</label>
+              <select name="metodo_pago" class="form-select" required>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">🏦 Transferencia</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="cheque">📄 Cheque</option>
+              </select>
+              <small class="text-muted d-block mt-1">¿Cómo pagaste?</small>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">⏱️ Estado *</label>
+              <select name="estado_pago" class="form-select" required>
+                <option value="pendiente">⏳ Pendiente</option>
+                <option value="pagado">✅ Pagado</option>
+              </select>
+              <small class="text-muted d-block mt-1">¿Ya pagaste?</small>
+            </div>
+
+            <!-- ¿TIENE FACTURA? -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">📋 ¿Tiene factura?</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="tiene_factura" id="facturaSi" value="1">
+                <label class="form-check-label" for="facturaSi">
+                  ✅ Sí, tengo factura A
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="tiene_factura" id="facturaNo" value="0" checked>
+                <label class="form-check-label" for="facturaNo">
+                  ❌ No, compré sin factura
+                </label>
+              </div>
+              <small class="text-muted d-block mt-1">Si tenés factura A, guardala. Sirve para descontar IVA.</small>
+            </div>
+
+            <!-- PROVEEDOR -->
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">🏪 Proveedor (opcional)</label>
+              <select name="proveedor_id" class="form-select">
+                <option value="">— Ninguno —</option>
+                <% if (typeof proveedores !== 'undefined' && proveedores.length > 0) { %>
+                  <% proveedores.forEach(p => { %>
+                    <option value="<%= p.id %>"><%= p.nombre %></option>
+                  <% }) %>
+                <% } %>
+              </select>
+              <small class="text-muted d-block mt-1">Si compraste a un proveedor específico, seleccionalo.</small>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg me-2"></i>Registrar Gasto
+          </button>
+        </div>
+      </form>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div class="text-muted small">👤 Gastos Personales</div>
-      <div class="fs-4 fw-bold text-info">$<%= totalPersonal.toLocaleString('es-AR') %></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDITAR GASTO -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="formEditar" action="" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="modal-header bg-light">
+          <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Gasto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">📅 Fecha *</label>
+              <input type="date" id="editFecha" name="fecha" class="form-control" required>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">¿Tipo? *</label>
+              <div class="d-flex gap-2">
+                <input type="radio" class="btn-check" name="tipo" id="editTipoNegocio" value="negocio" required onchange="actualizarCategorias('negocio', 'editCategoria')">
+                <label class="btn btn-outline-danger flex-fill" for="editTipoNegocio">
+                  <strong>💼 Negocio</strong>
+                </label>
+
+                <input type="radio" class="btn-check" name="tipo" id="editTipoPersonal" value="personal" onchange="actualizarCategorias('personal', 'editCategoria')">
+                <label class="btn btn-outline-info flex-fill" for="editTipoPersonal">
+                  <strong>👤 Personal</strong>
+                </label>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">📂 Categoría *</label>
+              <select id="editCategoria" name="categoria" class="form-select" required>
+                <option value="">— Seleccioná —</option>
+                <% CATEGORIAS_NEGOCIO.forEach(c => { %>
+                  <option value="<%= c %>"><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label fw-semibold">📝 Descripción *</label>
+              <input type="text" id="editDescripcion" name="descripcion" class="form-control" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">💵 Monto ($) *</label>
+              <input type="number" id="editMonto" name="monto" class="form-control" step="0.01" min="0" required>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">💳 Método *</label>
+              <select id="editMetodo" name="metodo_pago" class="form-select" required>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">🏦 Transferencia</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="cheque">📄 Cheque</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Estado *</label>
+              <select id="editEstado" name="estado_pago" class="form-select" required>
+                <option value="pendiente">⏳ Pendiente</option>
+                <option value="pagado">✅ Pagado</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">📋 ¿Tiene factura?</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="tiene_factura" id="editFacturaSi" value="1">
+                <label class="form-check-label" for="editFacturaSi">Sí</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="tiene_factura" id="editFacturaNo" value="0">
+                <label class="form-check-label" for="editFacturaNo">No</label>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">🏪 Proveedor (opcional)</label>
+              <select id="editProveedor" name="proveedor_id" class="form-select">
+                <option value="">— Ninguno —</option>
+                <% if (typeof proveedores !== 'undefined' && proveedores.length > 0) { %>
+                  <% proveedores.forEach(p => { %>
+                    <option value="<%= p.id %>"><%= p.nombre %></option>
+                  <% }) %>
+                <% } %>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-lg me-2"></i>Guardar Cambios
+          </button>
+        </div>
+      </form>
     </div>
   </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div class="text-muted small">Registrados</div>
-      <div class="fs-4 fw-bold"><%= gastos.length %></div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3">
-      <div class="text-muted small">⏳ Pendientes</div>
-      <div class="fs-4 fw-bold text-warning">
-        <%= gastos.filter(g => g.estado_pago === 'pendiente').length %>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: REVISAR CLASIFICACIÓN -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalRevisar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning bg-opacity-10">
+        <h5 class="modal-title"><i class="bi bi-search me-2"></i>🔍 Revisar Clasificación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <%
+          const gastosParaRevisar = gastos.filter(g =>
+            g.tipo === 'negocio' && (g.categoria.includes('Otros') || g.categoria.includes('otros'))
+          );
+        %>
+
+        <% if (gastosParaRevisar.length === 0) { %>
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            ✅ ¡Excelente! No hay gastos de negocio marcados como "Otros gastos del negocio".
+            <br><small class="text-muted mt-2 d-block">Tus gastos están bien clasificados.</small>
+          </div>
+        <% } else { %>
+          <p class="mb-3">
+            Encontramos <strong><%= gastosParaRevisar.length %></strong> gasto(s) marcado(s) como "Otros gastos del negocio".
+            <br><small class="text-muted">Revisa si deberían estar en una categoría más específica.</small>
+          </p>
+
+          <div class="list-group">
+            <% gastosParaRevisar.forEach(g => { %>
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h6 class="mb-1"><%= g.descripcion %></h6>
+                    <small class="text-muted">
+                      <%= new Date(g.fecha).toLocaleDateString('es-AR') %> •
+                      $<%= g.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                    </small>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="modal"
+                          data-bs-target="#modalEditar"
+                          onclick="editarGasto(<%= g.id %>, '<%= g.fecha %>', '<%= g.categoria %>', '<%= g.descripcion.replace(/'/g, '\\'') %>', <%= g.monto %>, '<%= g.estado_pago %>', <%= g.proveedor_id || 'null' %>, '<%= g.tipo %>', '<%= g.metodo_pago || 'efectivo' %>', <%= g.tiene_factura || 0 %>)">
+                    Editar
+                  </button>
+                </div>
+              </div>
+            <% }); %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
 </div>
 
-<% if (!gastos.length) { %>
-  <div class="alert alert-info">No hay gastos registrados para este mes.</div>
-<% } else { %>
-<div class="card shadow-sm">
-  <div class="table-responsive">
-    <table class="table table-hover align-middle mb-0">
-      <thead class="table-dark">
-        <tr>
-          <th>Fecha</th>
-          <th>Categoría</th>
-          <th>Descripción</th>
-          <th>Tipo</th>
-          <th>Proveedor</th>
-          <th>Monto</th>
-          <th>Estado</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <% gastos.forEach(g => { %>
-        <tr>
-          <td><%= g.fecha %></td>
-          <td><span class="badge bg-secondary"><%= g.categoria %></span></td>
-          <td><%= g.descripcion %></td>
-          <td>
-            <% if (g.tipo === 'negocio') { %>
-              <span class="badge bg-danger">Negocio</span>
-            <% } else { %>
-              <span class="badge bg-info">Personal</span>
-            <% } %>
-          </td>
-          <td><%= g.proveedor_nombre || '—' %></td>
-          <td class="fw-semibold">$<%= g.monto.toLocaleString('es-AR') %></td>
-          <td>
-            <% if (g.estado_pago === 'pagado') { %>
-              <span class="badge bg-success">Pagado</span>
-            <% } else { %>
-              <span class="badge bg-warning text-dark">Pendiente</span>
-            <% } %>
-          </td>
-          <td class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-primary"
-                    data-bs-toggle="modal"
-                    data-bs-target="#modalEditar"
-                    onclick="editarGasto(<%= g.id %>, '<%= g.fecha %>', '<%= g.categoria %>', '<%= g.descripcion %>', <%= g.monto %>, '<%= g.estado_pago %>', <%= g.proveedor_id || 'null' %>, '<%= g.tipo %>')"
-                    title="Editar">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <% if (g.estado_pago !== 'pagado') { %>
-            <form action="/gastos/<%= g.id %>/pagar" method="POST" style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <button class="btn btn-sm btn-success" title="Marcar como pagado">
-                <i class="bi bi-check-lg"></i>
-              </button>
-            </form>
-            <% } %>
-            <form action="/gastos/<%= g.id %>/eliminar" method="POST"
-                  onsubmit="return confirm('¿Eliminar este gasto?')"
-                  style="display:inline;">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <button class="btn btn-sm btn-outline-danger">
-                <i class="bi bi-trash"></i>
-              </button>
-            </form>
-          </td>
-        </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</div>
-<% } %>
-
-<!-- Modal Nuevo Gasto -->
-<div class="modal fade" id="modalNuevo" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form action="/gastos/nuevo" method="POST">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <div class="modal-header">
-          <h5 class="modal-title">Registrar Gasto</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo *</label>
-            <select name="tipo" class="form-select" required>
-              <option value="negocio" selected>💼 Negocio</option>
-              <option value="personal">👤 Personal</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Fecha *</label>
-            <input type="date" name="fecha" class="form-control"
-                   value="<%= new Date().toISOString().slice(0,10) %>" required>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Categoría *</label>
-            <select name="categoria" class="form-select" required>
-              <option value="">Seleccioná</option>
-              <% CATEGORIAS.forEach(c => { %>
-                <option value="<%= c %>"><%= c %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Descripción *</label>
-            <input type="text" name="descripcion" class="form-control"
-                   placeholder="Ej: Factura luz enero" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Monto $*</label>
-            <input type="number" name="monto" step="0.01" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Estado</label>
-            <select name="estado_pago" class="form-select">
-              <option value="pendiente">Pendiente</option>
-              <option value="pagado">Pagado</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Proveedor (opcional)</label>
-            <select name="proveedor_id" class="form-select">
-              <option value="">Ninguno</option>
-              <% proveedores.forEach(p => { %>
-                <option value="<%= p.id %>"><%= p.nombre %></option>
-              <% }) %>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Editar Gasto -->
-<div class="modal fade" id="modalEditar" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="formEditar" action="" method="POST">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <div class="modal-header">
-          <h5 class="modal-title">Editar Gasto</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Tipo *</label>
-            <select id="editTipo" name="tipo" class="form-select" required>
-              <option value="negocio">💼 Negocio</option>
-              <option value="personal">👤 Personal</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Fecha *</label>
-            <input type="date" id="editFecha" name="fecha" class="form-control" required>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Categoría *</label>
-            <select id="editCategoria" name="categoria" class="form-select" required>
-              <option value="">Seleccioná</option>
-              <% CATEGORIAS.forEach(c => { %>
-                <option value="<%= c %>"><%= c %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Descripción *</label>
-            <input type="text" id="editDescripcion" name="descripcion" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Monto $*</label>
-            <input type="number" id="editMonto" name="monto" step="0.01" class="form-control" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Estado</label>
-            <select id="editEstado" name="estado_pago" class="form-select">
-              <option value="pendiente">Pendiente</option>
-              <option value="pagado">Pagado</option>
-            </select>
-          </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Proveedor (opcional)</label>
-            <select id="editProveedor" name="proveedor_id" class="form-select">
-              <option value="">Ninguno</option>
-              <% proveedores.forEach(p => { %>
-                <option value="<%= p.id %>"><%= p.nombre %></option>
-              <% }) %>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <script>
-function editarGasto(id, fecha, categoria, descripcion, monto, estado, proveedor, tipo) {
-  document.getElementById('editTipo').value = tipo || 'negocio';
-  document.getElementById('editFecha').value = fecha;
-  document.getElementById('editCategoria').value = categoria;
-  document.getElementById('editDescripcion').value = descripcion;
-  document.getElementById('editMonto').value = monto;
-  document.getElementById('editEstado').value = estado;
-  document.getElementById('editProveedor').value = proveedor || '';
-  document.getElementById('formEditar').action = '/gastos/' + id + '/editar';
-}
+  // Datos de categorías para cambio dinámico
+  const CATS_NEGOCIO = <%- JSON.stringify(CATEGORIAS_NEGOCIO) %>;
+  const CATS_PERSONAL = <%- JSON.stringify(CATEGORIAS_PERSONAL) %>;
 
-// Categorización automática de gastos con IA
-document.addEventListener('DOMContentLoaded', function() {
-  const inputDescripcion = document.querySelector('#modalNuevo [name="descripcion"]');
-  const selectCategoria = document.querySelector('#modalNuevo [name="categoria"]');
+  // Función para actualizar categorías cuando cambia el tipo
+  function actualizarCategorias(tipo, selectId) {
+    const cats = tipo === 'negocio' ? CATS_NEGOCIO : CATS_PERSONAL;
+    const select = document.getElementById(selectId);
 
-  if (inputDescripcion && selectCategoria) {
-    inputDescripcion.addEventListener('blur', async function() {
-      const descripcion = this.value.trim();
-      if (descripcion.length < 5) return;
+    // Guardar valor actual si existe
+    const valorActual = select.value;
 
-      selectCategoria.dataset.manual = selectCategoria.dataset.manual || 'no';
-      if (selectCategoria.dataset.manual === 'si') return;
-
-      try {
-        const resp = await fetch('/api/ia/categorizar', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'CSRF-Token': '<%= csrfToken %>'
-          },
-          body: JSON.stringify({ descripcion })
-        });
-        const data = await resp.json();
-        if (data.ok && data.categoria) {
-          selectCategoria.value = data.categoria;
-          selectCategoria.title = 'Categoría sugerida por IA: ' + data.categoria;
-        }
-      } catch(e) {
-        console.log('IA categorización no disponible');
-      }
+    // Limpiar y reconstruir
+    select.innerHTML = '<option value="">— Seleccioná una categoría —</option>';
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c;
+      opt.textContent = c;
+      select.appendChild(opt);
     });
 
-    selectCategoria.addEventListener('change', function() {
-      this.dataset.manual = 'si';
-    });
+    // Restaurar valor si sigue existiendo en la nueva lista
+    if (cats.includes(valorActual)) {
+      select.value = valorActual;
+    }
   }
-});
+
+  // Función para editar gasto
+  function editarGasto(id, fecha, categoria, descripcion, monto, estado, proveedor, tipo, metodo, tieneFactura) {
+    // Llenar el formulario
+    document.getElementById('editFecha').value = fecha;
+    document.getElementById('editDescripcion').value = descripcion;
+    document.getElementById('editMonto').value = monto;
+    document.getElementById('editEstado').value = estado;
+    document.getElementById('editMetodo').value = metodo || 'efectivo';
+    document.getElementById('editProveedor').value = proveedor || '';
+
+    // Setear tipo y actualizar categorías
+    if (tipo === 'negocio') {
+      document.getElementById('editTipoNegocio').checked = true;
+      actualizarCategorias('negocio', 'editCategoria');
+    } else {
+      document.getElementById('editTipoPersonal').checked = true;
+      actualizarCategorias('personal', 'editCategoria');
+    }
+
+    // Setear categoría
+    document.getElementById('editCategoria').value = categoria;
+
+    // Setear factura
+    if (tieneFactura == 1 || tieneFactura === '1') {
+      document.getElementById('editFacturaSi').checked = true;
+    } else {
+      document.getElementById('editFacturaNo').checked = true;
+    }
+
+    // Actualizar action del form
+    document.getElementById('formEditar').action = '/gastos/' + id + '/editar';
+  }
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Gastos del Mes</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Aquí registrás TODO el dinero que sale de tu negocio o de tu bolsillo. Separar gastos de negocio (que se descuentan de ganancias) de gastos personales (que no) es FUNDAMENTAL para saber si tu imprenta gana o pierde dinero de verdad.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Gastos de negocio:</strong> Papel, tinta, reparaciones, sueldos, servicios del negocio. <strong>¡Registra TODO!</strong></li>
+      <li><strong>Gastos personales:</strong> Tu almuerzo, ropa, gastos de la casa. No se descuentan de ganancias pero el sistema los separa.</li>
+      <li><strong>Cuándo:</strong> Mejor el mismo día. Si esperas a fin de mes, te olvidás de algunos.</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>Olvidar cargar los gastos pequeños (los que "no se ven"). Estos suman mucho a fin de mes.</li>
+      <li>No separar bien entre negocio y personal. Si mezclas, los números salen mal.</li>
+      <li>No marcar estados de pago. "¿Ya pagué esto?" es importante para el flujo de caja.</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Día a día de gastos:</strong><br>
+      • Papel 500 resmas: $15.000 (negocio/no pagué)<br>
+      • Tinta negra 1kg x5: $8.000 (negocio/pagué)<br>
+      • Reparación impresora: $3.500 (negocio/pagué)<br>
+      • Mi almuerzo: $250 (personal/pagué)<br>
+      <strong>= Total mes: registras cada uno y al final ves claramente qué gasta el negocio</strong>
+    </div>
+  </div>
+</div>

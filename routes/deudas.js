@@ -115,11 +115,43 @@ module.exports = (db) => {
             `) || [];
 
             const totalActivas = tarjetas.filter(t => t.estado === 'activa').reduce((s, t) => s + t.saldo_adeudado, 0);
+            const totalLimite = tarjetas.filter(t => t.estado === 'activa').reduce((s, t) => s + (t.limite_credito || 0), 0);
+            const totalUtilizado = tarjetas.filter(t => t.estado === 'activa').reduce((s, t) => s + (t.saldo_adeudado || 0), 0);
+            const totalDisponible = Math.max(0, totalLimite - totalUtilizado);
+
+            // Calcular días hasta vencimiento para cada tarjeta
+            const hoy = new Date();
+            const diaHoy = hoy.getDate();
+
+            for (const t of tarjetas) {
+                if (t.fecha_vencimiento) {
+                    const diaVence = t.fecha_vencimiento;
+                    let diasHasta = diaVence - diaHoy;
+                    if (diasHasta < 0) {
+                        // Ya pasó este mes, calcular para el próximo mes (aproximado)
+                        const diasEnMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+                        diasHasta = (diasEnMes - diaHoy) + diaVence;
+                    }
+                    t.diasHastaVencimiento = diasHasta;
+                } else {
+                    t.diasHastaVencimiento = null;
+                }
+            }
+
+            // Detectar tarjetas que vencen en los próximos 5 días
+            const proximasAVencer = tarjetas.filter(t =>
+                t.estado === 'activa' &&
+                t.diasHastaVencimiento !== null &&
+                t.diasHastaVencimiento <= 5
+            );
 
             res.render('deudas/tarjetas', {
                 title: 'Tarjetas de Crédito',
                 tarjetas,
                 totalActivas,
+                totalLimite,
+                totalDisponible,
+                proximasAVencer,
                 success: req.flash('success'),
                 error: req.flash('error')
             });
@@ -131,27 +163,49 @@ module.exports = (db) => {
     });
 
     router.post('/tarjetas', checkPermission, async (req, res) => {
-        const { nombre_tarjeta, limite_credito, saldo_adeudado, fecha_cierre, fecha_vencimiento, monto_minimo, notas } = req.body;
+        const { nombre_tarjeta, banco, titular, tipo, limite_credito, saldo_adeudado, fecha_cierre, fecha_vencimiento, monto_minimo, notas } = req.body;
         try {
-            if (!nombre_tarjeta) {
-                req.flash('error', 'Nombre de tarjeta es requerido');
+            // Validaciones detalladas
+            if (!nombre_tarjeta || nombre_tarjeta.trim().length === 0) {
+                req.flash('error', 'Ingresá un nombre para identificar la tarjeta. Ej: "Naranja Rosana"');
                 return res.redirect('/deudas/tarjetas');
             }
 
-            const limiteNum = parseFloat(limite_credito) || 0;
+            if (!banco) {
+                req.flash('error', 'Elegí el banco o emisor de la tarjeta.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            if (!tipo) {
+                req.flash('error', 'Indicá si es una tarjeta del negocio o personal.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const limiteNum = parseFloat(limite_credito);
+            if (!limite_credito || isNaN(limiteNum) || limiteNum <= 0) {
+                req.flash('error', 'Ingresá el límite de crédito. Consultalo en la app del banco o en el contrato.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const cierreNum = parseInt(fecha_cierre);
+            if (!fecha_cierre || isNaN(cierreNum) || cierreNum < 1 || cierreNum > 31) {
+                req.flash('error', 'Ingresá el día de cierre (1 al 31). Lo encontrás en tu resumen del banco.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const venceNum = parseInt(fecha_vencimiento);
+            if (!fecha_vencimiento || isNaN(venceNum) || venceNum < 1 || venceNum > 31) {
+                req.flash('error', 'Ingresá el día de vencimiento (1 al 31). Es el día límite para pagar sin intereses.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
             const saldoNum = parseFloat(saldo_adeudado) || 0;
             const minimoNum = parseFloat(monto_minimo) || 0;
 
             await db.run(
-                `INSERT INTO deudas_tarjetas (nombre_tarjeta, limite_credito, saldo_adeudado, fecha_cierre, fecha_vencimiento, monto_minimo, notas)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                nombre_tarjeta.trim(),
-                limiteNum,
-                saldoNum,
-                parseInt(fecha_cierre) || null,
-                parseInt(fecha_vencimiento) || null,
-                minimoNum,
-                notas?.trim() || null
+                `INSERT INTO deudas_tarjetas (nombre_tarjeta, banco, titular, tipo, limite_credito, saldo_adeudado, fecha_cierre, fecha_vencimiento, monto_minimo, notas)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [nombre_tarjeta.trim(), banco, titular?.trim() || null, tipo || 'negocio', limiteNum, saldoNum, cierreNum, venceNum, minimoNum, notas?.trim() || null]
             );
             req.flash('success', `✅ Tarjeta ${nombre_tarjeta} creada`);
         } catch (err) {
@@ -164,26 +218,52 @@ module.exports = (db) => {
     router.post('/tarjetas/:id/editar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            const { nombre_tarjeta, limite_credito, saldo_adeudado, fecha_cierre, fecha_vencimiento, monto_minimo, estado, notas } = req.body;
+            const { nombre_tarjeta, banco, titular, tipo, limite_credito, saldo_adeudado, fecha_cierre, fecha_vencimiento, monto_minimo, estado, notas } = req.body;
 
-            const limiteNum = parseFloat(limite_credito) || 0;
+            // Validaciones detalladas (mismas que crear)
+            if (!nombre_tarjeta || nombre_tarjeta.trim().length === 0) {
+                req.flash('error', 'Ingresá un nombre válido para la tarjeta.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            if (!banco) {
+                req.flash('error', 'Elegí el banco o emisor.');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            if (!tipo) {
+                req.flash('error', 'Indicá el tipo de tarjeta (negocio/personal).');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const limiteNum = parseFloat(limite_credito);
+            if (!limite_credito || isNaN(limiteNum) || limiteNum <= 0) {
+                req.flash('error', 'Ingresá un límite válido (mayor a 0).');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const cierreNum = parseInt(fecha_cierre);
+            if (!fecha_cierre || isNaN(cierreNum) || cierreNum < 1 || cierreNum > 31) {
+                req.flash('error', 'Ingresá un día de cierre válido (1 al 31).');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const venceNum = parseInt(fecha_vencimiento);
+            if (!fecha_vencimiento || isNaN(venceNum) || venceNum < 1 || venceNum > 31) {
+                req.flash('error', 'Ingresá un día de vencimiento válido (1 al 31).');
+                return res.redirect('/deudas/tarjetas');
+            }
+
             const saldoNum = parseFloat(saldo_adeudado) || 0;
             const minimoNum = parseFloat(monto_minimo) || 0;
 
             await db.run(
                 `UPDATE deudas_tarjetas
-                 SET nombre_tarjeta = ?, limite_credito = ?, saldo_adeudado = ?,
+                 SET nombre_tarjeta = ?, banco = ?, titular = ?, tipo = ?, limite_credito = ?, saldo_adeudado = ?,
                      fecha_cierre = ?, fecha_vencimiento = ?, monto_minimo = ?, estado = ?, notas = ?
                  WHERE id = ?`,
-                nombre_tarjeta?.trim(),
-                limiteNum,
-                saldoNum,
-                parseInt(fecha_cierre) || null,
-                parseInt(fecha_vencimiento) || null,
-                minimoNum,
-                estado || 'activa',
-                notas?.trim() || null,
-                id
+                [nombre_tarjeta.trim(), banco, titular?.trim() || null, tipo || 'negocio', limiteNum, saldoNum,
+                 cierreNum, venceNum, minimoNum, estado || 'activa', notas?.trim() || null, id]
             );
             req.flash('success', '✅ Tarjeta actualizada');
         } catch (err) {

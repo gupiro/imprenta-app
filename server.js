@@ -3,12 +3,13 @@ require('dotenv').config();
 
 const express        = require('express');
 const session        = require('express-session');
+const cookieParser   = require('cookie-parser');
 const flash          = require('connect-flash');
 const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
 const rateLimit      = require('express-rate-limit');
-const csrf           = require('csurf');
+// const csrf           = require('csurf'); // DESACTIVADO TEMPORALMENTE
 
 // Swagger UI deshabilitado (archivo openapi.yaml removido)
 // const swaggerUi       = require('swagger-ui-express');
@@ -30,6 +31,7 @@ const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -44,14 +46,15 @@ app.use(session({
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
-        sameSite: 'strict'
+        sameSite: 'lax',
+        maxAge: 1000 * 60 * 60 * 24 // 24 horas
     }
 }));
 app.use(flash());
 
-// CSRF Protection middleware
-const csrfProtection = csrf({ cookie: false });
-app.use(csrfProtection);
+// CSRF Protection middleware (DESACTIVADO TEMPORALMENTE)
+// const csrfProtection = csrf({ cookie: false });
+// app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════
 // VARIABLES GLOBALES PARA VISTAS
@@ -62,7 +65,7 @@ app.use((req, res, next) => {
     res.locals.success     = req.flash('success') || [];
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
-    res.locals.csrfToken   = req.csrfToken();
+    res.locals.csrfToken   = 'disabled'; // CSRF temporalmente desactivado
     res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
     next();
 });
@@ -151,6 +154,7 @@ async function startServer() {
     const dashboardRouterConfigured    = require('./routes/dashboard')(dbInstance);
     const deudasRouterConfigured       = require('./routes/deudas')(dbInstance);
     const pagosRouterConfigured        = require('./routes/pagos')(dbInstance);
+    const finanzasRouterConfigured     = require('./routes/finanzas')(dbInstance);
 
     // ────────────────────────────────────────────────────────────────────
     // APIS INTERNAS (Autocomplete, etc)
@@ -161,6 +165,48 @@ async function startServer() {
     app.use('/api/autocomplete', apiAutocompleteConfigured);
     app.use('/api/pedidos',      apiPedidosRouterConfigured);
     app.use('/api/ia',           authMiddleware.isAuthenticated, iaApiRouterConfigured);
+
+    // ════════════════════════════════════════════════════════════════
+    // SEMÁFORO FINANCIERO
+    // ════════════════════════════════════════════════════════════════
+    app.get('/api/semaforo', authMiddleware.isAuthenticated, async (req, res) => {
+        const rol = req.session.user?.rol;
+        if (!['admin', 'vendedor'].includes(rol)) return res.json({ mostrar: false });
+        try {
+            const now = new Date();
+            const fechaInicio = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
+
+            const ingresos = (await dbInstance.get(
+                "SELECT COALESCE(SUM(monto),0) AS total FROM movimientos_caja WHERE tipo='ingreso' AND SUBSTR(fecha,1,10) >= ?",
+                [fechaInicio]
+            ))?.total || 0;
+
+            const gastos = (await dbInstance.get(
+                `SELECT COALESCE(SUM(monto),0) AS total FROM (
+                   SELECT monto FROM movimientos_caja WHERE tipo='egreso' AND SUBSTR(fecha,1,10) >= ?
+                   UNION ALL
+                   SELECT monto FROM gastos WHERE SUBSTR(fecha,1,10) >= ?
+                 )`, [fechaInicio, fechaInicio]
+            ))?.total || 0;
+
+            const diferencia = ingresos - gastos;
+            const porcentaje = ingresos > 0 ? Math.abs(diferencia / ingresos) * 100 : 0;
+
+            let color = 'success';
+            if (diferencia < 0) color = 'danger';
+            else if (porcentaje <= 15) color = 'warning';
+
+            const fmt = n => '$' + Math.round(n).toLocaleString('es-AR');
+            const tooltip = diferencia >= 0
+                ? `Ingresos: ${fmt(ingresos)} · Gastos: ${fmt(gastos)} · Ganancia: ${fmt(diferencia)}`
+                : `Ingresos: ${fmt(ingresos)} · Gastos: ${fmt(gastos)} · Pérdida: ${fmt(Math.abs(diferencia))}`;
+
+            res.json({ mostrar: true, color, tooltip });
+        } catch(e) {
+            console.error('Error en /api/semaforo:', e.message);
+            res.json({ mostrar: false });
+        }
+    });
 
     // ────────────────────────────────────────────────────────────────────
     // AUTH (Público) - Con protección de rate limiting
@@ -186,7 +232,7 @@ async function startServer() {
     const presupuestosControllerPublico = require('./controllers/presupuestosController')(dbInstance);
     const upload = require('./config/multer');
     app.get('/presupuestos/publico', presupuestosControllerPublico.formPresupuestoPublico);
-    app.post('/presupuestos/publico', csrfProtection, upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
+    app.post('/presupuestos/publico', upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
 
     // ────────────────────────────────────────────────────────────────────
     // RUTAS PROTEGIDAS
@@ -205,6 +251,7 @@ async function startServer() {
     app.use('/reportes',     permitirRoles('admin','vendedor'),                       reportesRouterConfigured);
     app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
     app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
+    app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA
@@ -235,12 +282,28 @@ async function startServer() {
         }
     );
 
+    app.post('/caja-diaria/cerrar-turno',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
+        async (req, res, next) => {
+            return cajaController.cerrarTurno(req, res);
+        }
+    );
+
+    app.post('/caja-diaria/reabrir-turno',
+        authMiddleware.isAuthenticated,
+        permitirRoles('admin'),
+        async (req, res, next) => {
+            return cajaController.reabrirTurno(req, res);
+        }
+    );
+
     app.use('/caja-diaria',
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
         async (req, res, next) => {
-            // Flag para mostrar/ocultar números contables: solo admin ve los números
-            res.locals.puedeVerNumeros = req.session.user?.rol === 'admin';
+            // Flag para mostrar/ocultar números contables: admin y recepcionistas ven los números
+            res.locals.puedeVerNumeros = ['admin', 'recepcionista'].includes(req.session.user?.rol);
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );
@@ -329,9 +392,9 @@ async function startServer() {
 
                 // Tarjetas activas
                 const tarjetasRaw = await dbInstance.all(`
-                    SELECT 'tarjeta' AS source_tipo, id, nombre AS titulo,
+                    SELECT 'tarjeta' AS source_tipo, id, nombre_tarjeta AS titulo,
                            monto_minimo AS monto, fecha_vencimiento,
-                           entidad AS subtitulo, estado
+                           'Tarjeta' AS subtitulo, estado
                     FROM deudas_tarjetas
                     WHERE estado = 'activa'
                 `) || [];
@@ -440,12 +503,23 @@ async function startServer() {
                 isRecepcionista
             });
         } catch (err) {
-            console.error('Error en dashboard:', err);
+            console.error('❌ Error en dashboard:', err.message);
             const isEmpleado = req.session.user?.rol === 'empleado';
             const isRecepcionista = req.session.user?.rol === 'recepcionista';
+
+            // Intentar recuperar al menos los counts
+            const counts = {
+                pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
+                en_produccion: (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,
+                listos:        (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO'"))?.c || 0,
+                entregados:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'"))?.c || 0,
+                presupuestos:  (await dbInstance.get("SELECT COUNT(*) AS c FROM presupuestos WHERE estado = 'PENDIENTE'"))?.c || 0,
+                clientes:      (await dbInstance.get("SELECT COUNT(*) AS c FROM clients"))?.c || 0,
+            };
+
             res.render('home', {
                 title: 'Panel Principal',
-                counts: {},
+                counts,
                 ingresosHoy: 0,
                 ingresosMes: 0,
                 deudores: [],

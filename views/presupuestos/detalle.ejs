@@ -184,6 +184,9 @@
 <!-- BOTONES DE ACCIÓN (sin imprimir) -->
 <div class="d-flex gap-2 no-print flex-wrap mt-4">
   <a href="/presupuestos" class="btn btn-secondary">← Volver</a>
+  <button type="button" class="btn btn-info" onclick="estimarGanancia()">
+    <i class="bi bi-robot"></i> Estimar Ganancia
+  </button>
   <% if (!presupuesto.usado) { %>
     <a href="/presupuestos/<%= presupuesto.id %>/editar" class="btn btn-warning">
       ✏️ Editar
@@ -198,3 +201,162 @@
     <button type="submit" class="btn btn-outline-danger">🗑️ Eliminar</button>
   </form>
 </div>
+
+<!-- MODAL: Estimar Ganancia -->
+<div class="modal fade" id="modalEstimarGanancia" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-robot"></i> Análisis de Ganancia con IA</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="estimacionCargando" class="text-center py-4">
+          <div class="spinner-border text-info" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-2 text-muted">Analizando costos y precios...</p>
+        </div>
+        <div id="estimacionResultado" style="display: none;">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="text-muted mb-1">Precio de Venta</p>
+                  <h5 id="precioVentaText" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-light">
+                <div class="card-body">
+                  <p class="text-muted mb-1">Costo Estimado</p>
+                  <h5 id="costoEstimadoText" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <div class="card bg-success text-white">
+                <div class="card-body">
+                  <p class="text-white-50 mb-1">Ganancia Bruta</p>
+                  <h5 id="gananciaBrutaText" class="mb-0">$0</h5>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card bg-primary text-white">
+                <div class="card-body">
+                  <p class="text-white-50 mb-1">Margen Actual</p>
+                  <h5 id="margenActualText" class="mb-0">0%</h5>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-3 border-warning">
+            <div class="card-body">
+              <p class="text-muted mb-2"><strong>Margen Recomendado:</strong> <span id="margenRecomendadoText">35%</span></p>
+              <p class="text-muted mb-0"><strong>Precio Recomendado:</strong> <span id="precioRecomendadoText" class="text-success fs-5">$0</span></p>
+            </div>
+          </div>
+
+          <div id="desgloseCostos" style="display: none;" class="card mb-3">
+            <div class="card-header">
+              <h6 class="mb-0">Desglose de Costos</h6>
+            </div>
+            <div class="card-body p-0">
+              <div id="listaCostos"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h6 class="mb-0">Análisis y Recomendaciones</h6>
+            </div>
+            <div class="card-body">
+              <p id="analisisText" class="text-muted mb-0"></p>
+            </div>
+          </div>
+        </div>
+        <div id="estimacionError" style="display: none;" class="alert alert-danger mb-0"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let modalEstimar = new bootstrap.Modal(document.getElementById('modalEstimarGanancia'));
+
+  async function estimarGanancia() {
+    // Limpiar modal
+    document.getElementById('estimacionCargando').style.display = 'block';
+    document.getElementById('estimacionResultado').style.display = 'none';
+    document.getElementById('estimacionError').style.display = 'none';
+
+    modalEstimar.show();
+
+    try {
+      const response = await fetch('/api/ia/estimar-ganancia', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ presupuesto_id: <%= presupuesto.id %> })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error desconocido');
+      }
+
+      const data = response.json();
+
+      data.then(d => {
+        if (d.ok) {
+          // Mostrar resultados
+          document.getElementById('precioVentaText').textContent =
+            '$' + d.precioActual.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+          document.getElementById('costoEstimadoText').textContent =
+            '$' + d.costoEstimado.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+          document.getElementById('gananciaBrutaText').textContent =
+            '$' + d.gananciaBruta.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+          document.getElementById('margenActualText').textContent = d.margenActual.toFixed(1) + '%';
+          document.getElementById('margenRecomendadoText').textContent = d.margenRecomendado.toFixed(1) + '%';
+          document.getElementById('precioRecomendadoText').textContent =
+            '$' + d.precioRecomendado.toLocaleString('es-AR', { minimumFractionDigits: 0 });
+
+          // Mostrar desglose de costos si existe
+          if (d.detallesCosto && d.detallesCosto.length > 0) {
+            const html = d.detallesCosto.map(c => `
+              <div class="d-flex justify-content-between py-2 px-3 border-bottom">
+                <span>${c.material} (${c.cantidad})</span>
+                <strong>$${c.costoEstimado.toLocaleString('es-AR')}</strong>
+              </div>
+            `).join('');
+            document.getElementById('listaCostos').innerHTML = html;
+            document.getElementById('desgloseCostos').style.display = 'block';
+          }
+
+          // Mostrar análisis
+          document.getElementById('analisisText').textContent = d.analisis;
+
+          document.getElementById('estimacionCargando').style.display = 'none';
+          document.getElementById('estimacionResultado').style.display = 'block';
+        } else {
+          throw new Error(d.error || 'Error en la respuesta');
+        }
+      });
+    } catch (error) {
+      console.error('Error:', error);
+      document.getElementById('estimacionError').textContent = error.message || 'Error al estimar ganancia';
+      document.getElementById('estimacionError').style.display = 'block';
+      document.getElementById('estimacionCargando').style.display = 'none';
+    }
+  }
+</script>

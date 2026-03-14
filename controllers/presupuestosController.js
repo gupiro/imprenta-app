@@ -34,6 +34,7 @@ module.exports = (db) => {
             title: 'Nuevo Presupuesto',
             productos,
             clientes,
+            csrfToken: 'disabled',
             error: req.flash('error'),
             success: req.flash('success')
         });
@@ -84,7 +85,7 @@ module.exports = (db) => {
                 return res.redirect('/presupuestos/nuevo');
             }
 
-            // Calcular total
+            // Calcular total con validaciones
             let totalPresupuesto = 0;
             const cantidades = Array.isArray(cantidad) ? cantidad : [cantidad];
             const preciosUnit = Array.isArray(precio_unitario) ? precio_unitario : [precio_unitario];
@@ -95,6 +96,21 @@ module.exports = (db) => {
                     const cant = parseFloat(cantidades[i]) || 0;
                     const precio = parseFloat(preciosUnit[i]) || 0;
                     const desc = parseFloat(descuentos[i]) || 0;
+
+                    // Validar valores positivos
+                    if (cant <= 0) {
+                        req.flash('error', `Cantidad debe ser mayor a 0 en item "${descripciones[i]}"`);
+                        return res.redirect('/presupuestos/nuevo');
+                    }
+                    if (precio < 0) {
+                        req.flash('error', `Precio no puede ser negativo en item "${descripciones[i]}"`);
+                        return res.redirect('/presupuestos/nuevo');
+                    }
+                    if (desc < 0) {
+                        req.flash('error', `Descuento no puede ser negativo en item "${descripciones[i]}"`);
+                        return res.redirect('/presupuestos/nuevo');
+                    }
+
                     totalPresupuesto += (cant * precio) - desc;
                 }
             }
@@ -112,7 +128,7 @@ module.exports = (db) => {
                     cliente_id, nombre_cliente, email_cliente, telefono_cliente,
                     precio_estimado, detalle, precio_extra, estado, fecha_creacion, usuario_id
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDIENTE', ?, ?)
-            `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, fecha, usuarioId);
+            `, [clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, fecha, usuarioId]);
 
             const presupuestoId = presupuestoResult.lastID;
 
@@ -130,7 +146,7 @@ module.exports = (db) => {
                             presupuesto_id, producto_id, descripcion, cantidad,
                             precio_unitario, descuento_item, subtotal
                         ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                    `, presupuestoId, prodId, descripciones[i], cant, precio, desc, subtotal);
+                    `, [presupuestoId, prodId, descripciones[i], cant, precio, desc, subtotal]);
                 }
             }
 

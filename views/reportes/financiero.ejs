@@ -1,0 +1,194 @@
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="mb-1">📊 Estado Financiero Simplificado</h1>
+      <p class="text-muted mb-0">Resumen financiero del mes seleccionado</p>
+    </div>
+    <div class="d-flex gap-2">
+      <div class="input-group" style="width: 200px;">
+        <input type="month" id="selectMes" class="form-control" value="<%= mes %>"
+               onchange="irAlMes(this.value)">
+      </div>
+      <a href="/reportes/financiero/pdf?mes=<%= mes %>" target="_blank" class="btn btn-primary">
+        <i class="bi bi-file-pdf me-2"></i> Exportar PDF
+      </a>
+      <a href="/reportes" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i> Volver
+      </a>
+    </div>
+  </div>
+
+  <!-- Card de Resultado Neto -->
+  <% const bgClass = resultadoNeto >= 0 ? 'bg-success' : 'bg-danger'; %>
+  <div class="card border-0 <%= bgClass %> text-white mb-4">
+    <div class="card-body p-4">
+      <div class="display-3 mb-2">$<%= Math.round(resultadoNeto).toLocaleString('es-AR') %></div>
+      <h5 class="card-title mb-3">
+        <% if (resultadoNeto >= 0) { %>
+          ✓ Resultado Positivo
+        <% } else { %>
+          ⚠ Resultado Negativo
+        <% } %>
+      </h5>
+      <p class="card-text mb-0">
+        <%= conclusion %>
+      </p>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-2">💰 Ingresos Totales</div>
+          <div class="h4 mb-0">$<%= Math.round(ingresosTotales).toLocaleString('es-AR') %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-2">💼 Gastos Negocio</div>
+          <div class="h4 mb-0">$<%= Math.round(totalGastosNegocio).toLocaleString('es-AR') %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-2">👤 Gastos Personales</div>
+          <div class="h4 mb-0">$<%= Math.round(totalGastosPersonales).toLocaleString('es-AR') %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-muted small mb-2">📦 Pedidos Entregados</div>
+          <div class="h4 mb-0"><%= pedidosEntregados?.cant || 0 %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gastos por Categoría -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-light border-0">
+      <h5 class="mb-0">💹 Gastos de Negocio por Categoría</h5>
+    </div>
+    <div class="card-body p-0">
+      <% if (gastosPorCategoria && gastosPorCategoria.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Categoría</th>
+                <th class="text-end">Monto</th>
+                <th class="text-end" style="width: 150px;">Porcentaje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% gastosPorCategoria.forEach(g => { %>
+                <% const pct = gastosTotales > 0 ? ((g.total / gastosTotales) * 100).toFixed(1) : 0; %>
+                <tr>
+                  <td><%= g.categoria %></td>
+                  <td class="text-end">$<%= Math.round(g.total).toLocaleString('es-AR') %></td>
+                  <td class="text-end">
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                      <span><%= pct %>%</span>
+                      <div class="progress flex-grow-1" style="height: 5px;">
+                        <div class="progress-bar" role="progressbar" style="width: <%= pct %>%;"></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+            <tfoot class="table-light">
+              <tr>
+                <th>Total Gastos</th>
+                <th class="text-end">$<%= Math.round(gastosTotales).toLocaleString('es-AR') %></th>
+                <th class="text-end">100%</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="p-4 text-center text-muted">
+          Sin gastos de negocio registrados este mes
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Cuentas por Cobrar y Deuda Tarjetas -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-start">
+            <div>
+              <h6 class="text-muted mb-2">💳 Cuentas por Cobrar</h6>
+              <div class="display-5 mb-2 text-primary">
+                $<%= Math.round(cuentasPorCobrar?.total || 0).toLocaleString('es-AR') %>
+              </div>
+              <small class="text-muted">
+                <%= cuentasPorCobrar?.cant || 0 %> cliente<%= (cuentasPorCobrar?.cant || 0) === 1 ? '' : 's' %> con deuda
+              </small>
+            </div>
+            <div class="ms-auto">
+              <span style="font-size: 3rem; opacity: 0.2;">📋</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-start">
+            <div>
+              <h6 class="text-muted mb-2">💰 Deuda en Tarjetas Activas</h6>
+              <div class="display-5 mb-2 text-danger">
+                $<%= Math.round(deudaTarjetas).toLocaleString('es-AR') %>
+              </div>
+              <small class="text-muted">
+                Saldo adeudado actualizado
+              </small>
+            </div>
+            <div class="ms-auto">
+              <span style="font-size: 3rem; opacity: 0.2;">💳</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel Educativo -->
+  <div class="alert alert-info border-0 rounded-3" role="alert">
+    <h6 class="mb-2"><i class="bi bi-lightbulb me-2"></i>Consejos para mejorar tu resultado:</h6>
+    <ul class="mb-0 ps-3">
+      <% if (resultadoNeto >= 0) { %>
+        <li>Tu negocio está ganando dinero este mes. ¡Excelente!</li>
+        <li>Si pudiste ganar más que el mes anterior, analiza qué hiciste diferente.</li>
+        <li>Reinvierte una parte de la ganancia en publicidad o mejoras operativas.</li>
+      <% } else { %>
+        <li>Este mes los gastos superaron los ingresos. Necesitás actuar rápido.</li>
+        <li>Identifica los gastos más grandes en las categorías de arriba. ¿Podés reducirlos?</li>
+        <li>Si el problema es bajo ingreso, enfocate en vender más los productos estrella.</li>
+      <% } %>
+      <li>Revisá este reporte el primer lunes de cada mes para mantener el negocio bajo control.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+function irAlMes(mes) {
+  if (mes) {
+    window.location.href = `/reportes/financiero?mes=${mes}`;
+  }
+}
+</script>

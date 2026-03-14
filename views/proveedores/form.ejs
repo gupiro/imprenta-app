@@ -25,6 +25,21 @@
               <input type="email" name="email" class="form-control"
                      value="<%= proveedor ? proveedor.email || '' : '' %>">
             </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">CUIT/CUIL</label>
+              <input type="text" name="cuit" class="form-control"
+                     placeholder="XX-XXXXXXXX-X"
+                     value="<%= proveedor ? proveedor.cuit || '' : '' %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Alícuota IVA por Defecto (%)</label>
+              <select name="alicuota_iva_default" class="form-select">
+                <option value="21" <%= proveedor && proveedor.alicuota_iva_default === 21 ? 'selected' : '' %>>21% (Normal)</option>
+                <option value="10.5" <%= proveedor && proveedor.alicuota_iva_default === 10.5 ? 'selected' : '' %>>10.5% (Reducida)</option>
+                <option value="5" <%= proveedor && proveedor.alicuota_iva_default === 5 ? 'selected' : '' %>>5% (Medicinas)</option>
+                <option value="0" <%= proveedor && proveedor.alicuota_iva_default === 0 ? 'selected' : '' %>>0% (Exento)</option>
+              </select>
+            </div>
             <div class="col-12">
               <label class="form-label fw-semibold">Rubro</label>
               <select name="rubro" class="form-select">

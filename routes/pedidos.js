@@ -22,6 +22,13 @@ function obtenerFechaLocal() {
   };
 }
 
+// Función para determinar turno por hora (mañana: <14:00, tarde: >=14:00)
+function turnoByHora() {
+  const now = new Date();
+  const hora = now.getHours();
+  return hora < 14 ? 'mañana' : 'tarde';
+}
+
 module.exports = (db) => {
   const router = express.Router();
   // Configuración de directorios
@@ -34,7 +41,7 @@ module.exports = (db) => {
   // ==================== FUNCIONES AUXILIARES ====================
 
   // Función para obtener pedidos con filtrado, búsqueda y ordenamiento
-  async function obtenerPedidosFiltrados(estado, search = '', sortBy = 'fecha', sortDir = 'desc') {
+  async function obtenerPedidosFiltrados(estado, search = '', sortBy = 'fecha', sortDir = 'desc', mes = '') {
     let query = 'SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ?';
     const params = [estado];
 
@@ -43,6 +50,12 @@ module.exports = (db) => {
       const searchTerm = `%${search}%`;
       query += ' AND (p.id LIKE ? OR c.name LIKE ?)';
       params.push(searchTerm, searchTerm);
+    }
+
+    // Filtro de mes (formato: YYYY-MM)
+    if (mes && /^\d{4}-\d{2}$/.test(mes)) {
+      query += ` AND SUBSTR(p.fecha, 1, 7) = ?`;
+      params.push(mes);
     }
 
     // Ordenamiento
@@ -82,6 +95,7 @@ module.exports = (db) => {
         title: 'Nuevo Pedido',
         clientes,
         materiales,
+        csrfToken: 'disabled',
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -109,7 +123,7 @@ module.exports = (db) => {
         if (fila) {
           clientId = fila.id;
         } else {
-          const insert = await db.run('INSERT INTO clients (name, phone, address, cuit, email) VALUES (?, ?, ?, ?, ?)', name, telefonoNuevo || '', direccionNuevo || '', cuitNuevo || '', emailNuevo || '');
+          const insert = await db.run('INSERT INTO clients (name, phone, address, cuit, email) VALUES (?, ?, ?, ?, ?)', [name, telefonoNuevo || '', direccionNuevo || '', cuitNuevo || '', emailNuevo || '']);
           clientId = insert.lastID;
         }
       }
@@ -131,14 +145,14 @@ module.exports = (db) => {
       const { timestamp: fecha } = obtenerFechaLocal();
       const usuarioId = req.session.user?.id || null;
 
-      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId);
+      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId]);
       const pedidoId = infoPed.lastID;
 
       // 💰 REGISTRAR ADELANTO EN CAJA DIARIA (si hay monto adelantado)
       if (entregado > 0) {
         const nombreCliente = clienteInput || (clienteExistente ? 'Cliente' : 'Cliente');
         const concepto = `Adelanto Pedido #${pedidoId} - ${nombreCliente}`;
-        await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, fecha, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', 'ingreso', concepto, 'Ventas - Adelanto', entregado, medio_pago || 'Efectivo', pedidoId, fecha, usuarioId);
+        await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, turno, fecha, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', ['ingreso', concepto, 'Ventas - Adelanto', entregado, medio_pago || 'Efectivo', pedidoId, turnoByHora(), fecha, usuarioId]);
       }
 
       const anchos = [].concat(req.body.ancho || []).map(v => parseFloat(v) || 0);
@@ -154,7 +168,7 @@ module.exports = (db) => {
         // NO multiplicar por qty nuevamente
         const precioFinal = preciosArr[i] || 0;
         const cantidad = cantidades[i] || 1;
-        await db.run('INSERT INTO productos (pedido_id, material, ancho, alto, cantidad, descuento, precio, descripcion, imagenes) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)', pedidoId, mat, anchos[i], altos[i], cantidad, precioFinal, descripciones[i] || 'Sin descripción', JSON.stringify(imgs));
+        await db.run('INSERT INTO productos (pedido_id, material, ancho, alto, cantidad, descuento, precio, descripcion, imagenes) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)', [pedidoId, mat, anchos[i], altos[i], cantidad, precioFinal, descripciones[i] || 'Sin descripción', JSON.stringify(imgs)]);
       }
 
       req.flash('success', 'Pedido creado correctamente');
@@ -176,9 +190,16 @@ module.exports = (db) => {
 
       const pedidos = await obtenerPedidosFiltrados('PENDIENTE', search, sortBy, sortDir);
 
+      // Contar pedidos por estado
+      const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
+      const estadoCounts = {};
+      countsRaw.forEach(r => { estadoCounts[r.estado] = r.c; });
+
       res.render('pedidos/pendientes', {
         title: 'Trabajos Encargados',
         pedidos,
+        estadoCounts,
+        estadoActual: 'PENDIENTE',
         search,
         sortBy,
         sortDir,
@@ -195,7 +216,7 @@ module.exports = (db) => {
   // 3B) Cambiar estado (SIMPLIFICADO) - CON SCOPE ARREGLADO
   router.post('/:id/cambiar-estado', checkPermission, async (req, res) => {
     const pedidoId = req.params.id;
-    
+
     try {
       const { estado } = req.body;
 
@@ -207,10 +228,30 @@ module.exports = (db) => {
         return res.redirect(`/pedidos/detalle/${pedidoId}`);
       }
 
-      await db.run('UPDATE pedidos SET estado = ? WHERE id = ?', estado, pedidoId);
+      await db.run('UPDATE pedidos SET estado = ? WHERE id = ?', [estado, pedidoId]);
 
-      req.flash('success', `Pedido movido a ${estado}`);
-      res.redirect(`/pedidos/detalle/${pedidoId}`);
+      const estadoEmojis = {
+        'PENDIENTE': '📋 PENDIENTE',
+        'EN_PRODUCCION': '⚙️ EN PRODUCCIÓN',
+        'LISTO': '✅ LISTO',
+        'ENTREGADO': '🎉 ENTREGADO',
+        'CANCELADO': '❌ CANCELADO'
+      };
+
+      const msgSuccess = `✅ Pedido #${pedidoId} movido a ${estadoEmojis[estado] || estado}`;
+      req.flash('success', msgSuccess);
+
+      // Redirect inteligente: si viene de un listado, redirigir al listado del nuevo estado
+      const rutas = {
+        PENDIENTE: '/pedidos/pendientes',
+        EN_PRODUCCION: '/pedidos/en-produccion',
+        LISTO: '/pedidos/listos',
+        ENTREGADO: '/pedidos/entregados',
+        CANCELADO: '/pedidos/detalle/' + pedidoId
+      };
+      const referer = req.get('Referer') || '';
+      const fromList = /\/pedidos\/(pendientes|en-produccion|listos|entregados)/.test(referer);
+      res.redirect(fromList ? (rutas[estado] || `/pedidos/detalle/${pedidoId}`) : `/pedidos/detalle/${pedidoId}`);
     } catch (err) {
       console.error('Error al cambiar estado:', err);
       req.flash('error', 'Error al cambiar estado: ' + err.message);
@@ -222,8 +263,8 @@ module.exports = (db) => {
   router.get('/detalle/:id', checkPermission, async (req, res) => {
     try {
       const { id } = req.params;
-      await db.run('UPDATE revision_comments SET leido = 1 WHERE pedido_id = ?', id);
-      await db.run('UPDATE pedidos SET unread_comments = 0 WHERE id = ?', id);
+      await db.run('UPDATE revision_comments SET leido = 1 WHERE pedido_id = ?', [id]);
+      await db.run('UPDATE pedidos SET unread_comments = 0 WHERE id = ?', [id]);
 
       const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id);
       if (!pedido) {
@@ -256,23 +297,28 @@ module.exports = (db) => {
     try {
       const { id } = req.params;
       const { monto_a_pagar, metodo_pago } = req.body;
+      const isJSON = req.is('application/json');
 
       const pedido = await db.get('SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.id = ?', id);
 
       if (!pedido) {
+        if (isJSON) return res.status(404).json({ ok: false, error: 'Pedido no encontrado' });
         req.flash('error', 'Pedido no encontrado');
         return res.redirect('/pedidos');
       }
 
       const monto = parseFloat(monto_a_pagar);
       if (isNaN(monto) || monto <= 0) {
+        if (isJSON) return res.status(400).json({ ok: false, error: 'Monto inválido' });
         req.flash('error', 'Monto inválido');
         return res.redirect(`/pedidos/detalle/${id}`);
       }
 
       const saldo_actual = (pedido.precio || 0) - (pedido.monto_entregado || 0);
       if (monto > saldo_actual + 0.01) {
-        req.flash('error', `Monto mayor que la deuda. Saldo: $${saldo_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`);
+        const errMsg = `Monto mayor que la deuda. Saldo: $${saldo_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
+        if (isJSON) return res.status(400).json({ ok: false, error: errMsg });
+        req.flash('error', errMsg);
         return res.redirect(`/pedidos/detalle/${id}`);
       }
 
@@ -280,16 +326,25 @@ module.exports = (db) => {
       const nuevo_saldo = Math.max(0, (pedido.precio || 0) - nuevo_entregado);
       const { timestamp: fecha_ahora } = obtenerFechaLocal();
 
-      await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, fecha_pago = ?, medio_pago = ?, estado_pago = CASE WHEN ? <= 0.01 THEN "PAGADO" ELSE "PARCIAL" END WHERE id = ?', nuevo_entregado, nuevo_saldo, fecha_ahora, metodo_pago || 'Efectivo', nuevo_saldo, id);
+      await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, fecha_pago = ?, medio_pago = ?, estado_pago = CASE WHEN ? <= 0.01 THEN "PAGADO" ELSE "PARCIAL" END WHERE id = ?', [nuevo_entregado, nuevo_saldo, fecha_ahora, metodo_pago || 'Efectivo', nuevo_saldo, id]);
 
       const concepto = `Pago Pedido #${id} - ${pedido.cliente_nombre}`;
-      await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha) VALUES (?, ?, ?, ?, ?, ?)', 'ingreso', concepto, 'Ventas - Pago de Pedido', monto, metodo_pago || 'Efectivo', fecha_ahora);
+      await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, turno, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)', ['ingreso', concepto, 'Ventas - Pago de Pedido', monto, metodo_pago || 'Efectivo', turnoByHora(), fecha_ahora]);
 
-      req.flash('success', `✅ Deuda cancelada. $${monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })} registrado en caja diaria.`);
+      const msgSuccess = `✅ Deuda cancelada. $${monto.toLocaleString('es-AR', { minimumFractionDigits: 2 })} registrado en caja diaria.`;
+
+      if (isJSON) {
+        return res.json({ ok: true, message: msgSuccess });
+      }
+
+      req.flash('success', msgSuccess);
       res.redirect(`/pedidos/detalle/${id}`);
 
     } catch (err) {
       console.error('Error al cancelar deuda:', err);
+      if (req.is('application/json')) {
+        return res.status(500).json({ ok: false, error: 'Error al cancelar deuda: ' + err.message });
+      }
       req.flash('error', 'Error al cancelar deuda: ' + err.message);
       res.redirect(`/pedidos/detalle/${id}`);
     }
@@ -299,8 +354,8 @@ module.exports = (db) => {
   router.post('/eliminar/:id', checkPermission, async (req, res) => {
     try {
       const { id } = req.params;
-      await db.run('DELETE FROM productos WHERE pedido_id = ?', id);
-      await db.run('DELETE FROM pedidos WHERE id = ?', id);
+      await db.run('DELETE FROM productos WHERE pedido_id = ?', [id]);
+      await db.run('DELETE FROM pedidos WHERE id = ?', [id]);
       req.flash('success', 'Pedido eliminado correctamente');
       res.redirect('/pedidos/pendientes');
     } catch (err) {
@@ -350,12 +405,12 @@ module.exports = (db) => {
       const nuevoRestante = (pedido.precio || 0) - nuevoEntregado;
       const { timestamp: fecha_pago } = obtenerFechaLocal();
 
-      await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, medio_pago = ?, fecha_pago = ?, estado_pago = CASE WHEN ? <= 0 THEN "PAGADO" ELSE estado_pago END, estado = CASE WHEN ? <= 0 THEN "ENTREGADO" ELSE estado END WHERE id = ?', nuevoEntregado, nuevoRestante, medio, fecha_pago, nuevoRestante, nuevoRestante, id);
+      await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, medio_pago = ?, fecha_pago = ?, estado_pago = CASE WHEN ? <= 0 THEN "PAGADO" ELSE estado_pago END, estado = CASE WHEN ? <= 0 THEN "ENTREGADO" ELSE estado END WHERE id = ?', [nuevoEntregado, nuevoRestante, medio, fecha_pago, nuevoRestante, nuevoRestante, id]);
 
       // 💰 REGISTRAR PAGO EN CAJA DIARIA
-      const cliente = await db.get('SELECT name FROM clients WHERE id = ?', pedido.client_id);
+      const cliente = await db.get('SELECT name FROM clients WHERE id = ?', [pedido.client_id]);
       const concepto = `Pago Pedido #${id} - ${cliente?.name || 'Cliente'}`;
-      await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)', 'ingreso', concepto, 'Ventas - Pago de Pedido', monto, medio || 'Efectivo', id, fecha_pago);
+      await db.run('INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, turno, fecha) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', ['ingreso', concepto, 'Ventas - Pago de Pedido', monto, medio || 'Efectivo', id, turnoByHora(), fecha_pago]);
 
       req.flash('success', `✅ Pago de $${monto.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado en caja diaria.`);
       res.redirect('/pedidos/entregados');
@@ -376,9 +431,16 @@ module.exports = (db) => {
 
       const pedidos = await obtenerPedidosFiltrados('EN_PRODUCCION', search, sortBy, sortDir);
 
+      // Contar pedidos por estado
+      const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
+      const estadoCounts = {};
+      countsRaw.forEach(r => { estadoCounts[r.estado] = r.c; });
+
       res.render('pedidos/en-produccion', {
         title: 'Trabajos en Producción',
         pedidos,
+        estadoCounts,
+        estadoActual: 'EN_PRODUCCION',
         search,
         sortBy,
         sortDir,
@@ -402,9 +464,16 @@ module.exports = (db) => {
 
       const pedidos = await obtenerPedidosFiltrados('LISTO', search, sortBy, sortDir);
 
+      // Contar pedidos por estado
+      const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
+      const estadoCounts = {};
+      countsRaw.forEach(r => { estadoCounts[r.estado] = r.c; });
+
       res.render('pedidos/listos', {
         title: 'Trabajos Listos para Entregar',
         pedidos,
+        estadoCounts,
+        estadoActual: 'LISTO',
         search,
         sortBy,
         sortDir,
@@ -427,7 +496,16 @@ module.exports = (db) => {
       const view = req.query.view || 'cards';
       const groupBy = req.query.groupBy || 'none'; // none, semana
 
-      const pedidos = await obtenerPedidosFiltrados('ENTREGADO', search, sortBy, sortDir);
+      // Filtro de mes: por defecto mes actual
+      let mes = req.query.mes || '';
+      if (!mes) {
+        const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+        const año = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        mes = `${año}-${m}`;
+      }
+
+      const pedidos = await obtenerPedidosFiltrados('ENTREGADO', search, sortBy, sortDir, mes);
 
       // Función auxiliar para obtener número de semana
       function getWeekNumber(date) {
@@ -462,15 +540,23 @@ module.exports = (db) => {
         pedidosAgrupados = Object.values(grupos).sort((a, b) => b.fecha - a.fecha);
       }
 
+      // Contar pedidos por estado
+      const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
+      const estadoCounts = {};
+      countsRaw.forEach(r => { estadoCounts[r.estado] = r.c; });
+
       res.render('pedidos/entregados', {
         title: 'Trabajos Entregados',
         pedidos,
         pedidosAgrupados,
+        estadoCounts,
+        estadoActual: 'ENTREGADO',
         search,
         sortBy,
         sortDir,
         view,
         groupBy,
+        mes,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -495,19 +581,13 @@ module.exports = (db) => {
         const { timestamp: fecha_ahora } = obtenerFechaLocal();
         const concepto = `Devolución - Pedido #${pedidoId} Cancelado`;
         await db.run(
-          'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, fecha) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          'egreso',
-          concepto,
-          'Devoluciones',
-          pedido.monto_entregado,
-          pedido.medio_pago || 'Efectivo',
-          pedidoId,
-          fecha_ahora
+          'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, pedido_id, turno, fecha) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          ['egreso', concepto, 'Devoluciones', pedido.monto_entregado, pedido.medio_pago || 'Efectivo', pedidoId, turnoByHora(), fecha_ahora]
         );
       }
 
       // Cambiar estado a CANCELADO
-      await db.run('UPDATE pedidos SET estado = "CANCELADO" WHERE id = ?', pedidoId);
+      await db.run('UPDATE pedidos SET estado = "CANCELADO" WHERE id = ?', [pedidoId]);
 
       req.flash('success', `✅ Pedido #${pedidoId} cancelado. Devolución de $${pedido.monto_entregado.toLocaleString('es-AR', { minimumFractionDigits: 2 })} registrada en caja.`);
       res.redirect(`/pedidos/detalle/${pedidoId}`);
@@ -597,7 +677,7 @@ module.exports = (db) => {
         totalItems += precio;
         await db.run(
           'UPDATE productos SET ancho = ?, alto = ?, precio = ?, descripcion = ? WHERE id = ? AND pedido_id = ?',
-          ancho, alto, precio, desc, itemId, id
+          [ancho, alto, precio, desc, itemId, id]
         );
       }
 
@@ -622,7 +702,7 @@ module.exports = (db) => {
 
         await db.run(
           'INSERT INTO productos (pedido_id, material, cantidad, ancho, alto, precio, descripcion) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          id, material, cantidad, ancho, alto, precio, descripcion
+          [id, material, cantidad, ancho, alto, precio, descripcion]
         );
         totalItems += precio;
       }
@@ -634,7 +714,7 @@ module.exports = (db) => {
 
       await db.run(
         'UPDATE pedidos SET client_id = ?, precio = ?, monto_entregado = ?, monto_restante = ?, medio_pago = ?, estado_pago = ?, fecha_entrega = ? WHERE id = ?',
-        client_id, totalItems, nuevoEntregado, nuevoRestante, medio_pago, estadoPago, fecha_entrega || null, id
+        [client_id, totalItems, nuevoEntregado, nuevoRestante, medio_pago, estadoPago, fecha_entrega || null, id]
       );
 
       req.flash('success', `Pedido #${id} actualizado correctamente`);
@@ -650,13 +730,13 @@ module.exports = (db) => {
   router.post('/editar/:id/eliminar/:item_id', checkPermission, async (req, res) => {
     const { id, item_id } = req.params;
     try {
-      await db.run('DELETE FROM productos WHERE id = ? AND pedido_id = ?', item_id, id);
+      await db.run('DELETE FROM productos WHERE id = ? AND pedido_id = ?', [item_id, id]);
       // Recalcular total del pedido
       const items = await db.all('SELECT precio FROM productos WHERE pedido_id = ?', id);
       const nuevoTotal = items.reduce((s, i) => s + (i.precio || 0), 0);
       const pedido = await db.get('SELECT monto_entregado FROM pedidos WHERE id = ?', id);
       const nuevoRestante = Math.max(0, nuevoTotal - (pedido?.monto_entregado || 0));
-      await db.run('UPDATE pedidos SET precio = ?, monto_restante = ? WHERE id = ?', nuevoTotal, nuevoRestante, id);
+      await db.run('UPDATE pedidos SET precio = ?, monto_restante = ? WHERE id = ?', [nuevoTotal, nuevoRestante, id]);
       req.flash('success', 'Producto eliminado');
     } catch (err) {
       console.error('Error:', err);

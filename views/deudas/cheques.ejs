@@ -2,8 +2,15 @@
 <div class="container-fluid py-4">
   <div class="row mb-4">
     <div class="col-md-8">
-      <h1 class="display-6"><i class="bi bi-file-earmark-check"></i> Cheques Diferidos</h1>
-      <p class="text-muted">Gestión de cheques emitidos pendientes y vencidos</p>
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 mb-1"><i class="bi bi-file-earmark-check"></i> Cheques Diferidos</h1>
+          <p class="text-muted mb-0">Gestión de cheques emitidos pendientes y vencidos</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+          <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+        </button>
+      </div>
     </div>
     <div class="col-md-4 text-end">
       <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevoCheque">
@@ -148,15 +155,24 @@
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label class="form-label">Número de Cheque *</label>
+              <label class="form-label">
+                Número de Cheque *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Número impreso en el cheque. Ej: 00012345"></i>
+              </label>
               <input type="text" name="numero_cheque" class="form-control" placeholder="ej: 001234" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Banco *</label>
+              <label class="form-label">
+                Banco *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Banco que emitió el cheque. Ej: Banco Nación, Banco Galicia"></i>
+              </label>
               <input type="text" name="banco" class="form-control" placeholder="ej: Santander" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Beneficiario *</label>
+              <label class="form-label">
+                Beneficiario *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="A quién le pagás. Ej: Papelería Martínez"></i>
+              </label>
               <input type="text" name="beneficiario" class="form-control" placeholder="Quien recibe el cheque" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -168,7 +184,10 @@
               <input type="date" name="fecha_emision" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Fecha de Vencimiento *</label>
+              <label class="form-label">
+                Fecha de Vencimiento *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="⚠️ El día que el beneficiario puede cobrarlo en el banco. Asegurate de tener fondos ese día."></i>
+              </label>
               <input type="date" name="fecha_vencimiento" class="form-control" required>
             </div>
             <div class="col-md-12 mb-3">
@@ -208,15 +227,24 @@
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label class="form-label">Número de Cheque</label>
+              <label class="form-label">
+                Número de Cheque
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Número impreso en el cheque. Ej: 00012345"></i>
+              </label>
               <input type="text" id="edit_numero" name="numero_cheque" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Banco</label>
+              <label class="form-label">
+                Banco
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Banco que emitió el cheque. Ej: Banco Nación, Banco Galicia"></i>
+              </label>
               <input type="text" id="edit_banco" name="banco" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Beneficiario</label>
+              <label class="form-label">
+                Beneficiario
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="A quién le pagás. Ej: Papelería Martínez"></i>
+              </label>
               <input type="text" id="edit_beneficiario" name="beneficiario" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -228,7 +256,10 @@
               <input type="date" id="edit_emision" name="fecha_emision" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Fecha de Vencimiento</label>
+              <label class="form-label">
+                Fecha de Vencimiento
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="⚠️ El día que el beneficiario puede cobrarlo en el banco. Asegurate de tener fondos ese día."></i>
+              </label>
               <input type="date" id="edit_vencimiento" name="fecha_vencimiento" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -297,6 +328,45 @@
           <button type="submit" class="btn btn-success">Marcar Cobrado</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Cheques Diferidos</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Registrá acá los cheques que emitiste (les diste a proveedores o acreedores) que todavía no cobraron. El sistema te avisa cuando están por vencer para que tengas fondos en la cuenta.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Al emitir:</strong> Cada cheque que das a alguien, cargalo inmediatamente acá</li>
+      <li><strong>Datos:</strong> Número del cheque, banco, monto, a quién va (beneficiario), fecha de vencimiento</li>
+      <li><strong>Cuando cobran:</strong> Marcá el cheque como "cobrado" para que desaparezca de los pendientes</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>No tener dinero en la cuenta cuando llega la fecha de vencimiento (el banco lo rechaza)</li>
+      <li>Confundir la fecha de EMISIÓN (cuando lo das) con la de VENCIMIENTO (cuando lo cobran)</li>
+      <li>Olvidar cargar cheques diferidos (y luego el sistema cree que tenés menos deuda)</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Cheque a papelería:</strong><br>
+      • Número: 001234<br>
+      • Banco Nación<br>
+      • A nombre de: Papelería Martínez<br>
+      • Monto: $50.000<br>
+      • Vence: 15/04/2026<br>
+      <strong>Resultado:</strong> Hoy (14/03) aún no se cobró. El 15/04 hay que tener esos fondos.
     </div>
   </div>
 </div>

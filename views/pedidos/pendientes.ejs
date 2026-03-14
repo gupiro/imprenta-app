@@ -26,6 +26,30 @@
     </div>
   <% } %>
 
+  <!-- NAVEGACIÓN RÁPIDA ENTRE ESTADOS -->
+  <div class="mb-4 d-flex gap-2 flex-wrap">
+    <a href="/pedidos/pendientes"
+       class="btn btn-sm <%= estadoActual === 'PENDIENTE' ? 'btn-danger' : 'btn-outline-danger' %>">
+      📋 Pendientes
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['PENDIENTE']) || 0 %></span>
+    </a>
+    <a href="/pedidos/en-produccion"
+       class="btn btn-sm <%= estadoActual === 'EN_PRODUCCION' ? 'btn-warning' : 'btn-outline-warning' %>">
+      ⚙️ En Producción
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['EN_PRODUCCION']) || 0 %></span>
+    </a>
+    <a href="/pedidos/listos"
+       class="btn btn-sm <%= estadoActual === 'LISTO' ? 'btn-info' : 'btn-outline-info' %>">
+      ✅ Listos
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['LISTO']) || 0 %></span>
+    </a>
+    <a href="/pedidos/entregados"
+       class="btn btn-sm <%= estadoActual === 'ENTREGADO' ? 'btn-success' : 'btn-outline-success' %>">
+      🎉 Entregados
+      <span class="badge bg-light text-dark ms-1"><%= (estadoCounts && estadoCounts['ENTREGADO']) || 0 %></span>
+    </a>
+  </div>
+
   <!-- CONTROLES: BÚSQUEDA, FILTRO Y VISTAS -->
   <div class="card mb-4 border-0 shadow-sm">
     <div class="card-body">
@@ -70,7 +94,7 @@
         <i class="bi bi-grid-3x2-gap"></i> Tarjetas
       </a>
       <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=tabla"
-         class="btn <%= view === 'tabla' ? 'btn-primary' : 'btn-outline-primary' %>">
+         class="btn <%= (view === 'tabla' || !view) ? 'btn-primary' : 'btn-outline-primary' %>">
         <i class="bi bi-table"></i> Tabla
       </a>
       <a href="?search=<%= search %>&sortBy=<%= sortBy %>&sortDir=<%= sortDir %>&view=compacto"
@@ -95,10 +119,12 @@
             <div class="card-body">
               <p><strong>👤 Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
               <p><strong>💰 Total:</strong> <span class="text-primary fs-5">$<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span></p>
-              <% if (p.monto_restante > 0) { %>
-                <p class="text-danger"><strong>⚠️ Deuda:</strong> $<%= (p.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
-              <% } else { %>
+              <% if ((p.monto_entregado || 0) < (p.precio || 0)) { %>
+                <p class="text-danger"><strong>⚠️ Deuda:</strong> $<%= ((p.precio || 0) - (p.monto_entregado || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              <% } else if ((p.precio || 0) > 0) { %>
                 <p class="text-success"><strong>✓ Pagado</strong></p>
+              <% } else { %>
+                <p class="text-muted"><small>Sin precio definido</small></p>
               <% } %>
               <div class="mb-3">
                 <small><strong>Productos:</strong></small>
@@ -110,7 +136,8 @@
               </div>
               <form action="/pedidos/<%= p.id %>/cambiar-estado" method="POST" class="mb-2">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
+                <select name="estado" class="form-select form-select-sm estado-select" data-estado="PENDIENTE"
+                        onchange="confirmarCambioEstado(this, <%= p.id %>, <%= p.precio || 0 %>, <%= p.monto_entregado || 0 %>)">
                   <option value="PENDIENTE" selected>📋 Pendiente</option>
                   <option value="EN_PRODUCCION">⚙️ Producción</option>
                   <option value="LISTO">✅ Listo</option>
@@ -127,8 +154,8 @@
     </div>
   <% } %>
 
-  <!-- VISTA: TABLA -->
-  <% if (view === 'tabla' && pedidos && pedidos.length > 0) { %>
+  <!-- VISTA: TABLA (DEFAULT) -->
+  <% if ((view === 'tabla' || !view) && pedidos && pedidos.length > 0) { %>
     <div class="card border-0 shadow-sm">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
@@ -222,3 +249,39 @@
     </a>
   </div>
 </div>
+
+<!-- MODAL: Pedido con deuda al entregar -->
+<div class="modal fade" id="modalEntregadoDeuda" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">💰 Pedido con deuda pendiente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Este pedido tiene una deuda de <strong id="montoDeudaModal"></strong></p>
+        <p>¿Deseás cobrar antes de marcar como entregado?</p>
+      </div>
+      <div class="modal-footer">
+        <a id="btnCobrarModal" href="#" class="btn btn-success">💰 Cobrar ahora</a>
+        <button id="btnEntregarSinCobrar" class="btn btn-warning">🎉 Entregar sin cobrar</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmarCambioEstado(select, pedidoId, precio, montoEntregado) {
+  if (select.value === 'ENTREGADO' && montoEntregado < precio) {
+    const deuda = precio - montoEntregado;
+    document.getElementById('montoDeudaModal').textContent =
+      '$' + deuda.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+    document.getElementById('btnCobrarModal').href = '/pedidos/detalle/' + pedidoId;
+    document.getElementById('btnEntregarSinCobrar').onclick = function() { select.form.submit(); };
+    new bootstrap.Modal(document.getElementById('modalEntregadoDeuda')).show();
+  } else {
+    select.form.submit();
+  }
+}
+</script>

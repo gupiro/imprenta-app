@@ -2,8 +2,15 @@
 <div class="container-fluid py-4">
   <div class="row mb-4">
     <div class="col-md-8">
-      <h1 class="display-6"><i class="bi bi-credit-card"></i> Tarjetas de Crédito</h1>
-      <p class="text-muted">Gestión de saldos adeudados y límites de crédito</p>
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 mb-1"><i class="bi bi-credit-card"></i> Tarjetas de Crédito</h1>
+          <p class="text-muted mb-0">Gestión de límites, vencimientos y saldos adeudados</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+          <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+        </button>
+      </div>
     </div>
     <div class="col-md-4 text-end">
       <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaTarjeta">
@@ -12,12 +19,53 @@
     </div>
   </div>
 
-  <!-- RESUMEN -->
+  <!-- ALERTA DE VENCIMIENTOS URGENTES (solo si hay) -->
+  <% if (proximasAVencer.length > 0) { %>
+  <div class="alert alert-danger border-danger border-2 shadow-sm mb-4" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-alarm-fill"></i> ⚠️ Tarjetas que vencen en los próximos 5 días</h5>
+    <% proximasAVencer.forEach(t => { %>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <strong><%= t.nombre_tarjeta %></strong>
+        <span>Vence día <strong><%= t.fecha_vencimiento %></strong> — en <strong><%= t.diasHastaVencimiento %> día(s)</strong> — Adeudado: <strong class="text-danger">$<%= t.saldo_adeudado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></span>
+      </div>
+    <% }); %>
+  </div>
+  <% } %>
+
+  <!-- PANEL EDUCATIVO VERDE -->
+  <div class="alert alert-success border-success border-start border-5 mb-4" style="background-color: #f0f8f5;">
+    <div class="row">
+      <div class="col-md-12 mb-3">
+        <h5 class="mb-2"><i class="bi bi-lightbulb"></i> Cómo gestionar tus tarjetas de crédito</h5>
+        <p class="mb-2">
+          Registrá acá <strong>TODAS tus tarjetas de crédito</strong>, tanto las del negocio como las personales que usás para gastos de la imprenta.
+        </p>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-2"><strong>Campos importantes:</strong></p>
+        <ul class="mb-0 small">
+          <li><strong>LÍMITE:</strong> es el máximo que te deja gastar el banco. Cargarlo te permite ver qué % ya usaste.</li>
+          <li><strong>FECHA DE CIERRE:</strong> el día del mes en que el banco 'congela' lo que gastaste y arma el resumen.</li>
+          <li><strong>FECHA DE VENCIMIENTO:</strong> el día que tenés que pagar ese resumen. ¡Muy importante para no pagar intereses!</li>
+          <li><strong>SALDO ADEUDADO:</strong> lo que debés actualmente en esa tarjeta.</li>
+        </ul>
+      </div>
+      <div class="col-md-6">
+        <p class="mb-2"><strong>Consejo importante:</strong></p>
+        <div class="bg-white p-2 rounded small">
+          <p class="mb-1">Intentá no superar el <strong>70% del límite</strong> de cada tarjeta.</p>
+          <p class="mb-0">Si una tarjeta ya superó ese porcentaje, el sistema la va a marcar en <span class="badge bg-warning">naranja/rojo</span> como señal de alerta.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUMEN - CARDS MEJORADAS -->
   <div class="row mb-4">
     <div class="col-lg-3 mb-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <p class="card-text small text-muted mb-2">💳 Total Adeudado</p>
+          <p class="card-text small text-muted mb-2">💳 Total Adeudado (Activas)</p>
           <h4 class="mb-0 text-danger">$<%= totalActivas.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
         </div>
       </div>
@@ -25,8 +73,8 @@
     <div class="col-lg-3 mb-3">
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
-          <p class="card-text small text-muted mb-2">🔢 Cantidad</p>
-          <h4 class="mb-0"><%= tarjetas.length %></h4>
+          <p class="card-text small text-muted mb-2">🏦 Límite Total Disponible</p>
+          <h4 class="mb-0 text-success">$<%= totalDisponible.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></h4>
         </div>
       </div>
     </div>
@@ -34,7 +82,7 @@
       <div class="card border-0 shadow-sm h-100">
         <div class="card-body">
           <p class="card-text small text-muted mb-2">✅ Activas</p>
-          <h4 class="mb-0 text-success"><%= tarjetas.filter(t => t.estado === 'activa').length %></h4>
+          <h4 class="mb-0"><%= tarjetas.filter(t => t.estado === 'activa').length %></h4>
         </div>
       </div>
     </div>
@@ -54,8 +102,12 @@
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <% if (tarjetas.length === 0) { %>
-            <div class="alert alert-info mb-0">
-              <i class="bi bi-info-circle"></i> No hay tarjetas registradas. ¡Crea una nueva!
+            <div class="text-center py-5">
+              <i class="bi bi-credit-card display-4 text-muted mb-3 d-block"></i>
+              <p class="text-muted mb-3">No hay tarjetas registradas.</p>
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevaTarjeta">
+                <i class="bi bi-plus-circle"></i> Crear tu primera tarjeta
+              </button>
             </div>
           <% } else { %>
             <div class="table-responsive">
@@ -63,37 +115,70 @@
                 <thead class="table-light">
                   <tr>
                     <th>Tarjeta</th>
+                    <th>Banco</th>
+                    <th>Titular</th>
+                    <th style="width: 90px;">Tipo</th>
                     <th style="width: 100px;">Límite</th>
-                    <th style="width: 120px;">Adeudado</th>
-                    <th style="width: 100px;">% Uso</th>
-                    <th style="width: 80px;">Cierre</th>
+                    <th style="width: 110px;">Adeudado</th>
+                    <th style="width: 120px;">% Uso</th>
+                    <th style="width: 60px;">Cierre</th>
                     <th style="width: 80px;">Vence</th>
-                    <th style="width: 80px;">Estado</th>
+                    <th style="width: 70px;">Estado</th>
                     <th style="width: 120px;">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   <% tarjetas.forEach(t => {
                     const porcentajeUso = t.limite_credito > 0 ? ((t.saldo_adeudado / t.limite_credito) * 100) : 0;
-                    const colorUso = porcentajeUso >= 80 ? 'danger' : (porcentajeUso >= 50 ? 'warning' : 'success');
+                    let colorUso = 'success';
+                    if (porcentajeUso > 80) colorUso = 'danger';
+                    else if (porcentajeUso > 70) colorUso = 'warning';
+                    else if (porcentajeUso > 50) colorUso = 'warning';
+
+                    const tipoLabel = t.tipo === 'negocio' ? 'Negocio' : 'Personal';
+                    const tipoColor = t.tipo === 'negocio' ? 'primary' : 'secondary';
                   %>
                     <tr>
                       <td><strong><%= t.nombre_tarjeta %></strong></td>
-                      <td>$<%= t.limite_credito.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+                      <td><small><%= t.banco || '-' %></small></td>
+                      <td><small><%= t.titular || '-' %></small></td>
+                      <td><span class="badge bg-<%= tipoColor %>"><%= tipoLabel %></span></td>
+                      <td>
+                        <% if (t.limite_credito > 0) { %>
+                          $<%= t.limite_credito.toLocaleString('es-AR', {minimumFractionDigits: 0}) %>
+                        <% } else { %>
+                          <span class="text-muted">-</span>
+                        <% } %>
+                      </td>
                       <td>
                         <strong class="text-danger">
                           $<%= t.saldo_adeudado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
                         </strong>
                       </td>
                       <td>
-                        <div class="progress" style="height: 20px;">
-                          <div class="progress-bar bg-<%= colorUso %>" style="width: <%= porcentajeUso %>%">
-                            <%= porcentajeUso.toFixed(0) %>%
+                        <% if (t.limite_credito > 0) { %>
+                          <div class="progress" style="height: 22px;">
+                            <div class="progress-bar bg-<%= colorUso %>" style="width: <%= porcentajeUso %>%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
+                              <%= porcentajeUso.toFixed(0) %>%
+                            </div>
                           </div>
-                        </div>
+                        <% } else { %>
+                          <span class="text-warning" title="Cargá el límite para ver el % de uso">⚠️ Sin límite</span>
+                        <% } %>
                       </td>
-                      <td><small><%= t.fecha_cierre || '-' %></small></td>
-                      <td><small><%= t.fecha_vencimiento || '-' %></small></td>
+                      <td><small><%= t.fecha_cierre ? 'Día ' + t.fecha_cierre : '-' %></small></td>
+                      <td>
+                        <% if (t.fecha_vencimiento) { %>
+                          <small>
+                            Día <%= t.fecha_vencimiento %>
+                            <% if (t.diasHastaVencimiento !== null && t.diasHastaVencimiento <= 5) { %>
+                              <br><span class="badge bg-danger">en <%= t.diasHastaVencimiento %> día(s)</span>
+                            <% } %>
+                          </small>
+                        <% } else { %>
+                          <small>-</small>
+                        <% } %>
+                      </td>
                       <td>
                         <% if (t.estado === 'activa') { %>
                           <span class="badge bg-success">Activa</span>
@@ -111,7 +196,7 @@
                           <i class="bi bi-pencil"></i>
                         </button>
                         <form method="POST" action="/deudas/tarjetas/<%= t.id %>/eliminar" style="display: inline;"
-                              onsubmit="return confirm('¿Eliminar tarjeta?');">
+                              onsubmit="return confirm('¿Eliminar esta tarjeta?');">
                           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                           <button type="submit" class="btn btn-sm btn-danger">
                             <i class="bi bi-trash"></i>
@@ -139,36 +224,75 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/deudas/tarjetas">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
-              <label class="form-label">Nombre de la Tarjeta *</label>
-              <input type="text" name="nombre_tarjeta" class="form-control" placeholder="ej: Visa Santander" required>
+              <label class="form-label">Banco/Emisor *</label>
+              <select name="banco" class="form-select" required>
+                <option value="">-- Seleccionar banco --</option>
+                <option value="Macro">Macro</option>
+                <option value="Naranja (Brubank)">Naranja (Brubank)</option>
+                <option value="ICBC">ICBC</option>
+                <option value="BBVA">BBVA</option>
+                <option value="Santander">Santander</option>
+                <option value="Galicia">Galicia</option>
+                <option value="Otro">Otro</option>
+              </select>
+              <small class="form-text text-muted">¿De qué banco es esta tarjeta?</small>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Límite de Crédito</label>
-              <input type="number" name="limite_credito" class="form-control" step="0.01" placeholder="0.00">
+              <label class="form-label">Nombre Identificador *</label>
+              <input type="text" name="nombre_tarjeta" class="form-control" placeholder="Ej: Naranja Rosana" required>
+              <small class="form-text text-muted">Poné un nombre para identificarla fácilmente</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Titular</label>
+              <input type="text" name="titular" class="form-control" placeholder="Ej: Rosana García">
+              <small class="form-text text-muted">¿A nombre de quién está la tarjeta?</small>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Saldo Adeudado</label>
+              <label class="form-label">Tipo *</label>
+              <select name="tipo" class="form-select" required>
+                <option value="">-- Seleccionar --</option>
+                <option value="negocio">Del negocio</option>
+                <option value="personal_negocio">Personal usada para el negocio</option>
+                <option value="personal">Personal</option>
+              </select>
+              <small class="form-text text-muted">¿Es del negocio o personal?</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Límite de Crédito *</label>
+              <input type="number" name="limite_credito" class="form-control" step="0.01" placeholder="0.00" required>
+              <small class="form-text text-muted">El límite está en el contrato o en la app del banco. Si no lo sabés, poné 0 temporalmente</small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Saldo Adeudado Actual</label>
               <input type="number" name="saldo_adeudado" class="form-control" step="0.01" placeholder="0.00">
+              <small class="form-text text-muted">¿Cuánto debés hoy? Lo podés ver en el último resumen</small>
             </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Cierre (del mes) *</label>
+              <input type="number" name="fecha_cierre" class="form-control" min="1" max="31" placeholder="Ej: 15" required>
+              <small class="form-text text-muted">El día en que el banco cierra el período. Está en tu resumen</small>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Día de Vencimiento (del mes) *</label>
+              <input type="number" name="fecha_vencimiento" class="form-control" min="1" max="31" placeholder="Ej: 25" required>
+              <small class="form-text text-muted">El día que tenés que pagar para no generar intereses</small>
+            </div>
+
             <div class="col-md-6 mb-3">
               <label class="form-label">Monto Mínimo</label>
               <input type="number" name="monto_minimo" class="form-control" step="0.01" placeholder="0.00">
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Día de Cierre (del mes)</label>
-              <input type="number" name="fecha_cierre" class="form-control" min="1" max="31" placeholder="ej: 15">
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Día de Vencimiento (del mes)</label>
-              <input type="number" name="fecha_vencimiento" class="form-control" min="1" max="31" placeholder="ej: 25">
+              <small class="form-text text-muted">Pago mínimo sugerido (opcional)</small>
             </div>
             <div class="col-md-12 mb-3">
               <label class="form-label">Notas</label>
-              <textarea name="notas" class="form-control" rows="2" placeholder="Observaciones adicionales..."></textarea>
+              <textarea name="notas" class="form-control" rows="2" placeholder="Datos adicionales sobre esta tarjeta..."></textarea>
             </div>
           </div>
         </div>
@@ -190,32 +314,61 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formEditar">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Banco/Emisor</label>
+              <select name="banco" id="edit_banco" class="form-select" required>
+                <option value="">-- Seleccionar --</option>
+                <option value="Macro">Macro</option>
+                <option value="Naranja (Brubank)">Naranja (Brubank)</option>
+                <option value="ICBC">ICBC</option>
+                <option value="BBVA">BBVA</option>
+                <option value="Santander">Santander</option>
+                <option value="Galicia">Galicia</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Nombre de la Tarjeta</label>
               <input type="text" id="edit_nombre" name="nombre_tarjeta" class="form-control" required>
             </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Titular</label>
+              <input type="text" id="edit_titular" name="titular" class="form-control">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Tipo</label>
+              <select name="tipo" id="edit_tipo" class="form-select" required>
+                <option value="negocio">Del negocio</option>
+                <option value="personal_negocio">Personal usada para el negocio</option>
+                <option value="personal">Personal</option>
+              </select>
+            </div>
+
             <div class="col-md-6 mb-3">
               <label class="form-label">Límite de Crédito</label>
-              <input type="number" id="edit_limite" name="limite_credito" class="form-control" step="0.01">
+              <input type="number" id="edit_limite" name="limite_credito" class="form-control" step="0.01" required>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Saldo Adeudado</label>
               <input type="number" id="edit_saldo" name="saldo_adeudado" class="form-control" step="0.01">
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Monto Mínimo</label>
-              <input type="number" id="edit_minimo" name="monto_minimo" class="form-control" step="0.01">
-            </div>
+
             <div class="col-md-6 mb-3">
               <label class="form-label">Día de Cierre</label>
-              <input type="number" id="edit_cierre" name="fecha_cierre" class="form-control" min="1" max="31">
+              <input type="number" id="edit_cierre" name="fecha_cierre" class="form-control" min="1" max="31" required>
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Día de Vencimiento</label>
-              <input type="number" id="edit_vence" name="fecha_vencimiento" class="form-control" min="1" max="31">
+              <input type="number" id="edit_vence" name="fecha_vencimiento" class="form-control" min="1" max="31" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Monto Mínimo</label>
+              <input type="number" id="edit_minimo" name="monto_minimo" class="form-control" step="0.01">
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Estado</label>
@@ -224,6 +377,7 @@
                 <option value="inactiva">Inactiva</option>
               </select>
             </div>
+
             <div class="col-md-12 mb-3">
               <label class="form-label">Notas</label>
               <textarea id="edit_notas" name="notas" class="form-control" rows="2"></textarea>
@@ -248,7 +402,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formPagar">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Monto a Pagar *</label>
@@ -282,6 +436,44 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Tarjetas de Crédito</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Aquí registrás todas tus tarjetas de crédito (del negocio y personales que usás para gastos). El sistema te alertará cuando se acerquen las fechas de vencimiento y te mostrará si ya usaste mucho del límite disponible.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Todas tus tarjetas:</strong> Negocio, personales, cualquier tarjeta que uses para la imprenta</li>
+      <li><strong>Los datos importantes:</strong> Límite de crédito, fecha de cierre, fecha de vencimiento, saldo actual</li>
+      <li><strong>Cada mes:</strong> Actualiza el saldo adeudado cuando recibís el resumen de la tarjeta</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>No registrar todas las tarjetas (y luego no sabés cuánto de deuda total tenés)</li>
+      <li>Confundir la fecha de CIERRE (cuando se hace el resumen) con la de VENCIMIENTO (cuando hay que pagar)</li>
+      <li>No marcar las tarjetas bloqueadas o cerradas (el sistema sigue contándolas)</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Tarjeta Naranja del negocio:</strong><br>
+      • Límite: $100.000<br>
+      • Hoy debo: $65.000 (65% usado)<br>
+      • Cierre: día 15 de cada mes<br>
+      • Vencimiento: día 20 de cada mes<br>
+      <strong>Resultado:</strong> Ya usaste 65% del límite. Cuidado con no pasarte. El 20 hay que pagar.
+    </div>
+  </div>
+</div>
+
 <script>
   let tarjetaPagoId = null;
 
@@ -291,12 +483,15 @@
   }
 
   function preLlenarEditar(tarjeta) {
+    document.getElementById('edit_banco').value = tarjeta.banco || '';
     document.getElementById('edit_nombre').value = tarjeta.nombre_tarjeta;
+    document.getElementById('edit_titular').value = tarjeta.titular || '';
+    document.getElementById('edit_tipo').value = tarjeta.tipo || 'negocio';
     document.getElementById('edit_limite').value = tarjeta.limite_credito;
     document.getElementById('edit_saldo').value = tarjeta.saldo_adeudado;
-    document.getElementById('edit_minimo').value = tarjeta.monto_minimo;
     document.getElementById('edit_cierre').value = tarjeta.fecha_cierre || '';
     document.getElementById('edit_vence').value = tarjeta.fecha_vencimiento || '';
+    document.getElementById('edit_minimo').value = tarjeta.monto_minimo;
     document.getElementById('edit_estado').value = tarjeta.estado;
     document.getElementById('edit_notas').value = tarjeta.notas || '';
     document.getElementById('formEditar').action = `/deudas/tarjetas/${tarjeta.id}/editar`;

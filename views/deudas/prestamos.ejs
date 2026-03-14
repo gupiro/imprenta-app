@@ -2,8 +2,15 @@
 <div class="container-fluid py-4">
   <div class="row mb-4">
     <div class="col-md-8">
-      <h1 class="display-6"><i class="bi bi-bank"></i> Préstamos</h1>
-      <p class="text-muted">Gestión de préstamos bancarios y cuotas</p>
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 mb-1"><i class="bi bi-bank"></i> Préstamos</h1>
+          <p class="text-muted mb-0">Gestión de préstamos bancarios y cuotas</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+          <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+        </button>
+      </div>
     </div>
     <div class="col-md-4 text-end">
       <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevoPrestamo">
@@ -146,11 +153,17 @@
               <input type="text" name="descripcion" class="form-control" placeholder="ej: Préstamo para capital de trabajo" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Entidad *</label>
+              <label class="form-label">
+                Entidad *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Quién te prestó el dinero. Ej: Banco Nación, familiar, financiera Cordón"></i>
+              </label>
               <input type="text" name="entidad" class="form-control" placeholder="ej: Banco Santander" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Monto Original *</label>
+              <label class="form-label">
+                Monto Original *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El total que te prestaron al inicio, sin intereses incluidos"></i>
+              </label>
               <input type="number" name="monto_original" class="form-control" step="0.01" placeholder="0.00" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -158,7 +171,10 @@
               <input type="number" name="monto_pendiente" class="form-control" step="0.01" placeholder="0.00" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Cuota Mensual</label>
+              <label class="form-label">
+                Cuota Mensual
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Cuánto pagás por mes. Si no sabés, dividí el total por la cantidad de cuotas"></i>
+              </label>
               <input type="number" name="cuota_mensual" class="form-control" step="0.01" placeholder="0.00">
             </div>
             <div class="col-md-6 mb-3">
@@ -166,11 +182,17 @@
               <input type="number" name="cuotas_totales" class="form-control" placeholder="ej: 24">
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Tasa de Interés (%)</label>
+              <label class="form-label">
+                Tasa de Interés (%)
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El porcentaje que cobra el banco por prestarte. Si no sabés, podés dejar 0"></i>
+              </label>
               <input type="number" name="tasa_interes" class="form-control" step="0.01" placeholder="ej: 15.5">
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Día de Vencimiento Mensual</label>
+              <label class="form-label">
+                Día de Vencimiento Mensual
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El día del mes que vence cada cuota. Ej: 15 = vence el 15 de cada mes"></i>
+              </label>
               <input type="number" name="dia_vencimiento_mensual" class="form-control" min="1" max="31" placeholder="ej: 25">
             </div>
             <div class="col-md-12 mb-3">
@@ -209,11 +231,17 @@
               <input type="text" id="edit_descripcion" name="descripcion" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Entidad</label>
+              <label class="form-label">
+                Entidad
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Quién te prestó el dinero. Ej: Banco Nación, familiar, financiera Cordón"></i>
+              </label>
               <input type="text" id="edit_entidad" name="entidad" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Monto Original</label>
+              <label class="form-label">
+                Monto Original
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El total que te prestaron al inicio, sin intereses incluidos"></i>
+              </label>
               <input type="number" id="edit_original" name="monto_original" class="form-control" step="0.01" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -221,7 +249,10 @@
               <input type="number" id="edit_pendiente" name="monto_pendiente" class="form-control" step="0.01" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Cuota Mensual</label>
+              <label class="form-label">
+                Cuota Mensual
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Cuánto pagás por mes. Si no sabés, dividí el total por la cantidad de cuotas"></i>
+              </label>
               <input type="number" id="edit_cuota" name="cuota_mensual" class="form-control" step="0.01">
             </div>
             <div class="col-md-6 mb-3">
@@ -233,11 +264,17 @@
               <input type="number" id="edit_cuotas_pagadas" name="cuotas_pagadas" class="form-control">
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Tasa de Interés (%)</label>
+              <label class="form-label">
+                Tasa de Interés (%)
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El porcentaje que cobra el banco por prestarte. Si no sabés, podés dejar 0"></i>
+              </label>
               <input type="number" id="edit_tasa" name="tasa_interes" class="form-control" step="0.01">
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Día Vencimiento Mensual</label>
+              <label class="form-label">
+                Día Vencimiento Mensual
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El día del mes que vence cada cuota. Ej: 15 = vence el 15 de cada mes"></i>
+              </label>
               <input type="number" id="edit_dia" name="dia_vencimiento_mensual" class="form-control" min="1" max="31">
             </div>
             <div class="col-md-6 mb-3">
@@ -305,6 +342,45 @@
           <button type="submit" class="btn btn-success">Registrar Pago</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Préstamos</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Registrá acá todos los préstamos que sacaste (banco, financiera, familia, etc.). El sistema calcula cuánto te queda por pagar y te avisa cuándo vence cada cuota.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Cada préstamo nuevo:</strong> Al sacarlo, registralo con los datos principales</li>
+      <li><strong>Monto original:</strong> El total que te prestaron al inicio</li>
+      <li><strong>Cuota mensual:</strong> Cuánto pagás cada mes (si no sabés, dividí el total por cantidad de cuotas)</li>
+      <li><strong>Cuando pagás:</strong> Registrá el pago para actualizar el saldo pendiente</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>No registrar préstamos personales (y luego crees que ganas más de lo que realmente ganás)</li>
+      <li>Confundir cuota mensual con tasa de interés</li>
+      <li>No cargar préstamos de familiares o amigos (igual hay que pagarlos)</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Préstamo del Banco Nación:</strong><br>
+      • Monto original: $500.000<br>
+      • 24 cuotas de $25.000<br>
+      • Vence día 15 de cada mes<br>
+      • Tasa: 15% anual<br>
+      <strong>Hoy:</strong> Ya pagaste 8 cuotas. Te quedan $400.000 pendientes en 16 cuotas.
     </div>
   </div>
 </div>

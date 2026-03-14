@@ -2,8 +2,15 @@
 <div class="container-fluid py-4">
   <div class="row mb-4">
     <div class="col-md-8">
-      <h1 class="display-6"><i class="bi bi-building"></i> Deudas con Proveedores</h1>
-      <p class="text-muted">Gestión de cuentas por pagar a proveedores</p>
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 mb-1"><i class="bi bi-building"></i> Deudas con Proveedores</h1>
+          <p class="text-muted mb-0">Gestión de cuentas por pagar a proveedores</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+          <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+        </button>
+      </div>
     </div>
     <div class="col-md-4 text-end">
       <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaDeuda">
@@ -174,11 +181,17 @@
               </select>
             </div>
             <div class="col-md-12 mb-3">
-              <label class="form-label">Concepto *</label>
+              <label class="form-label">
+                Concepto *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Qué compraste o qué servicio recibiste. Ej: Resmas A4, Mantenimiento impresora"></i>
+              </label>
               <input type="text" name="concepto" class="form-control" placeholder="ej: Compra de tinta y papeles" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Monto Total *</label>
+              <label class="form-label">
+                Monto Total *
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El total que le debés al proveedor por esta operación"></i>
+              </label>
               <input type="number" name="monto_total" class="form-control" step="0.01" placeholder="0.00" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -190,7 +203,10 @@
               <input type="date" name="fecha_deuda" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Fecha de Vencimiento</label>
+              <label class="form-label">
+                Fecha de Vencimiento
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Hasta cuándo tenés plazo para pagar. Si no hay plazo, podés dejarlo vacío"></i>
+              </label>
               <input type="date" name="fecha_vencimiento" class="form-control">
             </div>
             <div class="col-md-12 mb-3">
@@ -230,11 +246,17 @@
               </select>
             </div>
             <div class="col-md-12 mb-3">
-              <label class="form-label">Concepto</label>
+              <label class="form-label">
+                Concepto
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Qué compraste o qué servicio recibiste. Ej: Resmas A4, Mantenimiento impresora"></i>
+              </label>
               <input type="text" id="edit_concepto" name="concepto" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Monto Total</label>
+              <label class="form-label">
+                Monto Total
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="El total que le debés al proveedor por esta operación"></i>
+              </label>
               <input type="number" id="edit_total" name="monto_total" class="form-control" step="0.01" required>
             </div>
             <div class="col-md-6 mb-3">
@@ -246,7 +268,10 @@
               <input type="date" id="edit_fecha_deuda" name="fecha_deuda" class="form-control" required>
             </div>
             <div class="col-md-6 mb-3">
-              <label class="form-label">Fecha de Vencimiento</label>
+              <label class="form-label">
+                Fecha de Vencimiento
+                <i class="bi bi-info-circle text-muted ms-1" style="cursor:pointer; font-size:0.85em;" data-bs-toggle="popover" data-bs-placement="top" data-bs-content="Hasta cuándo tenés plazo para pagar. Si no hay plazo, podés dejarlo vacío"></i>
+              </label>
               <input type="date" id="edit_fecha_vencimiento" name="fecha_vencimiento" class="form-control">
             </div>
             <div class="col-md-6 mb-3">
@@ -311,6 +336,44 @@
           <button type="submit" class="btn btn-success">Registrar Pago</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Deudas con Proveedores</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Registrá acá todo lo que debes a tus proveedores (papel, tinta, servicios, etc.). El sistema te avisa cuándo está por vencer cada deuda y cuánto te queda por pagar.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Cada compra a crédito:</strong> Cuando un proveedor te da plazo para pagar, registralo acá</li>
+      <li><strong>Datos:</strong> Proveedor, concepto (qué compraste), monto total, fecha de vencimiento</li>
+      <li><strong>Cuando pagás:</strong> Registrá el pago parcial o total para actualizar el saldo</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>No cargar deudas de proveedores habituales (aunque no tengas factura todavía)</li>
+      <li>Olvidar la fecha de vencimiento (y luego los proveedores se enojan porque les debés hace 2 meses)</li>
+      <li>No actualizar cuando pagás parcialmente (el sistema te muestra que debés el 100% todavía)</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Deuda a papelería:</strong><br>
+      • Proveedor: Papelería Martínez<br>
+      • Concepto: Resmas A4 + Tinta<br>
+      • Monto: $25.000<br>
+      • Vencimiento: 10/04/2026<br>
+      <strong>Resultado:</strong> Sabés que si no pagas antes del 10, el proveedor va a venir a presionar.
     </div>
   </div>
 </div>

@@ -8,10 +8,11 @@ module.exports = (db) => {
   // GET /reportes - Página principal de reportes
   router.get('/', async (req, res) => {
     try {
-      const hoy = new Date().toISOString().slice(0, 10);
-      const inicioMes = new Date();
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const hoy = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
+      const inicioMes = new Date(_now);
       inicioMes.setDate(1);
-      const fechaInicio = inicioMes.toISOString().slice(0, 10);
+      const fechaInicio = `${inicioMes.getFullYear()}-${String(inicioMes.getMonth()+1).padStart(2,'0')}-${String(inicioMes.getDate()).padStart(2,'0')}`;
 
       // Estadísticas generales
       const totalPedidos = (await db.get("SELECT COUNT(*) AS c FROM pedidos"))?.c || 0;
@@ -19,13 +20,17 @@ module.exports = (db) => {
       const totalClientes = (await db.get("SELECT COUNT(*) AS c FROM clients"))?.c || 0;
 
       const ingresosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) >= ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) >= ?",
         fechaInicio
       ))?.total || 0;
 
       const egresosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) >= ?",
-        fechaInicio
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) >= ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) >= ?
+        )`,
+        fechaInicio, fechaInicio
       ))?.total || 0;
 
       const deudaTotal = (await db.get(
@@ -48,7 +53,8 @@ module.exports = (db) => {
   // GET /reportes/mensual - Reporte mensual
   router.get('/mensual', async (req, res) => {
     try {
-      const mes = req.query.mes || new Date().toISOString().slice(0, 7);
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const mes = req.query.mes || `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}`;
       const [anno, mesNum] = mes.split('-');
       const fechaInicio = `${anno}-${mesNum}-01`;
       const lastDay = new Date(anno, mesNum, 0).getDate();
@@ -56,20 +62,24 @@ module.exports = (db) => {
 
       // Ingresos y egresos
       const ingresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) BETWEEN ? AND ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) BETWEEN ? AND ?",
         fechaInicio, fechaFin
       ))?.total || 0;
 
       const egresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) BETWEEN ? AND ?",
-        fechaInicio, fechaFin
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
+        )`,
+        fechaInicio, fechaFin, fechaInicio, fechaFin
       ))?.total || 0;
 
       // Detalles por categoría
       const movimientos = await db.all(`
         SELECT categoria, tipo, COUNT(*) AS cantidad, COALESCE(SUM(monto), 0) AS total
         FROM movimientos_caja
-        WHERE DATE(fecha) BETWEEN ? AND ?
+        WHERE SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
         GROUP BY categoria, tipo
         ORDER BY total DESC
       `, fechaInicio, fechaFin) || [];
@@ -103,25 +113,30 @@ module.exports = (db) => {
   // GET /reportes/diario - Reporte diario
   router.get('/diario', async (req, res) => {
     try {
-      const fecha = req.query.fecha || new Date().toISOString().slice(0, 10);
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const fecha = req.query.fecha || `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
       const fechaFormato = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
       // Ingresos y egresos del día
       const ingresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?",
         fecha
       ))?.total || 0;
 
       const egresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) = ?",
-        fecha
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) = ?
+        )`,
+        fecha, fecha
       ))?.total || 0;
 
       // Movimientos detallados
       const movimientos = await db.all(`
         SELECT tipo, concepto, categoria, monto, metodo_pago, fecha
         FROM movimientos_caja
-        WHERE DATE(fecha) = ?
+        WHERE SUBSTR(fecha, 1, 10) = ?
         ORDER BY fecha ASC
       `, fecha) || [];
 
@@ -138,7 +153,7 @@ module.exports = (db) => {
       const metodos = await db.all(`
         SELECT metodo_pago, SUM(monto) AS total
         FROM movimientos_caja
-        WHERE tipo = 'ingreso' AND DATE(fecha) = ?
+        WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?
         GROUP BY metodo_pago
       `, fecha) || [];
 
@@ -190,9 +205,10 @@ module.exports = (db) => {
   router.get('/deudores', async (req, res) => {
     try {
       const deudores = await db.all(`
-        SELECT p.id, p.precio, p.monto_entregado, p.monto_restante, p.fecha_pago,
+        SELECT p.id, p.precio, p.monto_entregado, p.monto_restante, p.fecha_pago, p.fecha,
                c.id AS cliente_id, c.name AS cliente_nombre, c.phone, c.email,
-               ROUND((p.monto_restante / p.precio) * 100) AS porcentaje_deuda
+               ROUND((p.monto_restante / p.precio) * 100) AS porcentaje_deuda,
+               CAST((julianday('now') - julianday(p.fecha)) AS INTEGER) AS dias_pendientes
         FROM pedidos p
         LEFT JOIN clients c ON p.client_id = c.id
         WHERE p.monto_restante > 0
@@ -210,6 +226,39 @@ module.exports = (db) => {
       console.error('Error:', err);
       req.flash('error', 'Error: ' + err.message);
       res.redirect('/reportes');
+    }
+  });
+
+  // POST /reportes/cancelar-deuda - Cancelar deuda de un pedido
+  router.post('/cancelar-deuda', async (req, res) => {
+    try {
+      const { pedidoId, monto, registrarPago } = req.body;
+
+      if (!pedidoId || monto <= 0) {
+        return res.json({ success: false, error: 'Datos inválidos' });
+      }
+
+      // Actualizar pedido
+      await db.run(
+        'UPDATE pedidos SET monto_restante = 0, monto_entregado = precio WHERE id = ?',
+        [pedidoId]
+      );
+
+      // Si se desea registrar el pago, agregar a caja diaria
+      if (registrarPago) {
+        const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+        const timestamp = `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')} ${String(_now.getHours()).padStart(2,'0')}:${String(_now.getMinutes()).padStart(2,'0')}:${String(_now.getSeconds()).padStart(2,'0')}`;
+
+        await db.run(
+          'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha) VALUES (?, ?, ?, ?, ?, ?)',
+          ['ingreso', `Deuda cancelada - Pedido #${pedidoId}`, 'deuda_cancelada', monto, 'manual', timestamp]
+        );
+      }
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Error al cancelar deuda:', err);
+      res.json({ success: false, error: err.message });
     }
   });
 
@@ -330,18 +379,23 @@ module.exports = (db) => {
   // GET /reportes/caja/pdf/:fecha - Generar PDF de caja diaria
   router.get('/caja/pdf/:fecha', async (req, res) => {
     try {
-      const fecha = req.params.fecha || new Date().toISOString().slice(0, 10);
+      const _now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
+      const fecha = req.params.fecha || `${_now.getFullYear()}-${String(_now.getMonth()+1).padStart(2,'0')}-${String(_now.getDate()).padStart(2,'0')}`;
       const fechaFormato = new Date(fecha + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
       // Ingresos y egresos
       const ingresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?",
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?",
         fecha
       ))?.total || 0;
 
       const egresos = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND DATE(fecha) = ?",
-        fecha
+        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
+          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?
+          UNION ALL
+          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) = ?
+        )`,
+        fecha, fecha
       ))?.total || 0;
 
       const saldo = ingresos - egresos;
@@ -350,7 +404,7 @@ module.exports = (db) => {
       const metodos = await db.all(`
         SELECT metodo_pago, SUM(monto) AS total
         FROM movimientos_caja
-        WHERE tipo = 'ingreso' AND DATE(fecha) = ?
+        WHERE tipo = 'ingreso' AND SUBSTR(fecha, 1, 10) = ?
         GROUP BY metodo_pago
         ORDER BY metodo_pago
       `, fecha) || [];
@@ -360,7 +414,7 @@ module.exports = (db) => {
         SELECT tipo, concepto, categoria, metodo_pago, monto,
                strftime('%H:%M:%S', fecha) AS hora
         FROM movimientos_caja
-        WHERE DATE(fecha) = ?
+        WHERE SUBSTR(fecha, 1, 10) = ?
         ORDER BY fecha ASC
       `, fecha) || [];
 
@@ -595,6 +649,225 @@ module.exports = (db) => {
         mensaje: 'Error al cargar análisis ABC',
         error: err.message
       });
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // ESTADO FINANCIERO SIMPLIFICADO
+  // ════════════════════════════════════════════════════════════════════════════
+
+  // Helper para obtener datos del Estado Financiero
+  async function obtenerDatosFinancieros(mes) {
+    const [year, month] = mes.split('-');
+    const fechaInicio = `${year}-${month}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const fechaFin = `${year}-${month}-${lastDay}`;
+
+    const ingresosTotales = (await db.get(
+      "SELECT COALESCE(SUM(monto),0) AS t FROM movimientos_caja WHERE tipo='ingreso' AND SUBSTR(fecha,1,10) BETWEEN ? AND ?",
+      [fechaInicio, fechaFin]
+    ))?.t || 0;
+
+    const gastosPorCategoria = await db.all(
+      "SELECT categoria, COALESCE(SUM(monto),0) AS total, COUNT(*) AS cant FROM gastos WHERE SUBSTR(fecha,1,10) BETWEEN ? AND ? GROUP BY categoria ORDER BY total DESC",
+      [fechaInicio, fechaFin]
+    ) || [];
+
+    const totalGastosNegocio = gastosPorCategoria.reduce((s, g) => s + g.total, 0);
+
+    const totalGastosPersonales = (await db.get(
+      "SELECT COALESCE(SUM(monto),0) AS t FROM gastos WHERE SUBSTR(fecha,1,10) BETWEEN ? AND ?",
+      [fechaInicio, fechaFin]
+    ))?.t || 0;
+
+    const egresosCaja = (await db.get(
+      "SELECT COALESCE(SUM(monto),0) AS t FROM movimientos_caja WHERE tipo='egreso' AND SUBSTR(fecha,1,10) BETWEEN ? AND ?",
+      [fechaInicio, fechaFin]
+    ))?.t || 0;
+
+    const pedidosRow = await db.get(
+      "SELECT COUNT(*) AS cant, COALESCE(SUM(precio),0) AS facturado FROM pedidos WHERE estado='ENTREGADO' AND DATE(fecha) BETWEEN ? AND ?",
+      [fechaInicio, fechaFin]
+    );
+
+    const cuentasPorCobrar = await db.get(
+      "SELECT COUNT(*) AS cant, COALESCE(SUM(monto_restante),0) AS total FROM pedidos WHERE monto_restante > 0"
+    );
+
+    const deudaTarjetas = (await db.get(
+      "SELECT COALESCE(SUM(saldo_adeudado),0) AS t FROM deudas_tarjetas WHERE estado='activa'"
+    ))?.t || 0;
+
+    const gastosTotales = totalGastosNegocio + egresosCaja;
+    const resultadoNeto = ingresosTotales - gastosTotales;
+
+    let conclusion, por100;
+    if (ingresosTotales > 0 && resultadoNeto >= 0) {
+      por100 = Math.round((resultadoNeto / ingresosTotales) * 100);
+      conclusion = `Este mes tu negocio ganó $${Math.round(resultadoNeto).toLocaleString('es-AR')}. Por cada $100 que ingresó, $${por100} fueron ganancia. Tu negocio está funcionando bien.`;
+    } else if (resultadoNeto < 0) {
+      por100 = null;
+      conclusion = `Este mes tu negocio gastó $${Math.round(Math.abs(resultadoNeto)).toLocaleString('es-AR')} más de lo que ingresó. Revisá qué gastos podés reducir o cómo aumentar las ventas el próximo mes.`;
+    } else {
+      por100 = 0;
+      conclusion = 'No hay ingresos registrados para este mes todavía.';
+    }
+
+    return {
+      ingresosTotales,
+      gastosPorCategoria,
+      totalGastosNegocio,
+      totalGastosPersonales,
+      egresosCaja,
+      gastosTotales,
+      resultadoNeto,
+      pedidosEntregados: pedidosRow,
+      cuentasPorCobrar,
+      deudaTarjetas,
+      conclusion,
+      por100,
+      mes,
+      fechaInicio,
+      fechaFin
+    };
+  }
+
+  // GET /reportes/financiero - Estado Financiero Simplificado
+  router.get('/financiero', async (req, res) => {
+    try {
+      const now = new Date();
+      const mes = req.query.mes || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const datos = await obtenerDatosFinancieros(mes);
+      res.render('reportes/financiero', {
+        title: `Estado Financiero - ${mes}`,
+        ...datos,
+        success: req.flash('success'),
+        error: req.flash('error')
+      });
+    } catch(err) {
+      console.error('Error reporte financiero:', err);
+      req.flash('error', 'Error al generar el reporte: ' + err.message);
+      res.redirect('/reportes');
+    }
+  });
+
+  // GET /reportes/financiero/pdf - Exportar PDF
+  router.get('/financiero/pdf', async (req, res) => {
+    try {
+      const now = new Date();
+      const mes = req.query.mes || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+      const datos = await obtenerDatosFinancieros(mes);
+
+      // Generar tabla de gastos por categoría
+      const tablGastos = datos.gastosPorCategoria.map(g => {
+        const pct = datos.gastosTotales > 0 ? ((g.total / datos.gastosTotales) * 100).toFixed(1) : 0;
+        return `<tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${g.categoria}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${Math.round(g.total).toLocaleString('es-AR')}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${pct}%</td>
+        </tr>`;
+      }).join('');
+
+      const bgSemaforo = datos.resultadoNeto >= 0 ? '#d4edda' : '#f8d7da';
+      const colorTexto = datos.resultadoNeto >= 0 ? '#155724' : '#721c24';
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+            h1 { text-align: center; font-size: 24px; margin-bottom: 20px; }
+            .fecha { text-align: center; color: #666; margin-bottom: 30px; }
+            .semaforo { background: ${bgSemaforo}; color: ${colorTexto}; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
+            .resultado { font-size: 32px; font-weight: bold; margin-bottom: 10px; }
+            .conclusion { font-size: 14px; line-height: 1.5; }
+            .kpis { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 30px; }
+            .kpi-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; text-align: center; }
+            .kpi-label { font-size: 12px; color: #666; }
+            .kpi-valor { font-size: 16px; font-weight: bold; }
+            .section-title { background: #f5f5f5; padding: 10px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; }
+            th { background: #f5f5f5; border: 1px solid #ddd; padding: 8px; text-align: left; font-weight: bold; }
+            td { border: 1px solid #ddd; padding: 8px; }
+            .text-right { text-align: right; }
+            footer { margin-top: 40px; text-align: center; font-size: 12px; color: #999; }
+          </style>
+        </head>
+        <body>
+          <h1>📊 Estado Financiero</h1>
+          <div class="fecha">${mes}</div>
+
+          <div class="semaforo">
+            <div class="resultado">$${Math.round(datos.resultadoNeto).toLocaleString('es-AR')}</div>
+            <div class="conclusion">${datos.conclusion}</div>
+          </div>
+
+          <div class="section-title">Resumen del Mes</div>
+          <div class="kpis">
+            <div class="kpi-card">
+              <div class="kpi-label">Ingresos Totales</div>
+              <div class="kpi-valor">$${Math.round(datos.ingresosTotales).toLocaleString('es-AR')}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Gastos Negocio</div>
+              <div class="kpi-valor">$${Math.round(datos.totalGastosNegocio).toLocaleString('es-AR')}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Gastos Personales</div>
+              <div class="kpi-valor">$${Math.round(datos.totalGastosPersonales).toLocaleString('es-AR')}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Pedidos Entregados</div>
+              <div class="kpi-valor">${datos.pedidosEntregados?.cant || 0}</div>
+            </div>
+          </div>
+
+          <div class="section-title">Gastos de Negocio por Categoría</div>
+          <table>
+            <tr>
+              <th>Categoría</th>
+              <th class="text-right">Monto</th>
+              <th class="text-right">%</th>
+            </tr>
+            ${tablGastos || '<tr><td colspan="3" style="text-align: center; color: #999;">Sin gastos registrados</td></tr>'}
+          </table>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+              <div style="font-weight: bold; margin-bottom: 10px;">💰 Cuentas por Cobrar</div>
+              <div style="font-size: 18px; color: #0066cc;">$${Math.round(datos.cuentasPorCobrar?.total || 0).toLocaleString('es-AR')}</div>
+              <div style="font-size: 12px; color: #666; margin-top: 5px;">${datos.cuentasPorCobrar?.cant || 0} clientes</div>
+            </div>
+            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+              <div style="font-weight: bold; margin-bottom: 10px;">💳 Deuda Tarjetas Activas</div>
+              <div style="font-size: 18px; color: #dc3545;">$${Math.round(datos.deudaTarjetas).toLocaleString('es-AR')}</div>
+            </div>
+          </div>
+
+          <footer>
+            <p>Generado por Sistema de Gestión Imprenta El Gráfico</p>
+            <p style="margin-top: 10px;">Este reporte es confidencial y está destinado únicamente para el propietario del negocio.</p>
+          </footer>
+        </body>
+        </html>
+      `;
+
+      const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdf = await page.pdf({ format: 'A4', margin: { top: 15, right: 15, bottom: 15, left: 15 } });
+      await browser.close();
+
+      const filename = `estado-financiero-${mes}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(pdf);
+    } catch(err) {
+      console.error('Error generando PDF:', err);
+      req.flash('error', 'Error al generar PDF: ' + err.message);
+      res.redirect('/reportes/financiero?mes=' + (req.query.mes || ''));
     }
   });
 

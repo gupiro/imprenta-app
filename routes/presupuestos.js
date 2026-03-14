@@ -39,6 +39,7 @@ module.exports = (db) => {
         items: items || [],
         productos,
         clientes,
+        csrfToken: 'disabled',
         error: req.flash('error'),
         success: req.flash('success')
       });
@@ -66,7 +67,7 @@ module.exports = (db) => {
       let telefonoFinal = telefono_cliente || presupuesto.telefono_cliente;
       let clienteIdFinal = cliente_id ? parseInt(cliente_id, 10) : presupuesto.cliente_id;
 
-      // Calcular total de items
+      // Calcular total de items con validaciones
       let totalPresupuesto = 0;
       const descripciones = Array.isArray(descripcion) ? descripcion : [descripcion];
       const cantidades = Array.isArray(cantidad) ? cantidad : [cantidad];
@@ -78,6 +79,21 @@ module.exports = (db) => {
           const cant = parseFloat(cantidades[i]) || 0;
           const precio = parseFloat(preciosUnit[i]) || 0;
           const desc = parseFloat(descuentos[i]) || 0;
+
+          // Validar valores positivos
+          if (cant <= 0) {
+            req.flash('error', `Cantidad debe ser mayor a 0 en item "${descripciones[i]}"`);
+            return res.redirect(`/presupuestos/${id}/editar`);
+          }
+          if (precio < 0) {
+            req.flash('error', `Precio no puede ser negativo en item "${descripciones[i]}"`);
+            return res.redirect(`/presupuestos/${id}/editar`);
+          }
+          if (desc < 0) {
+            req.flash('error', `Descuento no puede ser negativo en item "${descripciones[i]}"`);
+            return res.redirect(`/presupuestos/${id}/editar`);
+          }
+
           totalPresupuesto += (cant * precio) - desc;
         }
       }

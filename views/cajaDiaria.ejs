@@ -34,37 +34,107 @@
     </div>
   </div>
 
-  <!-- RESUMEN FINANCIERO - SOLO PARA ADMIN -->
+  <!-- RESUMEN POR TURNO Y TOTAL - SOLO PARA ADMIN -->
   <div class="row g-3 mb-5">
-    <div class="col-md-3">
-      <div class="card bg-success text-white">
-        <div class="card-body text-center">
-          <h6>Ingresos</h6>
-          <h3>$<%= (totales.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+    <!-- Turno Mañana -->
+    <div class="col-lg-4">
+      <div class="card border-warning">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">☀️ Turno Mañana</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Ingresos</p>
+              <h5 class="text-success">$<%= (totalesTurno.manana.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Egresos</p>
+              <h5 class="text-danger">$<%= (totalesTurno.manana.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+          <p class="text-center mb-2">
+            <strong>Saldo:</strong> $<%= (totalesTurno.manana.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </p>
+          <% if (turnosCerrados && turnosCerrados.includes('mañana')) { %>
+            <div class="mb-2">
+              <span class="badge bg-secondary w-100 d-block mb-2">🔒 CERRADO</span>
+              <% if (user && user.rol === 'admin') { %>
+                <form action="/caja-diaria/reabrir-turno" method="POST" style="display:inline-block; width:100%;">
+                  <button type="submit" name="turno" value="mañana" class="btn btn-sm btn-outline-warning w-100">🔓 Reabrir Turno</button>
+                </form>
+              <% } %>
+            </div>
+          <% } else { %>
+            <form action="/caja-diaria/cerrar-turno" method="POST" style="display:inline-block; width:100%;">
+              <button type="submit" name="turno" value="mañana" class="btn btn-sm btn-warning w-100">🔒 Cerrar Turno</button>
+            </form>
+          <% } %>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card bg-danger text-white">
-        <div class="card-body text-center">
-          <h6>Egresos</h6>
-          <h3>$<%= (totales.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+
+    <!-- Turno Tarde -->
+    <div class="col-lg-4">
+      <div class="card border-secondary">
+        <div class="card-header bg-secondary text-white">
+          <h6 class="mb-0">🌙 Turno Tarde</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Ingresos</p>
+              <h5 class="text-success">$<%= (totalesTurno.tarde.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Egresos</p>
+              <h5 class="text-danger">$<%= (totalesTurno.tarde.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+          <p class="text-center mb-2">
+            <strong>Saldo:</strong> $<%= (totalesTurno.tarde.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </p>
+          <% if (turnosCerrados && turnosCerrados.includes('tarde')) { %>
+            <div class="mb-2">
+              <span class="badge bg-secondary w-100 d-block mb-2">🔒 CERRADO</span>
+              <% if (user && user.rol === 'admin') { %>
+                <form action="/caja-diaria/reabrir-turno" method="POST" style="display:inline-block; width:100%;">
+                  <button type="submit" name="turno" value="tarde" class="btn btn-sm btn-outline-secondary w-100">🔓 Reabrir Turno</button>
+                </form>
+              <% } %>
+            </div>
+          <% } else { %>
+            <form action="/caja-diaria/cerrar-turno" method="POST" style="display:inline-block; width:100%;">
+              <button type="submit" name="turno" value="tarde" class="btn btn-sm btn-secondary w-100">🔒 Cerrar Turno</button>
+            </form>
+          <% } %>
         </div>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card bg-primary text-white">
-        <div class="card-body text-center">
-          <h6>Saldo</h6>
-          <h3>$<%= (totales.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+
+    <!-- Total Día -->
+    <div class="col-lg-4">
+      <div class="card border-primary">
+        <div class="card-header bg-primary text-white">
+          <h6 class="mb-0">📅 Total Día</h6>
         </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card bg-info text-white">
-        <div class="card-body text-center">
-          <h6>Movimientos</h6>
-          <h3><%= (movimientos && movimientos.length) || 0 %></h3>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Ingresos</p>
+              <h5 class="text-success">$<%= (totales.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Egresos</p>
+              <h5 class="text-danger">$<%= (totales.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+          <p class="text-center mb-2">
+            <strong>Saldo:</strong> $<%= (totales.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </p>
+          <p class="text-center text-muted mb-0">
+            <small><%= (movimientos && movimientos.length) || 0 %> movimientos</small>
+          </p>
         </div>
       </div>
     </div>
@@ -138,7 +208,7 @@
             <label class="form-label fw-bold">Monto ($) *</label>
             <input type="number" name="monto" class="form-control" step="0.01" min="0" placeholder="0.00" required>
           </div>
-          <div class="col-md-5 mb-3">
+          <div class="col-md-3 mb-3">
             <label class="form-label fw-bold">Método de Pago *</label>
             <select name="metodo_pago" class="form-select" required>
               <option value="Efectivo">💵 Efectivo</option>
@@ -147,9 +217,24 @@
               <option value="QR">📱 QR</option>
             </select>
           </div>
-          <div class="col-md-4 mb-3 d-flex align-items-end">
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Turno *</label>
+            <select name="turno" class="form-select" required>
+              <option value="mañana" <% if(turnoActual === 'mañana') { %>selected<% } %>>☀️ Turno Mañana</option>
+              <option value="tarde" <% if(turnoActual === 'tarde') { %>selected<% } %>>🌙 Turno Tarde</option>
+            </select>
+            <% if (turnosCerrados && turnosCerrados.length > 0) { %>
+              <small class="text-danger d-block mt-1">
+                <i class="bi bi-exclamation-circle"></i> Turno<%= turnosCerrados.length === 2 ? 's' : '' %> cerrado<%= turnosCerrados.length === 2 ? 's' : '' %>: <%= turnosCerrados.join(', ') %>
+              </small>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3 d-flex align-items-end">
             <button type="submit" class="btn btn-success w-100">
-              <i class="bi bi-check-circle"></i> Registrar
+              <i class="bi bi-check-circle"></i> Registrar Movimiento
             </button>
           </div>
         </div>
@@ -193,6 +278,15 @@
             <option value="QR" <%= filtros.metodo==='QR' ? 'selected':'' %>>QR</option>
           </select>
         </div>
+        <!-- Turno -->
+        <div class="col-md-2">
+          <label class="form-label">Turno</label>
+          <select name="turno" class="form-select">
+            <option value="">Todos</option>
+            <option value="mañana" <%= filtros.turno==='mañana' ? 'selected':'' %>>☀️ Mañana</option>
+            <option value="tarde" <%= filtros.turno==='tarde' ? 'selected':'' %>>🌙 Tarde</option>
+          </select>
+        </div>
         <!-- Botones -->
         <div class="col-md-2 d-flex align-items-end gap-1">
           <button type="submit" class="btn btn-primary btn-sm w-100">🔍 Filtrar</button>
@@ -220,6 +314,7 @@
                 if (filtros.tipo)     url += '&tipo='    + encodeURIComponent(filtros.tipo);
                 if (filtros.concepto) url += '&concepto='+ encodeURIComponent(filtros.concepto);
                 if (filtros.metodo)   url += '&metodo='  + encodeURIComponent(filtros.metodo);
+                if (filtros.turno)    url += '&turno='   + encodeURIComponent(filtros.turno);
                 url += '&sortBy=' + col + '&sortDir=' + newDir;
                 return url;
               }
@@ -236,6 +331,7 @@
                 <th style="width: 100px;"><a href="<%= buildSortUrl('metodo') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Método<%= sortIcon('metodo') %></a></th>
                 <th style="width: 120px;"><a href="<%= buildSortUrl('monto') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Monto<%= sortIcon('monto') %></a></th>
                 <th style="width: 100px;"><a href="<%= buildSortUrl('usuario') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Usuario<%= sortIcon('usuario') %></a></th>
+                <th style="width: 80px;"><a href="<%= buildSortUrl('turno') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Turno<%= sortIcon('turno') %></a></th>
                 <th><a href="<%= buildSortUrl('fecha') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Hora<%= sortIcon('fecha') %></a></th>
                 <th style="width: 160px;">Acciones</th>
               </tr>
@@ -280,6 +376,11 @@
                         <em>-</em>
                       <% } %>
                     </small>
+                  </td>
+                  <td>
+                    <span class="badge <%= mov.turno === 'tarde' ? 'bg-secondary' : 'bg-warning text-dark' %>">
+                      <%= mov.turno === 'tarde' ? '🌙 Tarde' : '☀️ Mañana' %>
+                    </span>
                   </td>
                   <td>
                     <small class="text-muted">

@@ -1,9 +1,28 @@
 <!-- views/reportes/inicio.ejs -->
 <div class="container-fluid py-4">
-  <div class="row mb-4">
-    <div class="col-md-12">
-      <h1 class="display-6"><i class="bi bi-bar-chart-fill"></i> Reportes y Análisis</h1>
-      <p class="text-muted">Centro de generación de reportes empresariales</p>
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h1 class="display-6 mb-1"><i class="bi bi-bar-chart-fill"></i> Reportes y Análisis</h1>
+      <p class="text-muted mb-0">Centro de generación de reportes empresariales</p>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+      <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+    </button>
+  </div>
+
+  <!-- PANEL EDUCATIVO -->
+  <div class="card border-0 rounded-3 mb-4" style="background:#f1f3f5;">
+    <div class="card-body">
+      <h5 class="mb-2">📊 ¿Para qué sirven los reportes?</h5>
+      <p class="text-muted mb-2">Los reportes te muestran cómo le fue a tu negocio en un período.
+      Lo ideal es revisarlos una vez por mes, el primer lunes de cada mes.</p>
+      <strong>¿Por dónde empezar?</strong>
+      <ol class="mb-0 mt-1 ps-3">
+        <li>→ Primero mirá el <strong>Estado Financiero</strong> para saber si ganaste o perdiste.</li>
+        <li>→ Después mirá <strong>Cuentas por Cobrar</strong> para saber a quién cobrarle.</li>
+        <li>→ Una vez por trimestre mirá <strong>Tus Productos Estrella</strong>.</li>
+      </ol>
     </div>
   </div>
 
@@ -43,98 +62,139 @@
     </div>
   </div>
 
-  <!-- OPCIONES DE REPORTES -->
+  <!-- OPCIONES DE REPORTES (6 tarjetas en grid 3 columnas) -->
   <div class="row">
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/mensual'">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <i class="bi bi-calendar-month" style="font-size: 2rem; color: #0d6efd;"></i>
+    <!-- Estado Financiero -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <a href="/reportes/financiero" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <i class="bi bi-clipboard2-data" style="font-size: 2rem; color: #0d6efd;"></i>
+              <span class="badge bg-light text-muted border small">1 vez por mes</span>
             </div>
-            <div class="flex-grow-1 ms-3">
-              <h5 class="card-title mb-1">Reporte Mensual</h5>
-              <p class="card-text text-muted mb-0">Ingresos, egresos y análisis del mes</p>
-            </div>
+            <h5 class="card-title mb-1">Estado Financiero</h5>
+            <p class="card-text text-muted small mb-0">Ingresos, gastos y si ganaste o perdiste el mes. Con gastos de negocio separados de los personales.</p>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/clientes'">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <i class="bi bi-people-fill" style="font-size: 2rem; color: #198754;"></i>
+    <!-- Balance del Mes -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <a href="/reportes/mensual" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <i class="bi bi-calendar-month" style="font-size: 2rem; color: #198754;"></i>
+              <span class="badge bg-light text-muted border small">Primer lunes</span>
             </div>
-            <div class="flex-grow-1 ms-3">
-              <h5 class="card-title mb-1">Reporte de Clientes</h5>
-              <p class="card-text text-muted mb-0">Análisis de cliente y comportamiento de compra</p>
-            </div>
+            <h5 class="card-title mb-1">Balance del Mes</h5>
+            <p class="card-text text-muted small mb-0">Todos los movimientos del mes con comparación vs el mes anterior. Para ver la foto completa.</p>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/deudores'">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <i class="bi bi-cash-circle" style="font-size: 2rem; color: #dc3545;"></i>
+    <!-- Mis Clientes -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <a href="/reportes/clientes" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <i class="bi bi-people-fill" style="font-size: 2rem; color: #0dcaf0;"></i>
+              <span class="badge bg-light text-muted border small">1 vez por mes</span>
             </div>
-            <div class="flex-grow-1 ms-3">
-              <h5 class="card-title mb-1">Reporte de Deudores</h5>
-              <p class="card-text text-muted mb-0">Seguimiento de cuentas por cobrar</p>
-            </div>
+            <h5 class="card-title mb-1">Mis Clientes</h5>
+            <p class="card-text text-muted small mb-0">Quiénes te compran más y quiénes no volvieron en los últimos 60 días.</p>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/stock/movimientos'">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <i class="bi bi-boxes" style="font-size: 2rem; color: #ffc107;"></i>
+    <!-- Cuentas por Cobrar -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <a href="/reportes/deudores" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <i class="bi bi-exclamation-triangle-fill" style="font-size: 2rem; color: #fd7e14;"></i>
+              <span class="badge bg-light text-muted border small">Todas las semanas</span>
             </div>
-            <div class="flex-grow-1 ms-3">
-              <h5 class="card-title mb-1">Movimientos de Stock</h5>
-              <p class="card-text text-muted mb-0">Historial de entradas, salidas y ajustes</p>
-            </div>
+            <h5 class="card-title mb-1">Cuentas por Cobrar</h5>
+            <p class="card-text text-muted small mb-0">Lista de clientes que te deben dinero, para saber a quién llamarle hoy.</p>
           </div>
         </div>
-      </div>
+      </a>
     </div>
 
-    <div class="col-md-6 mb-4">
-      <div class="card border-0 shadow-sm h-100 cursor-pointer" style="cursor: pointer;" onclick="window.location.href='/reportes/productos'">
-        <div class="card-body">
-          <div class="d-flex align-items-center">
-            <div class="flex-shrink-0">
-              <i class="bi bi-bar-chart-steps" style="font-size: 2rem; color: #6f42c1;"></i>
+    <!-- Tus Productos Estrella -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <a href="/reportes/productos" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <i class="bi bi-star-fill" style="font-size: 2rem; color: #ffc107;"></i>
+              <span class="badge bg-light text-muted border small">1 vez por trimestre</span>
             </div>
-            <div class="flex-grow-1 ms-3">
-              <h5 class="card-title mb-1">Análisis ABC</h5>
-              <p class="card-text text-muted mb-0">Productos que generan 80% de ingresos</p>
-            </div>
+            <h5 class="card-title mb-1">Tus Productos Estrella</h5>
+            <p class="card-text text-muted small mb-0">Qué productos generan el 80% de tus ingresos (análisis ABC).</p>
           </div>
         </div>
-      </div>
+      </a>
+    </div>
+
+    <!-- Entradas y Salidas -->
+    <div class="col-md-6 col-lg-4 mb-4">
+      <a href="/stock/movimientos" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <i class="bi bi-box-arrow-in-down" style="font-size: 2rem; color: #6c757d;"></i>
+              <span class="badge bg-light text-muted border small">Al hacer inventario</span>
+            </div>
+            <h5 class="card-title mb-1">Entradas y Salidas</h5>
+            <p class="card-text text-muted small mb-0">Historial de materiales que entraron y salieron del depósito.</p>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
+</div>
 
-  <!-- INFORMACIÓN IMPORTANTE -->
-  <div class="row mt-4">
-    <div class="col-md-12">
-      <div class="alert alert-info border-0">
-        <h6 class="alert-heading"><i class="bi bi-lightbulb"></i> Información Importante</h6>
-        <p class="mb-2">Los reportes se generan en tiempo real con datos de la base de datos.</p>
-        <p class="mb-2">Puedes exportar reportes a PDF desde cada sección individual.</p>
-        <p class="mb-0">Los datos se actualizan cada vez que realizes movimientos en el sistema.</p>
-      </div>
+<!-- OFFCANVAS AYUDA -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Reportes y Análisis</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Los reportes son tu herramienta principal para entender cómo le va a tu negocio. Te muestran ingresos, gastos, qué productos venden más y a quién le debes cobrar.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué reportes revisar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Primer lunes del mes:</strong> Estado Financiero + Balance del Mes</li>
+      <li><strong>Todas las semanas:</strong> Cuentas por Cobrar (para saber a quién llamar)</li>
+      <li><strong>Una vez por trimestre:</strong> Tus Productos Estrella (para enfocarte en lo que vende)</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>No revisar los reportes hasta que hay crisis. Revisa mensual.</li>
+      <li>Olvidar cargar los gastos de negocio. Sin eso, los números no son reales.</li>
+      <li>No diferenciar entre gastos personales y de negocio. Necesitamos saber qué gasta el negocio.</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Imprenta El Gráfico:</strong><br>
+      &bull; Marzo: Ingresó $150.000 (15 pedidos)<br>
+      &bull; Gastó $45.000 (papel, tinta, alquiler)<br>
+      &bull; Ganó $105.000 netos<br>
+      &bull; 3 clientes le deben $35.000<br>
+      <br>
+      ✓ Resultado: El negocio va bien. Enfocar en cobrar a los 3 deudores.
     </div>
   </div>
 </div>

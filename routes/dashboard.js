@@ -127,6 +127,9 @@ module.exports = (db) => {
         ORDER BY cantidad ASC LIMIT 5
       `) || [];
 
+      // Total de artículos en stock
+      const totalStock = (await db.get("SELECT COUNT(*) AS c FROM stock"))?.c || 0;
+
       // Presupuestos pendientes sin respuesta hace más de 3 días
       const presupuestosPendientes = await db.all(`
         SELECT p.id, p.precio_estimado, p.fecha_creacion, c.name AS cliente
@@ -182,6 +185,125 @@ module.exports = (db) => {
       // Deuda total
       const deudaTotal = deudores.reduce((sum, d) => sum + d.monto_restante, 0);
 
+      // ════════════════════════════════════════════════════════════════
+      // NUEVAS VARIABLES PARA DASHBOARD MEJORADO
+      // ════════════════════════════════════════════════════════════════
+
+      // Piso de Supervivencia (gastos fijos)
+      const FACTOR_MENSUAL = { semanal: 4.33, quincenal: 2.17, mensual: 1, bimestral: 0.5, trimestral: 1/3, semestral: 1/6, anual: 1/12 };
+      const gastosFijosActivos = await db.all("SELECT frecuencia, monto FROM gastos_fijos WHERE activo = 1") || [];
+      const pisoSupervivencia = gastosFijosActivos.reduce((sum, gf) => {
+          const factor = FACTOR_MENSUAL[gf.frecuencia] ?? 1;
+          return sum + (gf.monto * factor);
+      }, 0);
+
+      // Total deuda en tarjetas
+      const totalDeudaTarjetas = (await db.get("SELECT COALESCE(SUM(saldo_adeudado), 0) AS total FROM deudas_tarjetas WHERE estado = 'activa'"))?.total || 0;
+
+      // Próximos 7 días — calcular fechas
+      const hoyDate = new Date();
+      const hoyDateStr = hoyDate.toISOString().slice(0, 10);
+      const en7DiasDate = new Date(hoyDate);
+      en7DiasDate.setDate(en7DiasDate.getDate() + 7);
+      const en7DiasDateStr = en7DiasDate.toISOString().slice(0, 10);
+
+      // Gastos pendientes en los próximos 7 días
+      const gastosPendientes7Dias = await db.all(`
+          SELECT 'gasto' AS tipo, descripcion AS concepto, fecha AS fecha_str, monto, id
+          FROM gastos
+          WHERE estado_pago = 'pendiente'
+            AND tipo = 'negocio'
+            AND fecha >= ?
+            AND fecha <= ?
+          ORDER BY fecha ASC
+      `, [hoyDateStr, en7DiasDateStr]) || [];
+
+      // Vencimientos fiscales en los próximos 7 días
+      const vencimientosFiscales7Dias = await db.all(`
+          SELECT descripcion AS concepto, fecha_vencimiento AS fecha_str, monto_estimado AS monto, id
+          FROM vencimientos_fiscales
+          WHERE estado != 'pagado'
+            AND fecha_vencimiento >= ?
+            AND fecha_vencimiento <= ?
+          ORDER BY fecha_vencimiento ASC
+      `, [hoyDateStr, en7DiasDateStr]) || [];
+
+      // Tarjetas próximas a vencer (en 7 días)
+      const tarjetasActivas = await db.all("SELECT nombre_tarjeta, fecha_vencimiento, saldo_adeudado, id FROM deudas_tarjetas WHERE estado = 'activa' AND fecha_vencimiento IS NOT NULL") || [];
+      const diaHoy = hoyDate.getDate();
+      const tarjetas7Dias = tarjetasActivas.filter(t => {
+          const diasHasta = t.fecha_vencimiento >= diaHoy
+              ? t.fecha_vencimiento - diaHoy
+              : new Date(hoyDate.getFullYear(), hoyDate.getMonth() + 1, 0).getDate() - diaHoy + t.fecha_vencimiento;
+          t.diasHasta = diasHasta;
+          t.fechaDisplay = `Día ${t.fecha_vencimiento}`;
+          return diasHasta <= 7;
+      }).map(t => ({
+          tipo: 'tarjeta',
+          concepto: `Tarjeta: ${t.nombre_tarjeta}`,
+          fecha_str: t.fechaDisplay,
+          diasHasta: t.diasHasta,
+          monto: t.saldo_adeudado,
+          id: t.id
+      }));
+
+      // Combinar y ordenar próximos 7 días
+      const proximos7Dias = [
+          ...tarjetas7Dias,
+          ...gastosPendientes7Dias.map(g => ({
+              ...g,
+              diasHasta: Math.round((new Date(g.fecha_str) - hoyDate) / 86400000)
+          })),
+          ...vencimientosFiscales7Dias.map(v => ({
+              ...v,
+              diasHasta: Math.round((new Date(v.fecha_str) - hoyDate) / 86400000)
+          }))
+      ].sort((a, b) => (a.diasHasta || 0) - (b.diasHasta || 0));
+
+      const totalProximos7Dias = proximos7Dias.reduce((s, v) => s + (v.monto || 0), 0);
+
+      // Semáforo financiero
+      const semaforo = (() => {
+          if (ingresosMes === 0 && gastosMes === 0) {
+              return { color: 'secondary', estado: 'Sin datos aún', clase: 'bg-secondary text-dark' };
+          }
+          const margen = ingresosMes > 0 ? ((ingresosMes - gastosMes) / ingresosMes) * 100 : -100;
+          if (gastosMes > ingresosMes) {
+              return { color: 'danger', clase: 'bg-danger text-white', estado: 'Atención: estás gastando más de lo que ingresa ❌' };
+          }
+          if (margen < 10) {
+              return { color: 'warning', clase: 'bg-warning text-dark', estado: 'Estás en equilibrio, cuidá los gastos ⚠️' };
+          }
+          return { color: 'success', clase: 'bg-success text-white', estado: 'El negocio va bien este mes ✅' };
+      })();
+
+      // Acciones para "¿Qué hago ahora?"
+      const accionesAhora = [];
+      const tarjetasUrgentes = tarjetas7Dias.filter(t => t.diasHasta <= 5);
+      if (tarjetasUrgentes.length > 0) {
+          accionesAhora.push({
+              icono: '💳',
+              texto: `La tarjeta ${tarjetasUrgentes[0].concepto.replace('Tarjeta: ','')} vence en ${tarjetasUrgentes[0].diasHasta} días. ¿Ya tenés el dinero?`,
+              urgencia: 'danger'
+          });
+      }
+      const gastosPendientesMes = await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(monto),0) AS total FROM gastos WHERE estado_pago='pendiente' AND tipo='negocio'");
+      if (gastosPendientesMes?.c > 0) {
+          accionesAhora.push({
+              icono: '💸',
+              texto: `Tenés ${gastosPendientesMes.c} gastos pendientes por $${gastosPendientesMes.total.toLocaleString('es-AR', {minimumFractionDigits: 2})}`,
+              urgencia: 'warning'
+          });
+      }
+      const deudoresViejos = deudores.filter(d => d.dias_deuda > 10);
+      if (deudoresViejos.length > 0) {
+          accionesAhora.push({
+              icono: '👥',
+              texto: `Hay ${deudoresViejos.length} cliente(s) que te deben hace más de 10 días`,
+              urgencia: 'info'
+          });
+      }
+
       res.render('dashboard', {
         title: 'Dashboard Ejecutivo',
         stats,
@@ -202,11 +324,18 @@ module.exports = (db) => {
         deudores,
         presupuestosPendientes,
         stockBajo,
+        totalStock,
         ultimosPedidos,
         graficoLabels: JSON.stringify(graficoLabels),
         graficoDatos: JSON.stringify(graficoDatos),
         estadoLabels: JSON.stringify(estadoLabels),
         estadoDatos: JSON.stringify(estadoDatos),
+        pisoSupervivencia,
+        proximos7Dias,
+        totalProximos7Dias,
+        totalDeudaTarjetas,
+        semaforo,
+        accionesAhora,
         success: req.flash('success'),
         error: req.flash('error')
       });

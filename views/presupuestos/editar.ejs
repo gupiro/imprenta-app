@@ -13,7 +13,8 @@
   <% } %>
 
   <form action="/presupuestos/<%= presupuesto.id %>/editar" method="POST">
-    
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
     <!-- DATOS DEL CLIENTE -->
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -56,8 +57,8 @@
                       <input type="text" name="descripcion[]" class="form-control" value="<%= item.descripcion %>" required>
                     </div>
                     <div class="col-md-3 mb-3">
-                      <label class="form-label fw-bold">Cantidad</label>
-                      <input type="number" name="cantidad[]" class="form-control cantidad" value="<%= item.cantidad %>" step="0.01" min="0" onchange="calcularSubtotal()" required>
+                      <label class="form-label fw-bold">Cantidad *</label>
+                      <input type="number" name="cantidad[]" class="form-control cantidad" value="<%= item.cantidad %>" step="any" min="0.01" onchange="calcularSubtotal()" required>
                     </div>
                     <div class="col-md-3 mb-3">
                       <label class="form-label fw-bold">P.Unitario ($)</label>
@@ -144,33 +145,52 @@
 
   function agregarItem() {
     itemCounter++;
+    const idx = itemCounter;
     const html = `
-      <div class="card mb-3 itemCard">
+      <div class="card mb-3 itemCard" id="item_${idx}">
         <div class="card-body">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">Descripción</label>
-              <input type="text" name="descripcion[]" class="form-control" placeholder="Ej: Lona 2x3" required>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Buscar Producto (nombre/código)</label>
+              <div class="position-relative">
+                <input type="text"
+                  class="form-control productoInput"
+                  placeholder="Ej: Lona estándar o 001-T"
+                  data-item="${idx}"
+                  onkeyup="buscarProductosEditar(${idx})"
+                  autocomplete="off">
+                <input type="hidden" name="producto_id[]" class="productoIdHidden">
+                <div class="dropdown-menu w-100 position-absolute"
+                  style="display:none; top:100%; left:0; z-index:1000; max-height:200px; overflow-y:auto;"
+                  id="dropdown_${idx}"></div>
+              </div>
             </div>
-            <div class="col-md-3 mb-3">
-              <label class="form-label fw-bold">Cantidad</label>
-              <input type="number" name="cantidad[]" class="form-control cantidad" value="1" step="0.01" min="0" onchange="calcularSubtotal()" required>
-            </div>
-            <div class="col-md-3 mb-3">
-              <label class="form-label fw-bold">P.Unitario ($)</label>
-              <input type="number" name="precio_unitario[]" class="form-control precioUnitario" step="0.01" min="0" onchange="calcularSubtotal()" required>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Descripción *</label>
+              <input type="text" name="descripcion[]" class="form-control descripcion" placeholder="Descripción del item" required>
             </div>
           </div>
+
+          <div id="camposDinamicos_${idx}" class="row mb-3"></div>
+
           <div class="row">
-            <div class="col-md-4 mb-3">
+            <div class="col-md-3">
+              <label class="form-label fw-bold">Cantidad *</label>
+              <input type="number" name="cantidad[]" class="form-control cantidad" value="1" step="any" min="0.01" required onchange="calcularSubtotal()">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-bold">P.Unitario ($) *</label>
+              <input type="number" name="precio_unitario[]" class="form-control precioUnitario" step="0.01" min="0" required onchange="calcularSubtotal()">
+            </div>
+            <div class="col-md-2">
               <label class="form-label fw-bold">Descuento ($)</label>
               <input type="number" name="descuento_item[]" class="form-control descuentoItem" value="0" step="0.01" min="0" onchange="calcularSubtotal()">
             </div>
-            <div class="col-md-4 mb-3">
+            <div class="col-md-2">
               <label class="form-label fw-bold">Subtotal</label>
               <input type="text" class="form-control subtotalDisplay" value="$0.00" readonly>
             </div>
-            <div class="col-md-4 mb-3 d-flex align-items-end">
+            <div class="col-md-2 d-flex align-items-end">
               <button type="button" class="btn btn-outline-danger w-100" onclick="eliminarItem(this)">🗑️ Eliminar</button>
             </div>
           </div>
@@ -178,6 +198,86 @@
       </div>
     `;
     document.getElementById('itemsContainer').insertAdjacentHTML('beforeend', html);
+  }
+
+  async function buscarProductosEditar(itemNum) {
+    const card = document.getElementById(`item_${itemNum}`);
+    const input = card.querySelector('.productoInput');
+    const dropdown = document.getElementById(`dropdown_${itemNum}`);
+    const query = input.value.trim();
+
+    if (query.length < 1) {
+      dropdown.style.display = 'none';
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/autocomplete/productos?q=${encodeURIComponent(query)}`);
+      const productos = await response.json();
+
+      if (productos.length === 0) {
+        dropdown.innerHTML = '<div class="dropdown-item text-muted">No hay productos encontrados</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      dropdown.innerHTML = productos.map(p => `
+        <button type="button" class="dropdown-item"
+          onclick="seleccionarProductoEditar(${itemNum}, ${p.id}, '${p.nombre.replace(/'/g, "\\'")}', ${p.precio}, '${p.tipo}', '${p.unidad}')">
+          <strong>[${p.codigo}]</strong> ${p.nombre}<br>
+          <small class="text-muted">$${p.precio} - ${p.unidad}</small>
+        </button>
+      `).join('');
+      dropdown.style.display = 'block';
+    } catch (err) {
+      console.error('Error buscando productos:', err);
+    }
+  }
+
+  function seleccionarProductoEditar(itemNum, productoId, nombre, precio, tipo, unidad) {
+    const card = document.getElementById(`item_${itemNum}`);
+    const input = card.querySelector('.productoInput');
+    const hiddenId = card.querySelector('.productoIdHidden');
+    const dropdown = document.getElementById(`dropdown_${itemNum}`);
+
+    input.value = nombre;
+    hiddenId.value = productoId;
+    dropdown.style.display = 'none';
+
+    card.querySelector('.descripcion').value = nombre;
+    card.querySelector('.precioUnitario').value = precio.toFixed(2);
+
+    const dinamicos = document.getElementById(`camposDinamicos_${itemNum}`);
+    dinamicos.innerHTML = '';
+
+    if (tipo === 'lona') {
+      dinamicos.innerHTML = `
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Ancho (m) *</label>
+          <input type="number" class="form-control ancho" step="0.01" min="0" required onchange="calcularSubtotal()" placeholder="0.00">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Alto (m) *</label>
+          <input type="number" class="form-control alto" step="0.01" min="0" required onchange="calcularSubtotal()" placeholder="0.00">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold">Unidades *</label>
+          <input type="number" class="form-control unidades" step="1" min="1" value="1" required onchange="calcularSubtotal()" placeholder="1">
+        </div>
+        <div class="col-md-6">
+          <p class="text-muted small mt-3"><strong>📐 Tipo:</strong> Metro Cuadrado</p>
+        </div>
+      `;
+    } else {
+      dinamicos.innerHTML = `
+        <div class="col-12">
+          <p class="text-muted small"><strong>📦 Tipo:</strong> ${unidad}</p>
+        </div>
+      `;
+    }
+
+    card.querySelector('.cantidad').value = '1';
+    calcularSubtotal();
   }
 
   function eliminarItem(btn) {
@@ -190,12 +290,26 @@
     let descuentoTotal = 0;
 
     document.querySelectorAll('.itemCard').forEach(card => {
-      const cantidad = parseFloat(card.querySelector('.cantidad').value) || 0;
+      const dinamicos = card.querySelector('[id^="camposDinamicos_"]');
+      const esMarcaLona = dinamicos && dinamicos.textContent.includes('Metro Cuadrado');
+
+      let cantidad = 0;
+
+      if (esMarcaLona) {
+        const ancho = parseFloat(card.querySelector('.ancho')?.value) || 0;
+        const alto = parseFloat(card.querySelector('.alto')?.value) || 0;
+        const unidades = parseFloat(card.querySelector('.unidades')?.value) || 1;
+        cantidad = (ancho * alto) * unidades;
+      } else {
+        cantidad = parseFloat(card.querySelector('.cantidad').value) || 0;
+      }
+
       const precioUnitario = parseFloat(card.querySelector('.precioUnitario').value) || 0;
       const descuento = parseFloat(card.querySelector('.descuentoItem').value) || 0;
 
       const subtotal = (cantidad * precioUnitario) - descuento;
       card.querySelector('.subtotalDisplay').value = '$' + subtotal.toFixed(2);
+      card.querySelector('.cantidad').value = cantidad.toFixed(2);
 
       totalFinal += subtotal;
       descuentoTotal += descuento;
@@ -212,4 +326,11 @@
 
   // Calcular al cargar la página
   document.addEventListener('DOMContentLoaded', calcularSubtotal);
+
+  // Cerrar dropdown al hacer clic fuera
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.position-relative')) {
+      document.querySelectorAll('[id^="dropdown_"]').forEach(d => d.style.display = 'none');
+    }
+  });
 </script>

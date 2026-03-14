@@ -1,0 +1,623 @@
+<!-- views/finanzas/facturas-recibidas.ejs - REDISEÑO PARA NO-CONTABLES -->
+
+<div class="container-fluid py-4">
+  <!-- HEADER -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6 mb-1"><i class="bi bi-receipt-cutoff"></i> 📄 Facturas Recibidas</h1>
+      <p class="text-muted mb-0">Registro de compras con comprobante para tu contador</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-outline-secondary me-2" id="btnExportarPDF" title="Exportar resumen para tu contador">
+        <i class="bi bi-file-pdf me-1"></i> Exportar PDF para contador
+      </button>
+      <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
+        <i class="bi bi-plus-circle me-2"></i>+ Nueva Factura
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS DE ÉXITO/ERROR -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle me-2"></i><%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i><%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- ALERTA: Facturas pendientes hace más de 30 días -->
+  <% if (facturasVencidas && facturasVencidas.length > 0) { %>
+    <div class="alert alert-warning border-start border-5 mb-4" style="background:#fff8f0;">
+      <div class="d-flex">
+        <div class="me-3" style="font-size:1.5rem;">⚠️</div>
+        <div>
+          <strong>Tenés <%= facturasVencidas.length %> factura(s) pendiente(s) de hace más de 30 días</strong>
+          <br>Total: <strong>$<%= totalVencidas.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+          <br><small class="text-muted">¿Ya las pagaste? Actualizá el estado abajo 👇</small>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- PANEL EDUCATIVO AZUL CLARO (SIEMPRE VISIBLE) -->
+  <div class="card mb-4 border-0 shadow-sm" style="background:#eff6ff; border-left: 5px solid #1e40af;">
+    <div class="card-body">
+      <h5 class="mb-3" style="color:#1e40af;">
+        <i class="bi bi-lightbulb me-2"></i>📄 ¿Para qué sirven las facturas recibidas?
+      </h5>
+
+      <p class="mb-3">
+        <strong>Cada vez que comprás algo para la imprenta y el proveedor te da una FACTURA, registrala acá.</strong>
+        No importa si ya la pagaste o no.
+      </p>
+
+      <div class="mb-3">
+        <h6 style="color:#1e40af; font-weight:600;">¿Por qué registrarlas?</h6>
+        <ul class="mb-0 ps-3 small">
+          <li class="mb-2">
+            <strong>→ PARA EL IVA:</strong> Si la factura es tipo <strong>A</strong>, el IVA que pagaste se llama
+            '<strong>crédito fiscal</strong>'. Podés descontarlo del IVA que le cobrás a tus clientes.
+            <strong>En términos simples: pagás menos impuestos.</strong>
+          </li>
+          <li class="mb-2">
+            <strong>→ PARA TU CONTADOR:</strong> Cada mes tu contador necesita estas facturas para hacer
+            la declaración de IVA. Si no las registrás, <strong>perdés plata.</strong>
+          </li>
+          <li>
+            <strong>→ PARA VOS:</strong> Sabés exactamente cuánto gastaste en compras con comprobante.
+          </li>
+        </ul>
+      </div>
+
+      <div class="mb-3 p-3 bg-white rounded border border-info border-opacity-25">
+        <h6 style="color:#1e40af; font-weight:600;">Tipos de facturas que podés recibir:</h6>
+        <ul class="mb-0 ps-3 small">
+          <li><strong>🔵 Factura A</strong> → Responsable Inscripto con IVA discriminado. <strong>¡La mejor! Siempre pedila.</strong></li>
+          <li><strong>🟡 Factura B</strong> → Sin IVA discriminado. Menos útil para descontar impuestos.</li>
+          <li><strong>🟢 Factura C</strong> → Proveedor monotributista. Sin IVA.</li>
+          <li><strong>🔴 Ticket/Recibo</strong> → Guardalo igual aunque no sea ideal fiscalmente.</li>
+        </ul>
+      </div>
+
+      <div class="alert alert-success mb-0 py-2">
+        <strong>💡 Consejo:</strong> Siempre pedí Factura A. Sin ella, perdés el beneficio del crédito de IVA y terminás pagando más impuestos.
+      </div>
+    </div>
+  </div>
+
+  <!-- RESUMEN MENSUAL: 4 BLOQUES SIMPLES -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="fs-5 mb-2">📥</div>
+          <div class="text-muted small mb-2">Total en facturas este mes</div>
+          <h3 class="text-primary mb-1">$<%= totalFacturas.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="text-muted"><%= facturas.length %> factura(s)</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="fs-5 mb-2">💡</div>
+          <div class="text-muted small mb-2">IVA que podés descontar<br><em>(crédito fiscal)</em></div>
+          <h3 class="text-info mb-1">$<%= totalIva.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="text-muted">Se lo informás a tu contador</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="fs-5 mb-2">✅</div>
+          <div class="text-muted small mb-2">Facturas ya pagas</div>
+          <h3 class="text-success mb-1">$<%= totalPagado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-3">
+      <div class="card border-0 shadow-sm <%= totalPendiente > 0 ? '' : '' %>" style="<%= totalPendiente > 0 ? 'background-color:#fffbf0;' : '' %>">
+        <div class="card-body text-center">
+          <div class="fs-5 mb-2">⏳</div>
+          <div class="text-muted small mb-2">Facturas pendientes</div>
+          <h3 class="<%= totalPendiente > 0 ? 'text-warning' : 'text-success' %> mb-1">$<%= totalPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <% if (totalPendiente > 0) { %>
+            <small class="text-warning">⚠️ Revisar si ya las pagaste</small>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE FACTURAS -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light">
+      <h6 class="mb-0"><i class="bi bi-table"></i> Facturas del Período</h6>
+    </div>
+    <div class="card-body">
+      <% if (facturas && facturas.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover table-sm mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 60px;">Tipo</th>
+                <th>Número</th>
+                <th>Proveedor</th>
+                <th>¿Qué compraste?</th>
+                <th style="width: 90px;">Fecha</th>
+                <th class="text-end" style="width: 80px;">Neto</th>
+                <th class="text-end" style="width: 80px;">IVA</th>
+                <th class="text-end" style="width: 90px;">Total</th>
+                <th style="width: 80px;">Estado</th>
+                <th style="width: 80px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% facturas.forEach(f => { %>
+                <tr>
+                  <td>
+                    <% if (f.tipo_comprobante === 'A') { %>
+                      <span class="badge bg-primary">A</span>
+                    <% } else if (f.tipo_comprobante === 'B') { %>
+                      <span class="badge bg-warning text-dark">B</span>
+                    <% } else if (f.tipo_comprobante === 'C') { %>
+                      <span class="badge bg-success">C</span>
+                    <% } else if (f.tipo_comprobante === 'Ticket') { %>
+                      <span class="badge bg-danger">Ticket</span>
+                    <% } else { %>
+                      <span class="badge bg-secondary"><%= f.tipo_comprobante %></span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= f.numero_comprobante %></strong></td>
+                  <td><%= f.razon_social %></td>
+                  <td><small><%= f.descripcion || '-' %></small></td>
+                  <td><small><%= new Date(f.fecha_emision).toLocaleDateString('es-AR') %></small></td>
+                  <td class="text-end">$<%= f.monto_neto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                  <td class="text-end text-info fw-bold">$<%= f.monto_iva.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                  <td class="text-end fw-bold">$<%= f.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                  <td>
+                    <% if (f.estado === 'pendiente') { %>
+                      <span class="badge bg-warning text-dark">⏳ Pdte</span>
+                    <% } else if (f.estado === 'pagada') { %>
+                      <span class="badge bg-success">✅ Paga</span>
+                    <% } else { %>
+                      <span class="badge bg-info">📊 Parcial</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (f.estado === 'pendiente') { %>
+                      <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalPagar" onclick="abrirPagar(<%= f.id %>, '<%= f.numero_comprobante %>', <%= f.monto_total %>, <%= f.monto_pagado || 0 %>)">
+                        ✅ Pagar
+                      </button>
+                    <% } %>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalEditarFactura" onclick="abrirEditar(<%= f.id %>)">
+                      ✏️
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="eliminar(<%= f.id %>, '<%= f.numero_comprobante %>')">
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="text-center py-5">
+          <div style="font-size:3rem; opacity:0.4;">🧾</div>
+          <h4 class="text-muted mt-3 mb-2">No hay facturas registradas</h4>
+          <p class="text-muted mb-3">Empieza registrando tu primera factura</p>
+          <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
+            <i class="bi bi-plus-circle me-2"></i>Registrar primera factura
+          </button>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: NUEVA FACTURA - REDISEÑADO PARA SIMPLICIDAD -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalNuevaFactura" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg" style="max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Registrar Nueva Factura</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="formNuevaFactura" action="/finanzas/facturas-recibidas/crear" method="POST" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <div class="modal-body" style="overflow-y: auto; flex: 1;">
+
+          <!-- PASO 1: TIPO DE COMPROBANTE - BOTONES GRANDES -->
+          <div class="mb-4">
+            <label class="form-label fw-bold mb-3">¿Qué tipo de comprobante recibiste? *</label>
+            <div class="d-grid gap-2">
+              <div class="btn-group" role="group">
+                <input type="radio" name="tipo_comprobante" id="tipoA" value="A" required onclick="updateTipoInfo('A')">
+                <label for="tipoA" class="btn btn-outline-primary btn-lg fw-bold">🔵 A</label>
+
+                <input type="radio" name="tipo_comprobante" id="tipoB" value="B" onclick="updateTipoInfo('B')">
+                <label for="tipoB" class="btn btn-outline-primary btn-lg fw-bold">🟡 B</label>
+
+                <input type="radio" name="tipo_comprobante" id="tipoC" value="C" onclick="updateTipoInfo('C')">
+                <label for="tipoC" class="btn btn-outline-primary btn-lg fw-bold">🟢 C</label>
+
+                <input type="radio" name="tipo_comprobante" id="tipoTicket" value="Ticket" onclick="updateTipoInfo('Ticket')">
+                <label for="tipoTicket" class="btn btn-outline-primary btn-lg fw-bold">🔴 Ticket</label>
+
+                <input type="radio" name="tipo_comprobante" id="tipoOtro" value="Otro" onclick="updateTipoInfo('Otro')">
+                <label for="tipoOtro" class="btn btn-outline-primary btn-lg fw-bold">❓ Otro</label>
+              </div>
+            </div>
+            <div id="tipoInfo" class="alert alert-success py-2 small mt-3" style="display:none;"></div>
+          </div>
+
+          <!-- Datos básicos -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Número de factura *</label>
+              <input type="text" name="numero_comprobante" class="form-control form-control-lg" placeholder="Ej: 0001-00003410" required>
+              <small class="text-muted d-block mt-1">El número que figura en el comprobante. Si es ticket, anotá cualquier número.</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de la factura *</label>
+              <input type="date" name="fecha_emision" class="form-control form-control-lg" required>
+              <small class="text-muted d-block mt-1">La fecha que figura impresa, no la fecha de hoy.</small>
+            </div>
+          </div>
+
+          <!-- Proveedor -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Proveedor *</label>
+            <div class="input-group">
+              <select id="proveedorSelect" name="proveedor_id" class="form-select form-select-lg" onchange="autoFillProveedor()">
+                <option value="">-- Seleccionar de la lista --</option>
+                <% (proveedores || []).forEach(p => { %>
+                  <option value="<%= p.id %>" data-nombre="<%= p.nombre %>"><%= p.nombre %></option>
+                <% }); %>
+              </select>
+            </div>
+            <input type="text" id="razonSocialInput" name="razon_social" class="form-control form-control-lg mt-2" placeholder="O escribí el nombre del proveedor aquí" required>
+            <small class="text-muted d-block mt-1">¿No está en la lista? <a href="/proveedores/nuevo" target="_blank">+ Crear nuevo proveedor</a></small>
+          </div>
+
+          <!-- Concepto -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">¿Qué compraste? (concepto) *</label>
+            <input type="text" name="concepto" class="form-control form-control-lg" placeholder="Ej: 'Tinta negra offset 1kg x 5', 'Papel bond 90gr resma x 10'" required>
+            <small class="text-muted d-block mt-1">Sé específico para que te acuerdes después.</small>
+          </div>
+
+          <!-- Montos -->
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto neto (sin IVA) *</label>
+              <input type="number" id="montoNeto" name="monto_neto" class="form-control form-control-lg" step="0.01" required onchange="calcularIVA()">
+              <small class="text-muted d-block mt-1">El subtotal ANTES del IVA. Si no tiene IVA, poné el total acá.</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">IVA (%)</label>
+              <select id="alicuotaSelect" name="alicuota_iva" class="form-select form-select-lg" onchange="calcularIVA()">
+                <option value="21">21% (lo más común)</option>
+                <option value="10.5">10.5% (algunos productos)</option>
+                <option value="0">0% (sin IVA)</option>
+              </select>
+              <small class="text-muted d-block mt-1">Si es Factura C o Ticket, elegí 0%.</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto IVA (calculado)</label>
+              <input type="number" id="montoIVA" name="monto_iva" class="form-control form-control-lg" step="0.01" readonly style="background-color: #f3f4f6;">
+              <small class="text-muted d-block mt-1">Se calcula automáticamente, pero podés editarlo.</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold text-primary"><strong>TOTAL</strong></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" id="montoTotal" name="monto_total" class="form-control form-control-lg" step="0.01" readonly style="font-weight:bold; font-size:1.2em; background-color: #f0f8ff;">
+              </div>
+              <small class="text-muted d-block mt-1">Total = Neto + IVA</small>
+            </div>
+          </div>
+
+          <!-- Estado de pago -->
+          <div class="mb-3">
+            <label class="form-label fw-bold mb-2">¿Ya pagaste esta factura? *</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" name="estado" id="estadoPendiente" value="pendiente" checked onchange="toggleFechaPago()">
+              <label for="estadoPendiente" class="btn btn-outline-warning btn-lg">⏳ Todavía no la pagué</label>
+
+              <input type="radio" name="estado" id="estadoPagada" value="pagada" onchange="toggleFechaPago()">
+              <label for="estadoPagada" class="btn btn-outline-success btn-lg">✅ Ya la pagué</label>
+            </div>
+          </div>
+
+          <!-- Fecha de pago (visible solo si pagada) -->
+          <div id="fechaPagoDiv" style="display:none;" class="mb-3">
+            <label class="form-label fw-bold">¿Cuándo la pagaste?</label>
+            <input type="date" name="fecha_pago" class="form-control form-control-lg">
+          </div>
+
+          <!-- Documento guardado -->
+          <div class="form-check mb-3">
+            <input type="checkbox" name="tiene_documento" id="tieneDocumento" value="1" class="form-check-input">
+            <label for="tieneDocumento" class="form-check-label">
+              <strong>Sí, tengo esta factura guardada (papel o PDF)</strong>
+              <small class="text-muted d-block">No necesitás subirla aquí, solo marcá si la tenés para cuando la necesite tu contador.</small>
+            </label>
+          </div>
+
+          <!-- Notas -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Ej: Pagada con transferencia al ALIAS del proveedor"></textarea>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-save me-2"></i>Registrar Factura
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: PAGAR FACTURA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPagar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Marcar como Pagada</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formRegistrarPago">
+        <div class="modal-body">
+          <div class="alert alert-light mb-3">
+            <p class="mb-2"><strong>Factura:</strong> <span id="pagoNumeroFactura"></span></p>
+            <p class="mb-2"><strong>Monto Total:</strong> $<span id="pagoMontoTotal"></span></p>
+            <p class="mb-0"><strong>Ya Pagado:</strong> $<span id="pagoMontoPagado"></span></p>
+          </div>
+
+          <div class="alert alert-info mb-3">
+            <strong>Saldo Pendiente:</strong> $<span id="pagoSaldoPendiente"></span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a Pagar ($) *</label>
+            <input type="number" id="inputMontoPago" name="monto_pagado" class="form-control form-control-lg" step="0.01" min="0.01" placeholder="0.00" required>
+            <small class="text-muted">No puede exceder el saldo pendiente</small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Pago</label>
+              <input type="date" id="inputFechaPago" name="fecha_pago" class="form-control form-control-lg">
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select name="metodo_pago" class="form-select form-select-lg">
+                <option value="">-- Seleccionar --</option>
+                <option value="Efectivo">💵 Efectivo</option>
+                <option value="Transferencia">🏦 Transferencia</option>
+                <option value="Tarjeta">💳 Tarjeta</option>
+                <option value="Cheque">📝 Cheque</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles del pago..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle me-2"></i>Registrar Pago
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDITAR FACTURA (simplificado) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalEditarFactura" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg" style="max-height: 90vh; display: flex; flex-direction: column;">
+    <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-pencil-square me-2"></i>Editar Factura</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarFactura" method="POST" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+        <div class="modal-body" style="overflow-y: auto; flex: 1;">
+          <p class="text-muted">Cargando datos...</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning btn-lg">
+            <i class="bi bi-save me-2"></i>Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+const proveedoresData = {
+  <% (proveedores || []).forEach(p => { %>
+    '<%= p.id %>': { id: <%= p.id %>, nombre: '<%= p.nombre %>', cuit: '<%= p.cuit %>' },
+  <% }); %>
+};
+
+// ════════════════════════════════════════════════════════════════
+// INFORMACIÓN DEL TIPO DE COMPROBANTE
+// ════════════════════════════════════════════════════════════════
+const tipoInfos = {
+  'A': { cls: 'alert-success', msg: '✅ Tiene IVA discriminado. ¡Sirve como crédito fiscal! Esta es la mejor opción.' },
+  'B': { cls: 'alert-warning', msg: '⚠️ Sin IVA discriminado. Validez fiscal limitada.' },
+  'C': { cls: 'alert-info', msg: 'ℹ️ Proveedor Monotributista. Sin IVA.' },
+  'Ticket': { cls: 'alert-warning', msg: '⚠️ Guardalo igual, pero no genera crédito de IVA.' },
+  'Otro': { cls: 'alert-secondary', msg: 'ℹ️ Guardalo igual para tu contador.' }
+};
+
+function updateTipoInfo(tipo) {
+  const el = document.getElementById('tipoInfo');
+  const info = tipoInfos[tipo];
+  el.className = `alert ${info.cls} py-2 small mt-3`;
+  el.textContent = info.msg;
+  el.style.display = 'block';
+
+  // Auto-set alícuota: si C, Ticket u Otro → 0%; si A o B → 21%
+  if (['C', 'Ticket', 'Otro', 'B'].includes(tipo)) {
+    document.getElementById('alicuotaSelect').value = '0';
+  } else {
+    document.getElementById('alicuotaSelect').value = '21';
+  }
+  calcularIVA();
+}
+
+// ════════════════════════════════════════════════════════════════
+// AUTO-FILL PROVEEDOR
+// ════════════════════════════════════════════════════════════════
+function autoFillProveedor() {
+  const select = document.getElementById('proveedorSelect');
+  const selectedOption = select.options[select.selectedIndex];
+  const inputRazonSocial = document.getElementById('razonSocialInput');
+
+  if (selectedOption.value !== '') {
+    inputRazonSocial.value = selectedOption.dataset.nombre;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// CALCULAR IVA
+// ════════════════════════════════════════════════════════════════
+function calcularIVA() {
+  const neto = parseFloat(document.getElementById('montoNeto').value) || 0;
+  const alicuota = parseFloat(document.getElementById('alicuotaSelect').value) || 0;
+  const iva = (neto * alicuota) / 100;
+  const total = neto + iva;
+
+  document.getElementById('montoIVA').value = iva.toFixed(2);
+  document.getElementById('montoTotal').value = total.toFixed(2);
+}
+
+// ════════════════════════════════════════════════════════════════
+// TOGGLE FECHA_PAGO
+// ════════════════════════════════════════════════════════════════
+function toggleFechaPago() {
+  const estado = document.querySelector('input[name="estado"]:checked').value;
+  const fechaPagoDiv = document.getElementById('fechaPagoDiv');
+  if (estado === 'pagada') {
+    fechaPagoDiv.style.display = 'block';
+    document.querySelector('input[name="fecha_pago"]').value = new Date().toISOString().split('T')[0];
+  } else {
+    fechaPagoDiv.style.display = 'none';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ELIMINAR FACTURA
+// ════════════════════════════════════════════════════════════════
+function eliminar(id, numero) {
+  if (confirm(`¿Eliminar la factura ${numero}? No se puede deshacer.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/finanzas/facturas-recibidas/${id}/eliminar`;
+    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">';
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ABRIR MODAL PAGAR
+// ════════════════════════════════════════════════════════════════
+function abrirPagar(id, numero, montoTotal, montoPagado) {
+  const saldoPendiente = montoTotal - montoPagado;
+  document.getElementById('pagoNumeroFactura').textContent = numero;
+  document.getElementById('pagoMontoTotal').textContent = montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('pagoMontoPagado').textContent = montoPagado.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('pagoSaldoPendiente').textContent = saldoPendiente.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('inputMontoPago').max = saldoPendiente;
+  document.getElementById('inputMontoPago').value = '';
+  document.getElementById('inputFechaPago').value = new Date().toISOString().split('T')[0];
+  document.getElementById('formRegistrarPago').dataset.facturaId = id;
+}
+
+// ════════════════════════════════════════════════════════════════
+// EDITAR FACTURA (simplificado)
+// ════════════════════════════════════════════════════════════════
+function abrirEditar(id) {
+  const formEditarFactura = document.getElementById('formEditarFactura');
+  formEditarFactura.action = `/finanzas/facturas-recibidas/${id}/editar`;
+  // TODO: cargar datos de la factura con AJAX
+}
+
+// ════════════════════════════════════════════════════════════════
+// ENVIAR PAGO
+// ════════════════════════════════════════════════════════════════
+document.getElementById('formRegistrarPago')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const facturaId = e.target.dataset.facturaId;
+  const montoPagado = parseFloat(document.getElementById('inputMontoPago').value);
+  const fechaPago = document.getElementById('inputFechaPago').value;
+  const metodoPago = document.querySelector('[name="metodo_pago"]').value;
+  const notas = document.querySelector('[name="notas"]').value;
+
+  try {
+    const response = await fetch(`/finanzas/facturas-recibidas/${facturaId}/registrar-pago`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ monto_pagado: montoPagado, metodo_pago: metodoPago, notas, fecha_pago: fechaPago })
+    });
+    const data = await response.json();
+    if (data.success) {
+      alert('✅ ' + data.message);
+      location.reload();
+    } else {
+      alert('❌ Error: ' + data.error);
+    }
+  } catch (err) {
+    alert('❌ Error al registrar pago: ' + err.message);
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// EXPORTAR PDF
+// ════════════════════════════════════════════════════════════════
+document.getElementById('btnExportarPDF')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  const periodo = new URLSearchParams(window.location.search).get('periodo') || new Date().toISOString().slice(0, 7);
+  window.open(`/finanzas/facturas-recibidas/pdf?periodo=${periodo}`, '_blank');
+});
+</script>

@@ -22,11 +22,11 @@
     <div class="col-12">
       <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
         <div class="card-body py-4">
-          <h6 class="mb-3"><i class="bi bi-lightning-fill"></i> 🚀 ACCIONES RÁPIDAS</h6>
+          <h6 class="mb-3"><i class="bi bi-lightning-fill"></i> ACCIONES RÁPIDAS</h6>
           <div class="row g-2">
             <% if (!isEmpleado) { %>
               <div class="col-6 col-md-4 col-lg-2">
-                <a href="/pedidos/nuevo" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
+                <a href="/pedidos/nuevo" class="btn w-100 fw-bold text-white" style="padding: 1.5rem 0.5rem; font-size: 0.85rem; background-color: #28a745; border-color: #28a745;">
                   <div><i class="bi bi-plus-circle" style="font-size: 1.5rem;"></i></div>
                   Nuevo Pedido
                 </a>
@@ -172,7 +172,7 @@
   <!-- ═══════════════════════════════════════════════════════
        SECCIÓN 3: INFORMACIÓN FINANCIERA (ADMIN/VENDEDOR)
        ═══════════════════════════════════════════════════════ -->
-  <div class="row g-3 mb-4">
+  <div class="row g-3 mb-4 align-items-stretch">
     <!-- TARJETA INGRESOS: Diferente para Admin vs No-Admin -->
     <% if (user && user.rol === 'admin') { %>
     <!-- Admin: Muestra número de ingresos -->

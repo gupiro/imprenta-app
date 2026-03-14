@@ -385,6 +385,15 @@
           </li>
           <% } %>
 
+          <!-- MI RUTINA - GUÍA PARA NO-CONTABLES -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+          <li class="nav-item">
+            <a class="nav-link <%= activePage === 'guia' ? 'active' : '' %>" href="/guia">
+              📋 Mi Rutina
+            </a>
+          </li>
+          <% } %>
+
           <!-- ▼ VENTAS -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="ventasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

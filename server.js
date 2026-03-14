@@ -155,6 +155,7 @@ async function startServer() {
     const deudasRouterConfigured       = require('./routes/deudas')(dbInstance);
     const pagosRouterConfigured        = require('./routes/pagos')(dbInstance);
     const finanzasRouterConfigured     = require('./routes/finanzas')(dbInstance);
+    const guiaRouterConfigured         = require('./routes/guia')(dbInstance);
 
     // ────────────────────────────────────────────────────────────────────
     // APIS INTERNAS (Autocomplete, etc)
@@ -252,6 +253,7 @@ async function startServer() {
     app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
     app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
     app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
+    app.use('/guia',         authMiddleware.isAuthenticated,               guiaRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA

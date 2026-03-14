@@ -1,0 +1,374 @@
+<div class="container-fluid py-4">
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- HEADER: BIENVENIDA + ESTADO FINANCIERO                           -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <h2 class="mb-1">Hola, <%= user.username %>. 👋</h2>
+      <p class="text-muted mb-3">Hoy es <%= diaSemana %>, <%= fechaFormateada %>.</p>
+      <% if (estadoFinanciero === 'bien') { %>
+        <div class="alert alert-success alert-dismissible fade show mb-0" role="alert">
+          <i class="bi bi-check-circle me-2"></i>Tu negocio va bien este mes ✅
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } else if (estadoFinanciero === 'equilibrio') { %>
+        <div class="alert alert-warning alert-dismissible fade show mb-0" role="alert">
+          <i class="bi bi-exclamation-triangle me-2"></i>Tu negocio está en equilibrio este mes ⚠️
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } else { %>
+        <div class="alert alert-danger alert-dismissible fade show mb-0" role="alert">
+          <i class="bi bi-exclamation-circle me-2"></i>Tu negocio necesita atención este mes ❌
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- BLOQUE 1: RUTINA DIARIA                                          -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4" style="background-color: #f0fdf4;">
+      <h4 class="mb-1">☀️ Todos los días — 5 minutos</h4>
+      <p class="text-muted mb-4">Hacé esto al final de cada jornada antes de cerrar.</p>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>✅ Registrá todos los cobros del día</strong>
+          <p class="text-muted small mb-0">Cada peso que entró hoy, anotalo en Caja.</p>
+        </div>
+        <a href="/caja-diaria" class="btn btn-sm btn-outline-success flex-shrink-0">Ir a Caja →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>✅ Registrá los gastos que hiciste hoy</strong>
+          <p class="text-muted small mb-0">Aunque sea chico: nafta, materiales, cualquier cosa que salió de tu bolsillo o del negocio.</p>
+        </div>
+        <a href="/gastos" class="btn btn-sm btn-outline-success flex-shrink-0">Registrar un gasto →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 gap-2">
+        <div>
+          <strong>✅ Revisá los pedidos del día</strong>
+          <p class="text-muted small mb-0">¿Algún pedido pasó a Listo y todavía no se entregó? ¿Hay algo pendiente que se atrasó?</p>
+        </div>
+        <a href="/pedidos" class="btn btn-sm btn-outline-success flex-shrink-0">Ver pedidos →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- BLOQUE 2: RUTINA SEMANAL                                         -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4" style="background-color: #eff6ff;">
+      <h4 class="mb-1">📅 Todos los lunes — 15 minutos</h4>
+      <p class="text-muted mb-4">Arrancá la semana con una foto clara del negocio.</p>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>✅ Mirá el Dashboard</strong>
+          <p class="text-muted small mb-0">¿Cómo va el mes hasta hoy? El semáforo del tope te dice el estado en segundos.</p>
+        </div>
+        <a href="/dashboard" class="btn btn-sm btn-outline-primary flex-shrink-0">Ir al Dashboard →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>✅ Revisá quién te debe dinero</strong>
+          <p class="text-muted small mb-0">Entrá a Cuentas por Cobrar y fijate quién lleva más de 7 días sin pagar. A esos clientes llamales esta semana.</p>
+        </div>
+        <a href="/reportes/deudores" class="btn btn-sm btn-outline-primary flex-shrink-0">Ver quién me debe →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>✅ Revisá los gastos pendientes</strong>
+          <p class="text-muted small mb-0">¿Hay gastos que ya pagaste pero siguen marcados como pendientes? Actualizalos para que los números sean reales.</p>
+        </div>
+        <a href="/gastos" class="btn btn-sm btn-outline-primary flex-shrink-0">Ver gastos →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 gap-2">
+        <div>
+          <strong>✅ Controlá los vencimientos de tarjetas</strong>
+          <p class="text-muted small mb-0">¿Vence alguna tarjeta esta semana? Revisalo antes de que se te pase y pagues intereses de más.</p>
+        </div>
+        <a href="/deudas/tarjetas" class="btn btn-sm btn-outline-primary flex-shrink-0">Ver tarjetas →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- BLOQUE 3: RUTINA MENSUAL                                         -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4" style="background-color: #fff7ed;">
+      <h4 class="mb-1">🗓️ El primer lunes de cada mes — 30 minutos</h4>
+      <p class="text-muted mb-4">El cierre del mes anterior. La revisión más importante. Hacela con tranquilidad, sin apuro.</p>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">1️⃣</span>
+          <strong class="ms-2 d-block">Mirá el Balance del Mes</strong>
+          <p class="text-muted small mb-0">¿Ganaste o perdiste en el mes que terminó?</p>
+        </div>
+        <a href="/reportes/mensual" class="btn btn-sm btn-outline-warning flex-shrink-0">Ver Balance →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">2️⃣</span>
+          <strong class="ms-2 d-block">Confirmá que todos los gastos están cargados</strong>
+          <p class="text-muted small mb-0">Revisá transferencias, billeteras virtuales y pagos en efectivo. ¿Falta cargar algo del mes pasado?</p>
+        </div>
+        <a href="/gastos" class="btn btn-sm btn-outline-warning flex-shrink-0">Revisar gastos →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">3️⃣</span>
+          <strong class="ms-2 d-block">Marcá como pagados los gastos fijos del mes</strong>
+          <p class="text-muted small mb-0">Alquiler, sueldos, servicios: marcá cada uno como pagado una vez que lo hayas abonado.</p>
+        </div>
+        <a href="/finanzas/gastos-fijos" class="btn btn-sm btn-outline-warning flex-shrink-0">Ir a Gastos Fijos →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">4️⃣</span>
+          <strong class="ms-2 d-block">Cargá las facturas de proveedores del mes</strong>
+          <p class="text-muted small mb-0">Cada factura que recibiste este mes: TECNOGRAF, papelería, servicios. Cargalas todas.</p>
+        </div>
+        <a href="/finanzas/facturas-recibidas" class="btn btn-sm btn-outline-warning flex-shrink-0">Cargar facturas →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">5️⃣</span>
+          <strong class="ms-2 d-block">Exportá el resumen para tu contador</strong>
+          <p class="text-muted small mb-0">Generá el PDF de facturas del mes y mandáselo a tu contador para que haga la declaración de IVA.</p>
+        </div>
+        <a href="/finanzas/facturas-recibidas" class="btn btn-sm btn-outline-warning flex-shrink-0">Exportar PDF →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">6️⃣</span>
+          <strong class="ms-2 d-block">Revisá los vencimientos fiscales del mes que empieza</strong>
+          <p class="text-muted small mb-0">¿Qué impuestos vencen este mes? ¿Ya tenés el dinero reservado para pagarlos?</p>
+        </div>
+        <a href="/finanzas/vencimientos-fiscales" class="btn btn-sm btn-outline-warning flex-shrink-0">Ver vencimientos →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 gap-2">
+        <div>
+          <span class="badge bg-warning text-dark">7️⃣</span>
+          <strong class="ms-2 d-block">Actualizá los saldos de las tarjetas</strong>
+          <p class="text-muted small mb-0">Abrí la app de cada banco y actualizá el saldo adeudado real en el sistema.</p>
+        </div>
+        <a href="/deudas/tarjetas" class="btn btn-sm btn-outline-warning flex-shrink-0">Actualizar tarjetas →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- BLOQUE 4: ANTES DE UNA DECISIÓN GRANDE                           -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4" style="background-color: #fff1f2;">
+      <h4 class="mb-1">⚠️ Antes de comprar algo caro, sacar un préstamo o contratar a alguien</h4>
+      <p class="text-muted mb-4">Cualquier decisión que comprometa dinero por más de un mes necesita que revises esto antes de decidir.</p>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>🔍 Mirá el Estado Financiero Simplificado</strong>
+          <p class="text-muted small mb-0">¿El negocio está ganando o perdiendo en este momento?</p>
+        </div>
+        <a href="/reportes/financiero" class="btn btn-sm btn-outline-danger flex-shrink-0">Ver Estado →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>🔍 Calculá cómo sube tu Piso de Supervivencia</strong>
+          <p class="text-muted small mb-0">Si agregás ese nuevo gasto fijo, ¿cuánto más necesitás facturar por mes para seguir ganando?</p>
+        </div>
+        <a href="/finanzas/gastos-fijos" class="btn btn-sm btn-outline-danger flex-shrink-0">Ir a Gastos Fijos →</a>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-start py-3 border-bottom gap-2">
+        <div>
+          <strong>🔍 Revisá los compromisos de cuotas que ya tenés</strong>
+          <p class="text-muted small mb-0">¿Cuánto te cae en cuotas por mes ahora? ¿Podés sumar una cuota más sin comprometer el negocio?</p>
+        </div>
+        <a href="/finanzas/compras-cuotas" class="btn btn-sm btn-outline-danger flex-shrink-0">Ver Cuotas →</a>
+      </div>
+
+      <div class="py-3">
+        <strong>💬 Consultá con tu contador antes de firmar</strong>
+        <p class="text-muted small mb-0 fst-italic">Para préstamos bancarios, compras de maquinaria de alto valor o contratar empleados en relación de dependencia, consultá a tu contador primero. El sistema te da la información, pero la decisión final la tomás vos con asesoramiento profesional.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- BLOQUE 5: GLOSARIO                                               -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4" style="background-color: #f8f9fa;">
+      <h4 class="mb-1">📖 Palabras que vas a ver en el sistema</h4>
+      <p class="text-muted mb-4">No hace falta saber contabilidad, pero estos términos van a aparecer seguido.</p>
+
+      <div class="accordion accordion-flush" id="glosarioAccordion">
+        <!-- Ingreso -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-1" aria-expanded="false" aria-controls="glossary-1"><strong>Ingreso</strong></button></h2>
+          <div id="glossary-1" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Plata que ENTRA al negocio.</strong> Lo que te pagan los clientes por sus pedidos.</div>
+          </div>
+        </div>
+
+        <!-- Egreso / Gasto -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-2" aria-expanded="false" aria-controls="glossary-2"><strong>Egreso / Gasto</strong></button></h2>
+          <div id="glossary-2" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Plata que SALE del negocio o de tu bolsillo</strong> para que la imprenta funcione.</div>
+          </div>
+        </div>
+
+        <!-- Saldo -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-3" aria-expanded="false" aria-controls="glossary-3"><strong>Saldo</strong></button></h2>
+          <div id="glossary-3" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Lo que queda después de restarle los gastos a los ingresos.</strong> Puede ser positivo o negativo.</div>
+          </div>
+        </div>
+
+        <!-- Deuda -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-4" aria-expanded="false" aria-controls="glossary-4"><strong>Deuda</strong></button></h2>
+          <div id="glossary-4" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Plata que vos le debés a alguien:</strong> banco, tarjeta, proveedor.</div>
+          </div>
+        </div>
+
+        <!-- Cuenta por cobrar -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-5" aria-expanded="false" aria-controls="glossary-5"><strong>Cuenta por cobrar</strong></button></h2>
+          <div id="glossary-5" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Plata que un cliente te debe a vos</strong> y todavía no pagó.</div>
+          </div>
+        </div>
+
+        <!-- Factura A -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-6" aria-expanded="false" aria-controls="glossary-6"><strong>Factura A</strong></button></h2>
+          <div id="glossary-6" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Comprobante con IVA discriminado</strong> que recibís de un proveedor Responsable Inscripto. Es la mejor opción porque podés descontar ese IVA.</div>
+          </div>
+        </div>
+
+        <!-- Factura C -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-7" aria-expanded="false" aria-controls="glossary-7"><strong>Factura C</strong></button></h2>
+          <div id="glossary-7" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Comprobante de un proveedor monotributista.</strong> No tiene IVA discriminado.</div>
+          </div>
+        </div>
+
+        <!-- IVA Crédito Fiscal -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-8" aria-expanded="false" aria-controls="glossary-8"><strong>IVA Crédito Fiscal</strong></button></h2>
+          <div id="glossary-8" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>El IVA que vos pagaste al comprar insumos o servicios.</strong> Tu contador lo descuenta del IVA que le cobraste a tus clientes.</div>
+          </div>
+        </div>
+
+        <!-- Monotributo -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-9" aria-expanded="false" aria-controls="glossary-9"><strong>Monotributo</strong></button></h2>
+          <div id="glossary-9" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Régimen simplificado de impuestos</strong> para pequeños contribuyentes. Se paga mensualmente a AFIP e incluye impuesto + obra social.</div>
+          </div>
+        </div>
+
+        <!-- IIBB (Ingresos Brutos) -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-10" aria-expanded="false" aria-controls="glossary-10"><strong>IIBB (Ingresos Brutos)</strong></button></h2>
+          <div id="glossary-10" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Impuesto provincial</strong> que se paga mensualmente a Rentas de Salta sobre todo lo que facturás.</div>
+          </div>
+        </div>
+
+        <!-- Gasto Fijo -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-11" aria-expanded="false" aria-controls="glossary-11"><strong>Gasto Fijo</strong></button></h2>
+          <div id="glossary-11" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Gasto que pagás siempre, aunque no vendas nada.</strong> Ejemplos: alquiler, sueldos, cuota del banco.</div>
+          </div>
+        </div>
+
+        <!-- Gasto Variable -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-12" aria-expanded="false" aria-controls="glossary-12"><strong>Gasto Variable</strong></button></h2>
+          <div id="glossary-12" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Gasto que cambia según cuánto trabajás.</strong> Ejemplos: tinta, papel, energía extra en un mes activo.</div>
+          </div>
+        </div>
+
+        <!-- Piso de Supervivencia -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-13" aria-expanded="false" aria-controls="glossary-13"><strong>Piso de Supervivencia</strong></button></h2>
+          <div id="glossary-13" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>El mínimo que necesitás facturar por mes</strong> para que el negocio no pierda dinero. Se calcula sumando todos tus gastos fijos.</div>
+          </div>
+        </div>
+
+        <!-- Margen de Ganancia -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-14" aria-expanded="false" aria-controls="glossary-14"><strong>Margen de Ganancia</strong></button></h2>
+          <div id="glossary-14" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>Qué porcentaje de todo lo que facturás te queda como ganancia real.</strong> Ejemplo: margen del 20% significa que de cada $100 facturados, $20 son ganancia y $80 son costos.</div>
+          </div>
+        </div>
+
+        <!-- Flujo de Caja -->
+        <div class="accordion-item">
+          <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#glossary-15" aria-expanded="false" aria-controls="glossary-15"><strong>Flujo de Caja</strong></button></h2>
+          <div id="glossary-15" class="accordion-collapse collapse" data-bs-parent="#glosarioAccordion">
+            <div class="accordion-body text-muted"><strong>El movimiento real de plata que entra y sale del negocio</strong> cada mes.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN: FEEDBACK                                                -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+      <i class="bi bi-check-circle me-2"></i><%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <div class="card border-0 bg-light mt-4">
+    <div class="card-body">
+      <h6 class="mb-3">¿Encontraste algo confuso en el sistema? Anotalo acá:</h6>
+      <form action="/guia/feedback" method="POST">
+        <div class="mb-3">
+          <textarea name="contenido" class="form-control" rows="3" placeholder="Ej: No entiendo para qué sirve la sección de gastos fijos... o qué botón apretar para..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm">
+          <i class="bi bi-send me-1"></i> Guardar comentario
+        </button>
+        <small class="text-muted ms-2">Tu comentario ayuda a mejorar el sistema para vos y para otros usuarios.</small>
+      </form>
+    </div>
+  </div>
+
+</div>

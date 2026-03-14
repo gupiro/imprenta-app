@@ -714,6 +714,18 @@ async function initDb() {
             )
         `);
 
+        // ════════════════════════════════════════════════════════════════
+        // TABLA: NOTAS DEL SISTEMA (FEEDBACK)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS notas_sistema (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                contenido   TEXT NOT NULL,
+                usuario_id  INTEGER REFERENCES users(id),
+                fecha       TEXT DEFAULT (datetime('now'))
+            )
+        `);
+
         console.log('✅ Base de datos lista\n');
         return db;
 

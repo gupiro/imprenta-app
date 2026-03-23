@@ -276,7 +276,7 @@ module.exports = (db) => {
     router.post('/tarjetas/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_tarjetas WHERE id = ?', [id]);
+            await db.run('DELETE FROM deudas_tarjetas WHERE id = ?', id);
             req.flash('success', '✅ Tarjeta eliminada');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -289,27 +289,30 @@ module.exports = (db) => {
             const id = parseInt(req.params.id);
             const { monto, fecha, metodo_pago, notas } = req.body;
             const montoNum = parseFloat(monto);
+            const metodoCapitalizado = metodo_pago
+                ? metodo_pago.charAt(0).toUpperCase() + metodo_pago.slice(1).toLowerCase()
+                : 'Transferencia';
 
             if (isNaN(montoNum) || montoNum <= 0) {
                 req.flash('error', 'Monto inválido');
                 return res.redirect('/deudas/tarjetas');
             }
 
-            const tarjeta = await db.get('SELECT saldo_adeudado FROM deudas_tarjetas WHERE id = ?', id);
+            const tarjeta = await db.get('SELECT saldo_adeudado, nombre_tarjeta, tipo FROM deudas_tarjetas WHERE id = ?', id);
             if (!tarjeta) {
                 req.flash('error', 'Tarjeta no encontrada');
                 return res.redirect('/deudas/tarjetas');
             }
 
             // Registrar en movimientos_caja
-            const cajaResult = await db.run(
+            await db.run(
                 `INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, usuario_id, fecha, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 'egreso',
                 'Pago Tarjeta de Crédito',
                 'Deuda',
                 montoNum,
-                metodo_pago || null,
+                metodoCapitalizado,
                 req.session?.userId || null,
                 fecha || new Date().toISOString().slice(0, 10),
                 notas?.trim() || null
@@ -323,7 +326,7 @@ module.exports = (db) => {
                 id,
                 montoNum,
                 fecha || new Date().toISOString().slice(0, 10),
-                metodo_pago || null,
+                metodoCapitalizado,
                 req.session?.userId || null,
                 null, // Se actualiza después si es necesario
                 notas?.trim() || null
@@ -335,6 +338,12 @@ module.exports = (db) => {
                 'UPDATE deudas_tarjetas SET saldo_adeudado = ? WHERE id = ?',
                 nuevoSaldo,
                 id
+            );
+
+            // Registrar en gastos para que impacte el balance financiero
+            await db.run(
+                'INSERT INTO gastos (fecha, categoria, descripcion, monto, estado_pago, tipo, metodo_pago, usuario_id) VALUES (?,?,?,?,?,?,?,?)',
+                [fecha || new Date().toISOString().slice(0, 10), 'Tarjeta de Crédito', `Pago Tarjeta ${tarjeta.nombre_tarjeta}`, montoNum, 'pagado', tarjeta.tipo || 'negocio', metodoCapitalizado, req.session?.userId || null]
             );
 
             req.flash('success', `✅ Pago de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado`);
@@ -457,7 +466,7 @@ module.exports = (db) => {
     router.post('/cheques/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_cheques WHERE id = ?', [id]);
+            await db.run('DELETE FROM deudas_cheques WHERE id = ?', id);
             req.flash('success', '✅ Cheque eliminado');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -470,7 +479,7 @@ module.exports = (db) => {
             const id = parseInt(req.params.id);
             const { fecha, metodo_pago, notas } = req.body;
 
-            const cheque = await db.get('SELECT monto FROM deudas_cheques WHERE id = ?', id);
+            const cheque = await db.get('SELECT monto, numero_cheque, beneficiario FROM deudas_cheques WHERE id = ?', id);
             if (!cheque) {
                 req.flash('error', 'Cheque no encontrado');
                 return res.redirect('/deudas/cheques');
@@ -504,7 +513,13 @@ module.exports = (db) => {
             );
 
             // Marcar cheque como cobrado
-            await db.run('UPDATE deudas_cheques SET estado = ? WHERE id = ?', ['cobrado', id]);
+            await db.run('UPDATE deudas_cheques SET estado = ? WHERE id = ?', 'cobrado', id);
+
+            // Registrar en gastos para que impacte el balance financiero
+            await db.run(
+                'INSERT INTO gastos (fecha, categoria, descripcion, monto, estado_pago, tipo, metodo_pago, usuario_id) VALUES (?,?,?,?,?,?,?,?)',
+                [fecha || new Date().toISOString().slice(0, 10), 'Cheques', `Cheque #${cheque.numero_cheque} - ${cheque.beneficiario}`, cheque.monto, 'pagado', 'negocio', metodo_pago || 'efectivo', req.session?.userId || null]
+            );
 
             req.flash('success', `✅ Cheque marcado como cobrado`);
         } catch (err) {
@@ -621,7 +636,7 @@ module.exports = (db) => {
     router.post('/prestamos/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_prestamos WHERE id = ?', [id]);
+            await db.run('DELETE FROM deudas_prestamos WHERE id = ?', id);
             req.flash('success', '✅ Préstamo eliminado');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -640,7 +655,7 @@ module.exports = (db) => {
                 return res.redirect('/deudas/prestamos');
             }
 
-            const prestamo = await db.get('SELECT monto_pendiente, cuotas_pagadas FROM deudas_prestamos WHERE id = ?', id);
+            const prestamo = await db.get('SELECT monto_pendiente, cuotas_pagadas, descripcion, entidad FROM deudas_prestamos WHERE id = ?', id);
             if (!prestamo) {
                 req.flash('error', 'Préstamo no encontrado');
                 return res.redirect('/deudas/prestamos');
@@ -686,8 +701,14 @@ module.exports = (db) => {
 
             // Si está pagado, cambiar estado
             if (nuevoSaldo <= 0) {
-                await db.run('UPDATE deudas_prestamos SET estado = ? WHERE id = ?', ['cancelado', id]);
+                await db.run('UPDATE deudas_prestamos SET estado = ? WHERE id = ?', 'cancelado', id);
             }
+
+            // Registrar en gastos para que impacte el balance financiero
+            await db.run(
+                'INSERT INTO gastos (fecha, categoria, descripcion, monto, estado_pago, tipo, metodo_pago, usuario_id) VALUES (?,?,?,?,?,?,?,?)',
+                [fecha || new Date().toISOString().slice(0, 10), 'Préstamos', `Cuota ${nuevosCuotaPagadas} - ${prestamo.entidad} (${prestamo.descripcion})`, montoNum, 'pagado', 'negocio', metodo_pago || 'efectivo', req.session?.userId || null]
+            );
 
             req.flash('success', `✅ Pago de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado (Cuota ${nuevosCuotaPagadas})`);
         } catch (err) {
@@ -804,7 +825,7 @@ module.exports = (db) => {
     router.post('/proveedores-deuda/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_proveedores WHERE id = ?', [id]);
+            await db.run('DELETE FROM deudas_proveedores WHERE id = ?', id);
             req.flash('success', '✅ Deuda eliminada');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -823,7 +844,7 @@ module.exports = (db) => {
                 return res.redirect('/deudas/proveedores-deuda');
             }
 
-            const deuda = await db.get('SELECT monto_total, monto_pagado FROM deudas_proveedores WHERE id = ?', id);
+            const deuda = await db.get('SELECT monto_total, monto_pagado, concepto, proveedor_id FROM deudas_proveedores WHERE id = ?', id);
             if (!deuda) {
                 req.flash('error', 'Deuda no encontrada');
                 return res.redirect('/deudas/proveedores-deuda');
@@ -880,7 +901,7 @@ module.exports = (db) => {
     // GRÁFICOS Y ANÁLISIS
     // ════════════════════════════════════════════════════════════════
 
-    router.get('/graficos/deudas', checkPermission, async (req, res) => {
+    router.get('/graficos/deudas', checkPermission, async (_req, res) => {
         try {
             const totalTarjetas = (await db.get(`
                 SELECT COALESCE(SUM(saldo_adeudado), 0) AS total
@@ -937,7 +958,7 @@ module.exports = (db) => {
     // ALERTAS Y VENCIMIENTOS
     // ════════════════════════════════════════════════════════════════
 
-    router.get('/alertas', checkPermission, async (req, res) => {
+    router.get('/alertas', checkPermission, async (_req, res) => {
         try {
             const vencidos = await db.all(`
                 SELECT 'cheque' AS tipo, numero_cheque AS descripcion, monto, fecha_vencimiento

@@ -6,11 +6,13 @@ const checkPermission = require('../middleware/permissions');
 module.exports = (db) => {
     const clientesController = require('../controllers/clientesController')(db);
 
-    // Crear cliente desde modal - SIN AUTENTICACIÓN (acceso público para modal)
-    router.post('/crear-desde-modal', clientesController.crearClienteDesdeModal);
+    const { isAuthenticated } = require('../middleware/authMiddleware');
 
-    // Buscar clientes por nombre - SIN AUTENTICACIÓN
-    router.get('/search', clientesController.buscarClientes);
+    // Crear cliente desde modal - REQUIERE LOGIN
+    router.post('/crear-desde-modal', isAuthenticated, clientesController.crearClienteDesdeModal);
+
+    // Buscar clientes por nombre - REQUIERE LOGIN
+    router.get('/search', isAuthenticated, clientesController.buscarClientes);
 
     // ▶ Listar Clientes (HTML)
     router.get('/', checkPermission, clientesController.listarClientes);

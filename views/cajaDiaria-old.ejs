@@ -1,0 +1,646 @@
+<!-- views/cajaDiaria.ejs - CON DESGLOSE POR MÉTODO -->
+<style>
+@media print {
+  nav, .navbar, .card-registrar-movimiento,
+  .filtros-avanzados, footer, .btn-acciones,
+  .btn-imprimir, .btn-exportar,
+  .no-print, .btn-close,
+  .card.mb-5:first-of-type, .card.mb-4 { display: none !important; }
+  .print-header { display: block !important; }
+  body { background: white !important; }
+  .container { max-width: 100% !important; padding: 0 !important; }
+  .table { font-size: 11px; }
+}
+.print-header { display: none; }
+</style>
+
+<!-- Encabezado visible solo al imprimir -->
+<div class="print-header" style="display:none; margin-bottom:12px;">
+  <h2 style="margin:0;">Imprenta El Gráfico — Caja Diaria</h2>
+  <p style="margin:4px 0 0;">Fecha: <%= fechaMostrada %> | Impreso por: <%= user && user.username ? user.username : 'Admin' %></p>
+</div>
+
+<div class="container py-4">
+  <h1><i class="bi bi-cash-coin"></i> Caja Diaria</h1>
+  <p class="text-muted">Registro de ingresos y egresos del día con desglose por método de pago</p>
+  <div id="resumenDatos" style="display:none"
+       data-ingresos="<%= totales.ingresos || 0 %>"
+       data-egresos="<%= totales.egresos || 0 %>"
+       data-saldo="<%= totales.saldo || 0 %>"
+       data-efectivo="<%= totales.efectivo || 0 %>"
+       data-transferencia="<%= totales.transferencia || 0 %>"
+       data-tarjeta="<%= totales.tarjeta || 0 %>"
+       data-qr="<%= totales.qr || 0 %>">
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle"></i>
+      <%= Array.isArray(error) ? error.join('<br>') : error %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <i class="bi bi-check-circle"></i>
+      <%= Array.isArray(success) ? success.join('<br>') : success %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- BOTONES DE ACCIÓN - SOLO PARA ADMIN -->
+  <% if (puedeVerNumeros) { %>
+  <div class="row g-2 mb-4 no-print">
+    <div class="col-auto">
+      <button id="btnImprimir" class="btn btn-primary">
+        <i class="bi bi-printer"></i> 🖨️ Imprimir Caja
+      </button>
+    </div>
+    <div class="col-auto">
+      <button id="btnExportarPDF" class="btn btn-danger">
+        <i class="bi bi-file-pdf"></i> 📄 Exportar PDF
+      </button>
+    </div>
+  </div>
+  <% } %>
+
+  
+
+  <!-- FORMULARIO PARA AGREGAR MOVIMIENTO -->
+  <div class="card mb-5">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">➕ Registrar Movimiento</h5>
+    </div>
+    <div class="card-body">
+      <form action="/caja-diaria/agregar" method="POST">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+  <input type="hidden" name="fecha" value="<%= fechaSeleccionada %>">
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="ingreso">➕ Ingreso</option>
+              <option value="egreso">➖ Egreso</option>
+            </select>
+          </div>
+          <div class="col-md-5 mb-3">
+            <label class="form-label fw-bold">Concepto *</label>
+            <input type="text" name="concepto" class="form-control" placeholder="Ej: Pago Pedido #123" required>
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label fw-bold">Categoría</label>
+            <select name="categoria" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="Ventas">💰 Ventas</option>
+              <option value="Devoluciones">↩️ Devoluciones</option>
+              <option value="Sueldos">👥 Sueldos</option>
+              <option value="Alquiler">🏠 Alquiler</option>
+              <option value="Servicios">⚙️ Servicios</option>
+              <option value="Otros">📌 Otros</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Monto ($) *</label>
+            <input type="number" name="monto" class="form-control" step="0.01" min="0" placeholder="0.00" required>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Método de Pago *</label>
+            <select name="metodo_pago" class="form-select" required>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="QR">📱 QR</option>
+            </select>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Turno *</label>
+            <select name="turno" class="form-select" required>
+              <option value="mañana" <% if(turnoActual === 'mañana') { %>selected<% } %>>☀️ Turno Mañana</option>
+              <option value="tarde" <% if(turnoActual === 'tarde') { %>selected<% } %>>🌙 Turno Tarde</option>
+            </select>
+            <% if (turnosCerrados && turnosCerrados.length > 0) { %>
+              <small class="text-danger d-block mt-1">
+                <i class="bi bi-exclamation-circle"></i> Turno<%= turnosCerrados.length === 2 ? 's' : '' %> cerrado<%= turnosCerrados.length === 2 ? 's' : '' %>: <%= turnosCerrados.join(', ') %>
+              </small>
+            <% } %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-12 mb-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-success w-100">
+              <i class="bi bi-check-circle"></i> Registrar Movimiento
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PANEL DE FILTROS - SOLO ADMIN -->
+  <% if (user && user.rol === 'admin') { %>
+  <form method="GET" action="/caja-diaria" class="card mb-4">
+    <div class="card-body">
+      <h6 class="mb-3">🔍 Filtros Avanzados</h6>
+      <div class="row g-2">
+        <!-- Selector de fecha -->
+        <div class="col-md-3">
+          <label class="form-label">Fecha</label>
+          <input type="date" name="fecha" value="<%= fechaSeleccionada %>" class="form-control">
+        </div>
+        <!-- Tipo -->
+        <div class="col-md-2">
+          <label class="form-label">Tipo</label>
+          <select name="tipo" class="form-select">
+            <option value="">Todos</option>
+            <option value="ingreso" <%= filtros.tipo==='ingreso' ? 'selected':'' %>>➕ Ingreso</option>
+            <option value="egreso" <%= filtros.tipo==='egreso' ? 'selected':'' %>>➖ Egreso</option>
+          </select>
+        </div>
+        <!-- Concepto/búsqueda -->
+        <div class="col-md-3">
+          <label class="form-label">Buscar concepto</label>
+          <input type="text" name="concepto" value="<%= filtros.concepto %>" class="form-control" placeholder="Ej: Pedido #123">
+        </div>
+        <!-- Método de pago -->
+        <div class="col-md-2">
+          <label class="form-label">Método</label>
+          <select name="metodo" class="form-select">
+            <option value="">Todos</option>
+            <option value="Efectivo" <%= filtros.metodo==='Efectivo' ? 'selected':'' %>>Efectivo</option>
+            <option value="Transferencia" <%= filtros.metodo==='Transferencia' ? 'selected':'' %>>Transferencia</option>
+            <option value="Tarjeta" <%= filtros.metodo==='Tarjeta' ? 'selected':'' %>>Tarjeta</option>
+            <option value="QR" <%= filtros.metodo==='QR' ? 'selected':'' %>>QR</option>
+          </select>
+        </div>
+        <!-- Turno -->
+        <div class="col-md-2">
+          <label class="form-label">Turno</label>
+          <select name="turno" class="form-select">
+            <option value="">Todos</option>
+            <option value="mañana" <%= filtros.turno==='mañana' ? 'selected':'' %>>☀️ Mañana</option>
+            <option value="tarde" <%= filtros.turno==='tarde' ? 'selected':'' %>>🌙 Tarde</option>
+          </select>
+        </div>
+        <!-- Botones -->
+        <div class="col-md-2 d-flex align-items-end gap-1">
+          <button type="submit" class="btn btn-primary btn-sm w-100">🔍 Filtrar</button>
+          <a href="/caja-diaria" class="btn btn-secondary btn-sm w-100">Limpiar</a>
+        </div>
+      </div>
+    </div>
+  </form>
+  <% } %>
+
+  <!-- TABLA DE MOVIMIENTOS - SOLO PARA ADMIN -->
+  <% if (puedeVerNumeros) { %>
+    <div class="print-header mb-3">
+      <h4 id="caja-imprimir-fecha">Imprenta El Gráfico — Caja Diaria — <%= fechaMostrada %></h4>
+    </div>
+  <div class="card print-area">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">📊 Movimientos - <%= fechaMostrada %></h6>
+    </div>
+    <div class="card-body p-0">
+      <% if (movimientos && movimientos.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <%
+              function buildSortUrl(col) {
+                const newDir = (sortBy === col && sortDir === 'asc') ? 'desc' : 'asc';
+                let url = '/caja-diaria?fecha=' + encodeURIComponent(fechaSeleccionada);
+                if (filtros.tipo)     url += '&tipo='    + encodeURIComponent(filtros.tipo);
+                if (filtros.concepto) url += '&concepto='+ encodeURIComponent(filtros.concepto);
+                if (filtros.metodo)   url += '&metodo='  + encodeURIComponent(filtros.metodo);
+                if (filtros.turno)    url += '&turno='   + encodeURIComponent(filtros.turno);
+                url += '&sortBy=' + col + '&sortDir=' + newDir;
+                return url;
+              }
+              function sortIcon(col) {
+                if (sortBy !== col) return '';
+                return sortDir === 'asc' ? ' ↑' : ' ↓';
+              }
+            %>
+            <thead class="table-light">
+              <tr>
+                <th style="width: 80px;"><a href="<%= buildSortUrl('tipo') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Tipo<%= sortIcon('tipo') %></a></th>
+                <th><a href="<%= buildSortUrl('concepto') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Concepto<%= sortIcon('concepto') %></a></th>
+                <th><a href="<%= buildSortUrl('categoria') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Categoría<%= sortIcon('categoria') %></a></th>
+                <th style="width: 100px;"><a href="<%= buildSortUrl('metodo') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Método<%= sortIcon('metodo') %></a></th>
+                <th style="width: 120px;"><a href="<%= buildSortUrl('monto') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Monto<%= sortIcon('monto') %></a></th>
+                <th style="width: 100px;"><a href="<%= buildSortUrl('usuario') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Usuario<%= sortIcon('usuario') %></a></th>
+                <th style="width: 80px;"><a href="<%= buildSortUrl('turno') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Turno<%= sortIcon('turno') %></a></th>
+                <th><a href="<%= buildSortUrl('fecha') %>" class="text-decoration-none text-dark" style="cursor:pointer;">Hora<%= sortIcon('fecha') %></a></th>
+                <th style="width: 160px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% movimientos.forEach(mov => { %>
+                <tr>
+                  <td>
+                    <% if (mov.tipo === 'ingreso') { %>
+                      <span class="badge bg-success">➕ Ingreso</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">➖ Egreso</span>
+                    <% } %>
+                  </td>
+                  <td><strong><%= mov.concepto %></strong></td>
+                  <td><small class="text-muted"><%= mov.categoria || '-' %></small></td>
+                  <td>
+                    <% if (mov.metodo_pago === 'Efectivo') { %>
+                      💵 Efectivo
+                    <% } else if (mov.metodo_pago === 'Transferencia') { %>
+                      🏦 Transfer.
+                    <% } else if (mov.metodo_pago === 'Tarjeta') { %>
+                      💳 Tarjeta
+                    <% } else if (mov.metodo_pago === 'QR') { %>
+                      📱 QR
+                    <% } else { %>
+                      <%= mov.metodo_pago || '-' %>
+                    <% } %>
+                  </td>
+                  <td class="fw-bold">
+                    <% if (mov.tipo === 'ingreso') { %>
+                      <span class="text-success">+$<%= (mov.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                    <% } else { %>
+                      <span class="text-danger">-$<%= (mov.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      <% if (mov.username) { %>
+                        <%= mov.username %>
+                      <% } else { %>
+                        <em>-</em>
+                      <% } %>
+                    </small>
+                  </td>
+                  <td>
+                    <span class="badge <%= mov.turno === 'tarde' ? 'bg-secondary' : 'bg-warning text-dark' %>">
+                      <%= mov.turno === 'tarde' ? '🌙 Tarde' : '☀️ Mañana' %>
+                    </span>
+                  </td>
+                  <td>
+                    <small class="text-muted">
+                      <% if (mov.fecha) { %>
+                        <%= new Date(mov.fecha.replace(' ', 'T')).toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'}) %>
+                      <% } %>
+                    </small>
+                  </td>
+                  <td class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalEditar"
+                            onclick="editarMovimiento(<%= mov.id %>, '<%= mov.tipo %>', '<%= mov.concepto %>', '<%= mov.categoria || '' %>', <%= mov.monto %>, '<%= mov.metodo_pago || '' %>')"
+                            title="Editar">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <% if (mov.pedido_id) { %>
+                    <button class="btn btn-sm btn-outline-info"
+                            data-bs-toggle="modal"
+                            data-bs-target="#modalDetalle"
+                            onclick="verDetallePedido(<%= mov.pedido_id %>)"
+                            title="Ver detalle del pedido">
+                      <i class="bi bi-info-circle"></i>
+                    </button>
+                    <% } %>
+                    <% if (user && user.rol === 'admin') { %>
+                    <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
+                          onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="alert alert-info m-3 mb-0">
+          <i class="bi bi-info-circle"></i> No hay movimientos registrados para <strong><%= fechaMostrada %></strong>.
+        </div>
+      <% } %>
+    </div>
+  </div>
+  <% } %> <!-- Fin de puedeVerNumeros -->
+
+  
+<% if (puedeVerNumeros) { %>
+  <!-- RESUMEN POR TURNO Y TOTAL - SOLO PARA ADMIN -->
+  <div class="row g-3 mb-5 print-area">
+    <!-- Turno Mañana -->
+    <div class="col-lg-4">
+      <div class="card border-warning">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">☀️ Turno Mañana</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Ingresos</p>
+              <h5 class="text-success">$<%= (totalesTurno.manana.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Egresos</p>
+              <h5 class="text-danger">$<%= (totalesTurno.manana.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+          <p class="text-center mb-2">
+            <strong>Saldo:</strong> $<%= (totalesTurno.manana.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </p>
+          <% if (turnosCerrados && turnosCerrados.includes('mañana')) { %>
+            <div class="mb-2">
+              <span class="badge bg-secondary w-100 d-block mb-2">🔒 CERRADO</span>
+              <% if (user && user.rol === 'admin') { %>
+                <form action="/caja-diaria/reabrir-turno" method="POST" style="display:inline-block; width:100%;">
+                  <button type="submit" name="turno" value="mañana" class="btn btn-sm btn-outline-warning w-100">🔓 Reabrir Turno</button>
+                </form>
+              <% } %>
+            </div>
+          <% } else { %>
+            <form action="/caja-diaria/cerrar-turno" method="POST" style="display:inline-block; width:100%;">
+              <button type="submit" name="turno" value="mañana" class="btn btn-sm btn-warning w-100">🔒 Cerrar Turno</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Turno Tarde -->
+    <div class="col-lg-4">
+      <div class="card border-secondary">
+        <div class="card-header bg-secondary text-white">
+          <h6 class="mb-0">🌙 Turno Tarde</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Ingresos</p>
+              <h5 class="text-success">$<%= (totalesTurno.tarde.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Egresos</p>
+              <h5 class="text-danger">$<%= (totalesTurno.tarde.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+          <p class="text-center mb-2">
+            <strong>Saldo:</strong> $<%= (totalesTurno.tarde.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </p>
+          <% if (turnosCerrados && turnosCerrados.includes('tarde')) { %>
+            <div class="mb-2">
+              <span class="badge bg-secondary w-100 d-block mb-2">🔒 CERRADO</span>
+              <% if (user && user.rol === 'admin') { %>
+                <form action="/caja-diaria/reabrir-turno" method="POST" style="display:inline-block; width:100%;">
+                  <button type="submit" name="turno" value="tarde" class="btn btn-sm btn-outline-secondary w-100">🔓 Reabrir Turno</button>
+                </form>
+              <% } %>
+            </div>
+          <% } else { %>
+            <form action="/caja-diaria/cerrar-turno" method="POST" style="display:inline-block; width:100%;">
+              <button type="submit" name="turno" value="tarde" class="btn btn-sm btn-secondary w-100">🔒 Cerrar Turno</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Día -->
+    <div class="col-lg-4">
+      <div class="card border-primary">
+        <div class="card-header bg-primary text-white">
+          <h6 class="mb-0">📅 Total Día</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Ingresos</p>
+              <h5 class="text-success">$<%= (totales.ingresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+            <div class="col-6 mb-2">
+              <p class="text-muted small mb-1">Egresos</p>
+              <h5 class="text-danger">$<%= (totales.egresos || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+            </div>
+          </div>
+          <p class="text-center mb-2">
+            <strong>Saldo:</strong> $<%= (totales.saldo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </p>
+          <p class="text-center text-muted mb-0">
+            <small><%= (movimientos && movimientos.length) || 0 %> movimientos</small>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DESGLOSE POR MÉTODO DE PAGO -->
+  <div class="card mb-5 print-area">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">💳 Desglose por Método de Pago</h6>
+    </div>
+    <div class="card-body">
+      <div class="row text-center">
+        <div class="col-md-3">
+          <p class="text-muted mb-1">💵 Efectivo</p>
+          <h5 class="text-success">$<%= (totales.efectivo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">🏦 Transferencia</p>
+          <h5 class="text-info">$<%= (totales.transferencia || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">💳 Tarjeta</p>
+          <h5 class="text-primary">$<%= (totales.tarjeta || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+        <div class="col-md-3">
+          <p class="text-muted mb-1">📱 QR</p>
+          <h5 class="text-warning">$<%= (totales.qr || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h5>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+<!-- TABLA DE ÚLTIMOS 10 MOVIMIENTOS - PARA NO-ADMIN -->
+  <% if (!puedeVerNumeros && movimientos && movimientos.length > 0) { %>
+  <div class="card">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">📋 Últimos 10 Movimientos Registrados</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 table-sm">
+          <thead class="table-light">
+            <tr>
+              <th>Tipo</th>
+              <th>Concepto</th>
+              <th>Método de Pago</th>
+              <th>Importe</th>
+              <th style="width: 100px;">Usuario</th>
+              <th>Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% movimientos.slice(0, 10).forEach(mov => { %>
+              <tr>
+                <td>
+                  <% if (mov.tipo === 'ingreso') { %>
+                    <span class="badge bg-success">➕ Ingreso</span>
+                  <% } else { %>
+                    <span class="badge bg-danger">➖ Egreso</span>
+                  <% } %>
+                </td>
+                <td><strong><%= mov.concepto %></strong></td>
+                <td>
+                  <% if (mov.metodo_pago === 'Efectivo') { %>💵 Efectivo<% } else if (mov.metodo_pago === 'Transferencia') { %>🏦 Transferencia<% } else if (mov.metodo_pago === 'Tarjeta') { %>💳 Tarjeta<% } else if (mov.metodo_pago === 'QR') { %>📱 QR<% } else { %><%= mov.metodo_pago %><% } %>
+                </td>
+                <td class="fw-semibold text-end">$<%= (mov.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                <td><small class="text-muted"><%= mov.username || 'Sistema' %></small></td>
+                <td><small><%= mov.fecha ? mov.fecha.slice(11, 16) : '' %></small></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<!-- Modal Editar Movimiento -->
+<div class="modal fade" id="modalEditar" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditar" action="" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar Movimiento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tipo *</label>
+            <select id="editTipo" name="tipo" class="form-select" required>
+              <option value="ingreso">➕ Ingreso</option>
+              <option value="egreso">➖ Egreso</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Categoría</label>
+            <input type="text" id="editCategoria" name="categoria" class="form-control">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Concepto *</label>
+            <input type="text" id="editConcepto" name="concepto" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Monto $ *</label>
+            <input type="number" id="editMonto" name="monto" step="0.01" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Método de Pago</label>
+            <select id="editMetodo" name="metodo_pago" class="form-select">
+              <option value="">-- Seleccionar --</option>
+              <option value="Efectivo">💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="QR">📱 QR</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle Pedido -->
+<div class="modal fade" id="modalDetalle" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle del Pedido</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="detallePedidoContent">
+          <div class="text-center">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function editarMovimiento(id, tipo, concepto, categoria, monto, metodo) {
+    document.getElementById('editTipo').value = tipo;
+    document.getElementById('editConcepto').value = concepto;
+    document.getElementById('editCategoria').value = categoria || '';
+    document.getElementById('editMonto').value = monto;
+    document.getElementById('editMetodo').value = metodo || '';
+    document.getElementById('formEditar').action = '/caja-diaria/' + id + '/editar';
+  }
+
+  async function verDetallePedido(pedidoId) {
+    const content = document.getElementById('detallePedidoContent');
+    content.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div></div>';
+
+    try {
+      const res = await fetch('/api/pedidos/' + pedidoId);
+      const pedido = await res.json();
+
+      if (!pedido) {
+        content.innerHTML = '<div class="alert alert-warning">Pedido no encontrado</div>';
+        return;
+      }
+
+      const html = `
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <strong>Pedido #${pedido.id}</strong>
+          <p class="text-muted mb-0">Fecha: ${new Date(pedido.fecha).toLocaleDateString('es-AR')}</p>
+        </div>
+        <div class="col-md-6 text-end">
+          <span class="badge bg-primary">${pedido.estado}</span>
+          <span class="badge bg-${pedido.estado_pago === 'PAGADO' ? 'success' : 'warning'}">${pedido.estado_pago}</span>
+        </div>
+      </div>`;
+
+      content.innerHTML = html;
+    } catch (error) {
+      content.innerHTML = '<div class="alert alert-danger">Error al cargar el detalle</div>';
+    }
+  }
+
+  const btnImprimir = document.getElementById('btnImprimir');
+  if (btnImprimir) {
+    btnImprimir.addEventListener('click', function() {
+      window.print();
+    });
+  }
+
+  const btnExportarPDF = document.getElementById('btnExportarPDF');
+  if (btnExportarPDF) {
+    btnExportarPDF.addEventListener('click', function() {
+      const fecha = '<%= fechaSeleccionada %>';
+      const titleOriginal = document.title;
+      document.title = 'Caja-' + fecha;
+      window.print();
+      setTimeout(function() { document.title = titleOriginal; }, 3000);
+    });
+  }
+</script>

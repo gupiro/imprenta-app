@@ -236,6 +236,12 @@
                 <div class="text-muted small">Tel: <%= pedido.phone %></div>
             <% } %>
         </div>
+
+        <!-- DETALLE DEL TRABAJO -->
+        <div class="info-section">
+            <div class="label">📝 DETALLE DEL TRABAJO</div>
+            <div><%= pedido.detalle ? pedido.detalle.replace(/\n/g, '<br>') : '<em>No especificado</em>' %></div>
+        </div>
         
         <!-- TABLA DE PRODUCTOS -->
         <div class="tabla-productos">

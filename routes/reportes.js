@@ -1,6 +1,7 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
 const path = require('path');
+const { calcularBalanceMes } = require('../utils/financiero');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -24,13 +25,11 @@ module.exports = (db) => {
         fechaInicio
       ))?.total || 0;
 
+      // ✅ CORREGIDO: Usar SOLO movimientos_caja para evitar doble conteo
+      // Cuando se pagan gastos/cuotas/facturas, ya se registran en movimientos_caja
       const egresosMes = (await db.get(
-        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
-          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) >= ?
-          UNION ALL
-          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) >= ?
-        )`,
-        fechaInicio, fechaInicio
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) >= ?",
+        fechaInicio
       ))?.total || 0;
 
       const deudaTotal = (await db.get(
@@ -66,13 +65,10 @@ module.exports = (db) => {
         fechaInicio, fechaFin
       ))?.total || 0;
 
+      // ✅ CORREGIDO: Usar SOLO movimientos_caja para evitar doble conteo
       const egresos = (await db.get(
-        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
-          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
-          UNION ALL
-          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) BETWEEN ? AND ?
-        )`,
-        fechaInicio, fechaFin, fechaInicio, fechaFin
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) BETWEEN ? AND ?",
+        [fechaInicio, fechaFin]
       ))?.total || 0;
 
       // Detalles por categoría
@@ -123,13 +119,10 @@ module.exports = (db) => {
         fecha
       ))?.total || 0;
 
+      // ✅ CORREGIDO: Usar SOLO movimientos_caja para evitar doble conteo
       const egresos = (await db.get(
-        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
-          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?
-          UNION ALL
-          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) = ?
-        )`,
-        fecha, fecha
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?",
+        [fecha]
       ))?.total || 0;
 
       // Movimientos detallados
@@ -389,13 +382,10 @@ module.exports = (db) => {
         fecha
       ))?.total || 0;
 
+      // ✅ CORREGIDO: Usar SOLO movimientos_caja para evitar doble conteo
       const egresos = (await db.get(
-        `SELECT COALESCE(SUM(monto), 0) AS total FROM (
-          SELECT monto FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?
-          UNION ALL
-          SELECT monto FROM gastos WHERE SUBSTR(fecha, 1, 10) = ?
-        )`,
-        fecha, fecha
+        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'egreso' AND SUBSTR(fecha, 1, 10) = ?",
+        [fecha]
       ))?.total || 0;
 
       const saldo = ingresos - egresos;
@@ -663,27 +653,19 @@ module.exports = (db) => {
     const lastDay = new Date(year, month, 0).getDate();
     const fechaFin = `${year}-${month}-${lastDay}`;
 
-    const ingresosTotales = (await db.get(
-      "SELECT COALESCE(SUM(monto),0) AS t FROM movimientos_caja WHERE tipo='ingreso' AND SUBSTR(fecha,1,10) BETWEEN ? AND ?",
-      [fechaInicio, fechaFin]
-    ))?.t || 0;
+    // Balance consolidado desde la fuente única de verdad
+    const balance = await calcularBalanceMes(db, mes);
+    const ingresosTotales     = balance.ingresosCaja;
+    const totalGastosNegocio  = balance.gastosNegocio;
+    const totalGastosPersonales = balance.gastosPersonales;
+    const gastosTotales       = balance.gastosTotales;
+    const resultadoNeto       = balance.resultadoNeto;
 
+    // Desglose por categoría (solo para la tabla del reporte, no afecta los totales)
     const gastosPorCategoria = await db.all(
-      "SELECT categoria, COALESCE(SUM(monto),0) AS total, COUNT(*) AS cant FROM gastos WHERE SUBSTR(fecha,1,10) BETWEEN ? AND ? GROUP BY categoria ORDER BY total DESC",
+      "SELECT categoria, COALESCE(SUM(monto),0) AS total, COUNT(*) AS cant FROM gastos WHERE tipo = 'negocio' AND SUBSTR(fecha,1,10) BETWEEN ? AND ? GROUP BY categoria ORDER BY total DESC",
       [fechaInicio, fechaFin]
     ) || [];
-
-    const totalGastosNegocio = gastosPorCategoria.reduce((s, g) => s + g.total, 0);
-
-    const totalGastosPersonales = (await db.get(
-      "SELECT COALESCE(SUM(monto),0) AS t FROM gastos WHERE SUBSTR(fecha,1,10) BETWEEN ? AND ?",
-      [fechaInicio, fechaFin]
-    ))?.t || 0;
-
-    const egresosCaja = (await db.get(
-      "SELECT COALESCE(SUM(monto),0) AS t FROM movimientos_caja WHERE tipo='egreso' AND SUBSTR(fecha,1,10) BETWEEN ? AND ?",
-      [fechaInicio, fechaFin]
-    ))?.t || 0;
 
     const pedidosRow = await db.get(
       "SELECT COUNT(*) AS cant, COALESCE(SUM(precio),0) AS facturado FROM pedidos WHERE estado='ENTREGADO' AND DATE(fecha) BETWEEN ? AND ?",
@@ -697,9 +679,6 @@ module.exports = (db) => {
     const deudaTarjetas = (await db.get(
       "SELECT COALESCE(SUM(saldo_adeudado),0) AS t FROM deudas_tarjetas WHERE estado='activa'"
     ))?.t || 0;
-
-    const gastosTotales = totalGastosNegocio + egresosCaja;
-    const resultadoNeto = ingresosTotales - gastosTotales;
 
     let conclusion, por100;
     if (ingresosTotales > 0 && resultadoNeto >= 0) {
@@ -718,7 +697,6 @@ module.exports = (db) => {
       gastosPorCategoria,
       totalGastosNegocio,
       totalGastosPersonales,
-      egresosCaja,
       gastosTotales,
       resultadoNeto,
       pedidosEntregados: pedidosRow,

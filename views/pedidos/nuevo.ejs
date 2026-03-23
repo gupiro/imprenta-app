@@ -137,8 +137,24 @@
         </div>
       </div>
 
-      <!-- ═════════════════════════════════════════
-           SECCIÓN 4: TOTALES Y PAGO
+      <!-- ═════════════════════════════════════════           SECCIÓN 3_extra: DETALLE DEL TRABAJO (OBLIGATORIO)
+           ════════════════════════════════════════════════= -->
+      <div class="col-12">
+        <div class="card border-0 shadow-sm border-info border-4">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="bi bi-pencil-square"></i> 3️⃣ DETALLE DEL TRABAJO</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="detalleTrabajo" class="form-label fw-bold">Detalle del trabajo *</label>
+              <textarea id="detalleTrabajo" name="detalle" class="form-control" rows="4" placeholder="Descripción del trabajo, especificaciones y observaciones" required></textarea>
+              <div class="form-text">Este campo es obligatorio.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════════════════════════════════════════           SECCIÓN 4: TOTALES Y PAGO
            ════════════════════════════════════════= -->
       <div class="col-12">
         <div class="card border-0 shadow-sm border-warning border-4">
@@ -518,6 +534,12 @@ function validarFormulario() {
     return false;
   }
   
+  const detalle = document.getElementById('detalleTrabajo').value.trim();
+  if (!detalle) {
+    alert('⚠️ Debés completar el detalle del trabajo.');
+    return false;
+  }
+
   let valido = true;
   productos.forEach((prod, i) => {
     const id = prod.querySelector('input[name="producto_id[]"]').value;

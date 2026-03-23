@@ -77,7 +77,35 @@
           </select>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Estado</label>
+          <select name="estado" class="form-select">
+            <option value="" <%= !estado ? 'selected' : '' %>>Todos</option>
+            <option value="PENDIENTE" <%= estado === 'PENDIENTE' ? 'selected' : '' %>>Pendiente</option>
+            <option value="EN_PRODUCCION" <%= estado === 'EN_PRODUCCION' ? 'selected' : '' %>>En producción</option>
+            <option value="LISTO" <%= estado === 'LISTO' ? 'selected' : '' %>>Listo</option>
+            <option value="ENTREGADO" <%= estado === 'ENTREGADO' ? 'selected' : '' %>>Entregado</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">Deuda</label>
+          <select name="deuda" class="form-select">
+            <option value="" <%= !deuda ? 'selected' : '' %>>Todos</option>
+            <option value="con" <%= deuda === 'con' ? 'selected' : '' %>>Con deuda</option>
+            <option value="sin" <%= deuda === 'sin' ? 'selected' : '' %>>Sin deuda</option>
+          </select>
+        </div>
+
+        <div class="col-md-1">
+          <label class="form-label fw-semibold">Hoy</label>
+          <select name="hoy" class="form-select">
+            <option value="" <%= !hoy ? 'selected' : '' %>>No</option>
+            <option value="1" <%= hoy === '1' ? 'selected' : '' %>>Sí</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
           <button type="submit" class="btn btn-primary w-100">
             <i class="bi bi-funnel"></i> Filtrar
           </button>
@@ -118,6 +146,20 @@
             </div>
             <div class="card-body">
               <p><strong>👤 Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <p><strong>🧑‍💼 Responsable:</strong> <%= p.username || '-' %></p>
+              <p><strong>📅 Entrega:</strong> <%= p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-AR') : 'No definida' %></p>
+              <p><strong>📝 Detalle:</strong>
+                <% const detalleTexto = (p.detalle || '').trim(); %>
+                <% if (!detalleTexto) { %>
+                  <em>No definido</em>
+                <% } else if (detalleTexto.length <= 120) { %>
+                  <%= detalleTexto %>
+                <% } else { %>
+                  <span id="detalleCortoListos-<%= p.id %>"><%= detalleTexto.substring(0,120) %>...</span>
+                  <span id="detalleCompletoListos-<%= p.id %>" class="d-none"><%= detalleTexto %></span>
+                  <a href="#" onclick="event.preventDefault(); document.getElementById('detalleCortoListos-<%= p.id %>').classList.toggle('d-none'); document.getElementById('detalleCompletoListos-<%= p.id %>').classList.toggle('d-none');">Ver más</a>
+                <% } %>
+              </p>
               <p><strong>💰 Total:</strong> <span class="text-primary fs-5">$<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span></p>
               <% if ((p.monto_entregado || 0) < (p.precio || 0)) { %>
                 <p class="text-danger"><strong>⚠️ Deuda:</strong> $<%= ((p.precio || 0) - (p.monto_entregado || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
@@ -176,6 +218,8 @@
               <th>ID</th>
               <th>Cliente</th>
               <th>Fecha</th>
+              <th>Entrega</th>
+              <th>Detalle</th>
               <th>Monto</th>
               <th>Deuda</th>
               <th>Productos</th>
@@ -188,6 +232,8 @@
               <td><strong>#<%= p.id %></strong></td>
               <td><%= p.cliente_nombre || 'N/A' %></td>
               <td><small><%= new Date(p.fecha).toLocaleDateString('es-AR') %></small></td>
+              <td><small><%= p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-AR') : '-' %></small></td>
+              <td><small><%= (p.detalle || '').length > 120 ? (p.detalle || '').substring(0, 120) + '...' : (p.detalle || '-') %></small></td>
               <td class="fw-bold">$<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
               <td>
                 <% if (p.monto_restante > 0) { %>
@@ -209,7 +255,8 @@
               <td>
                 <div class="d-flex gap-1">
                   <a href="/pedidos/detalle/<%= p.id %>" class="btn btn-sm btn-outline-primary">Detalle</a>
-                  <button class="btn btn-sm btn-success" onclick="enviarWhatsAppListo(<%= p.id %>, '<%= p.cliente_nombre.replace(/'/g, "\\'") %>')">
+                  <a href="/pedidos/<%= p.id %>/comprobante" class="btn btn-sm btn-outline-info">Comprobante</a>
+                  <button class="btn btn-sm btn-success" onclick="enviarWhatsAppListo(<%= p.id %>, '<%= p.cliente_nombre.replace(/'/g, "\\'") %>', <%= p.monto_restante %>)">
                     <i class="bi bi-whatsapp"></i>
                   </button>
                 </div>

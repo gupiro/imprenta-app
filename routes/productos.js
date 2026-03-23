@@ -109,7 +109,7 @@ module.exports = (db) => {
     // Eliminar Producto
     router.post('/eliminar/:id', checkPermission, async (req, res) => {
         try {
-            await db.run('DELETE FROM productos WHERE id = ?', [req.params.id]);
+            await db.run('DELETE FROM productos WHERE id = ?', req.params.id);
             req.flash('success', 'Producto eliminado correctamente.');
         } catch (err) {
             console.error('Error:', err);

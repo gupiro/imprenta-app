@@ -41,15 +41,25 @@ module.exports = (db) => {
   // ==================== FUNCIONES AUXILIARES ====================
 
   // Función para obtener pedidos con filtrado, búsqueda y ordenamiento
-  async function obtenerPedidosFiltrados(estado, search = '', sortBy = 'fecha', sortDir = 'desc', mes = '') {
-    let query = 'SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE p.estado = ?';
-    const params = [estado];
+  async function obtenerPedidosFiltrados(estado = '', search = '', sortBy = 'fecha', sortDir = 'desc', mes = '', deuda = '', hoy = '', estadoFiltro = '') {
+    let query = 'SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE 1=1';
+    const params = [];
+
+    if (estado) {
+      query += ' AND p.estado = ?';
+      params.push(estado);
+    }
+
+    if (estadoFiltro) {
+      query += ' AND p.estado = ?';
+      params.push(estadoFiltro);
+    }
 
     // Filtro de búsqueda
     if (search.trim()) {
       const searchTerm = `%${search}%`;
-      query += ' AND (p.id LIKE ? OR c.name LIKE ?)';
-      params.push(searchTerm, searchTerm);
+      query += ' AND (p.id LIKE ? OR c.name LIKE ? OR p.detalle LIKE ?)';
+      params.push(searchTerm, searchTerm, searchTerm);
     }
 
     // Filtro de mes (formato: YYYY-MM)
@@ -58,12 +68,28 @@ module.exports = (db) => {
       params.push(mes);
     }
 
+    // Filtro de deuda
+    if (deuda === 'con') {
+      query += ' AND (p.monto_restante > 0)';
+    } else if (deuda === 'sin') {
+      query += ' AND (p.monto_restante <= 0)';
+    }
+
+    // Filtro para hoy por fecha de entrega
+    if (hoy === '1') {
+      query += " AND DATE(p.fecha_entrega) = DATE('now','localtime')";
+    }
+
     // Ordenamiento
     const columnasPermitidas = {
       'fecha': 'p.fecha',
+      'fecha_entrega': 'p.fecha_entrega',
       'cliente': 'c.name',
       'monto': 'p.precio',
-      'id': 'p.id'
+      'deuda': 'p.monto_restante',
+      'estado': 'p.estado',
+      'id': 'p.id',
+      'responsable': 'u.username'
     };
     const columnaSQL = columnasPermitidas[sortBy] || 'p.fecha';
     const direccion = sortDir === 'asc' ? 'ASC' : 'DESC';
@@ -108,8 +134,13 @@ module.exports = (db) => {
   // 2) Crear Nuevo Pedido (POST)
   router.post('/nuevo', checkPermission, upload.any(), async (req, res) => {
     try {
-      const { clienteExistente, clienteInput, telefonoNuevo, direccionNuevo, cuitNuevo, emailNuevo, precioTotalPedido, monto_entregado, medio_pago, fecha_entrega } = req.body;
+      const { clienteExistente, clienteInput, telefonoNuevo, direccionNuevo, cuitNuevo, emailNuevo, precioTotalPedido, monto_entregado, medio_pago, fecha_entrega, detalle } = req.body;
       const presupuestoId = req.body.presupuesto_id || null;
+
+      if (!detalle || !detalle.trim()) {
+        req.flash('error', 'El detalle del trabajo es obligatorio.');
+        return res.redirect('/pedidos/nuevo');
+      }
 
       let clientId = null;
       if (clienteExistente && clienteExistente !== 'undefined') {
@@ -145,15 +176,7 @@ module.exports = (db) => {
       const { timestamp: fecha } = obtenerFechaLocal();
       const usuarioId = req.session.user?.id || null;
 
-      // Calcular estado_pago basado en adelanto
-      let estadoPago = 'PENDIENTE';
-      if (entregado >= precio) {
-        estadoPago = 'PAGADO';
-      } else if (entregado > 0) {
-        estadoPago = 'PARCIAL';
-      }
-
-      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id, estado_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId, estadoPago]);
+      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, detalle, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, detalle.trim(), usuarioId]);
       const pedidoId = infoPed.lastID;
 
       // 💰 REGISTRAR ADELANTO EN CAJA DIARIA (si hay monto adelantado)
@@ -195,8 +218,11 @@ module.exports = (db) => {
       const sortBy = req.query.sortBy || 'fecha';
       const sortDir = req.query.sortDir || 'desc';
       const view = req.query.view || 'cards'; // cards, tabla, lista
+      const deuda = req.query.deuda || '';
+      const hoy = req.query.hoy || '';
+      const estadoFiltro = req.query.estado || '';
 
-      const pedidos = await obtenerPedidosFiltrados('PENDIENTE', search, sortBy, sortDir);
+      const pedidos = await obtenerPedidosFiltrados('PENDIENTE', search, sortBy, sortDir, '', deuda, hoy, estadoFiltro);
 
       // Contar pedidos por estado
       const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
@@ -212,6 +238,9 @@ module.exports = (db) => {
         sortBy,
         sortDir,
         view,
+        deuda,
+        hoy,
+        estado: estadoFiltro,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -331,7 +360,7 @@ module.exports = (db) => {
       }
 
       const nuevo_entregado = (pedido.monto_entregado || 0) + monto;
-      const nuevo_saldo = (pedido.precio || 0) - nuevo_entregado;
+      const nuevo_saldo = Math.max(0, (pedido.precio || 0) - nuevo_entregado);
       const { timestamp: fecha_ahora } = obtenerFechaLocal();
 
       await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, fecha_pago = ?, medio_pago = ?, estado_pago = CASE WHEN ? <= 0.01 THEN "PAGADO" ELSE "PARCIAL" END WHERE id = ?', [nuevo_entregado, nuevo_saldo, fecha_ahora, metodo_pago || 'Efectivo', nuevo_saldo, id]);
@@ -436,8 +465,11 @@ module.exports = (db) => {
       const sortBy = req.query.sortBy || 'fecha';
       const sortDir = req.query.sortDir || 'desc';
       const view = req.query.view || 'cards';
+      const deuda = req.query.deuda || '';
+      const hoy = req.query.hoy || '';
+      const estadoFiltro = req.query.estado || '';
 
-      const pedidos = await obtenerPedidosFiltrados('EN_PRODUCCION', search, sortBy, sortDir);
+      const pedidos = await obtenerPedidosFiltrados('EN_PRODUCCION', search, sortBy, sortDir, '', deuda, hoy, estadoFiltro);
 
       // Contar pedidos por estado
       const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
@@ -453,6 +485,9 @@ module.exports = (db) => {
         sortBy,
         sortDir,
         view,
+        deuda,
+        hoy,
+        estado: estadoFiltro,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -469,8 +504,11 @@ module.exports = (db) => {
       const sortBy = req.query.sortBy || 'fecha';
       const sortDir = req.query.sortDir || 'desc';
       const view = req.query.view || 'cards';
+      const deuda = req.query.deuda || '';
+      const hoy = req.query.hoy || '';
+      const estadoFiltro = req.query.estado || '';
 
-      const pedidos = await obtenerPedidosFiltrados('LISTO', search, sortBy, sortDir);
+      const pedidos = await obtenerPedidosFiltrados('LISTO', search, sortBy, sortDir, '', deuda, hoy, estadoFiltro);
 
       // Contar pedidos por estado
       const countsRaw = await db.all("SELECT estado, COUNT(*) as c FROM pedidos GROUP BY estado");
@@ -486,6 +524,9 @@ module.exports = (db) => {
         sortBy,
         sortDir,
         view,
+        deuda,
+        hoy,
+        estado: estadoFiltro,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -503,6 +544,9 @@ module.exports = (db) => {
       const sortDir = req.query.sortDir || 'desc';
       const view = req.query.view || 'cards';
       const groupBy = req.query.groupBy || 'none'; // none, semana
+      const deuda = req.query.deuda || '';
+      const hoy = req.query.hoy || '';
+      const estadoFiltro = req.query.estado || '';
 
       // Filtro de mes: por defecto mes actual
       let mes = req.query.mes || '';
@@ -513,7 +557,7 @@ module.exports = (db) => {
         mes = `${año}-${m}`;
       }
 
-      const pedidos = await obtenerPedidosFiltrados('ENTREGADO', search, sortBy, sortDir, mes);
+      const pedidos = await obtenerPedidosFiltrados('ENTREGADO', search, sortBy, sortDir, mes, deuda, hoy, estadoFiltro);
 
       // Función auxiliar para obtener número de semana
       function getWeekNumber(date) {
@@ -565,6 +609,9 @@ module.exports = (db) => {
         view,
         groupBy,
         mes,
+        deuda,
+        hoy,
+        estado: estadoFiltro,
         success: req.flash('success'),
         error: req.flash('error')
       });
@@ -717,7 +764,7 @@ module.exports = (db) => {
 
       // Recalcular totales
       const nuevoEntregado = parseFloat(monto_entregado) || pedido.monto_entregado || 0;
-      const nuevoRestante  = totalItems - nuevoEntregado;
+      const nuevoRestante  = Math.max(0, totalItems - nuevoEntregado);
       const estadoPago     = nuevoRestante <= 0 ? 'PAGADO' : (nuevoEntregado > 0 ? 'PARCIAL' : 'PENDIENTE');
 
       await db.run(
@@ -742,8 +789,8 @@ module.exports = (db) => {
       // Recalcular total del pedido
       const items = await db.all('SELECT precio FROM productos WHERE pedido_id = ?', id);
       const nuevoTotal = items.reduce((s, i) => s + (i.precio || 0), 0);
-      const pedido = await db.get('SELECT monto_entregado FROM pedidos WHERE id = ?', [id]);
-      const nuevoRestante = nuevoTotal - (pedido?.monto_entregado || 0);
+      const pedido = await db.get('SELECT monto_entregado FROM pedidos WHERE id = ?', id);
+      const nuevoRestante = Math.max(0, nuevoTotal - (pedido?.monto_entregado || 0));
       await db.run('UPDATE pedidos SET precio = ?, monto_restante = ? WHERE id = ?', [nuevoTotal, nuevoRestante, id]);
       req.flash('success', 'Producto eliminado');
     } catch (err) {

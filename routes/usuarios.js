@@ -71,7 +71,7 @@ module.exports = (db) => { // Recibe 'db' como argumento
             }
 
             // Actualizar rol
-            await db.run('UPDATE users SET rol = ? WHERE id = ?', [rol, id]);
+            await db.run('UPDATE users SET rol = ? WHERE id = ?', rol, id);
             req.flash('success', `Rol de ${usuario.username} cambiado a ${rol}`);
             res.redirect('/usuarios');
         } catch (err) {
@@ -100,7 +100,7 @@ module.exports = (db) => { // Recibe 'db' como argumento
             }
 
             // Eliminar usuario
-            await db.run('DELETE FROM users WHERE id = ?', [id]);
+            await db.run('DELETE FROM users WHERE id = ?', id);
             req.flash('success', `Usuario ${usuario.username} eliminado correctamente.`);
             res.redirect('/usuarios');
         } catch (err) {

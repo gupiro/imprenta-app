@@ -112,7 +112,7 @@ module.exports = (db) => {
         else if (tipo === 'salida') nuevaCantidad -= cantidadNum;
         else if (tipo === 'ajuste') nuevaCantidad = cantidadNum;
 
-        await db.run('UPDATE stock SET cantidad = ? WHERE producto_id = ?', [nuevaCantidad, producto_id]);
+        await db.run('UPDATE stock SET cantidad = ? WHERE producto_id = ?', nuevaCantidad, producto_id);
       } else {
         // Crear nuevo registro si no existe
         let cantFinal = (tipo === 'entrada') ? cantidadNum : (tipo === 'ajuste' ? cantidadNum : -cantidadNum);
@@ -144,7 +144,7 @@ module.exports = (db) => {
         return res.redirect('/stock');
       }
 
-      await db.run('UPDATE stock SET cantidad = ? WHERE id = ?', [cantidadNum, id]);
+      await db.run('UPDATE stock SET cantidad = ? WHERE id = ?', cantidadNum, id);
       
       // Registrar movimiento de ajuste
       await db.run(

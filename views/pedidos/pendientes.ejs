@@ -59,14 +59,42 @@
           <input type="text" name="search" class="form-control" placeholder="Ej: Juan, #123" value="<%= search %>">
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label fw-semibold">📊 Ordenar por</label>
           <select name="sortBy" class="form-select">
-            <option value="fecha" <%= sortBy === 'fecha' ? 'selected' : '' %>>📅 Fecha</option>
+            <option value="fecha" <%= sortBy === 'fecha' ? 'selected' : '' %>>📅 Fecha creación</option>
+            <option value="fecha_entrega" <%= sortBy === 'fecha_entrega' ? 'selected' : '' %>>📆 Fecha entrega</option>
             <option value="cliente" <%= sortBy === 'cliente' ? 'selected' : '' %>>👤 Cliente</option>
             <option value="monto" <%= sortBy === 'monto' ? 'selected' : '' %>>💰 Monto</option>
+            <option value="deuda" <%= sortBy === 'deuda' ? 'selected' : '' %>>💸 Deuda</option>
             <option value="id" <%= sortBy === 'id' ? 'selected' : '' %>>🏷️ ID</option>
+            <option value="estado" <%= sortBy === 'estado' ? 'selected' : '' %>>📌 Estado</option>
           </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">📍 Estado</label>
+          <select name="estado" class="form-select">
+            <option value="">Todos</option>
+            <option value="PENDIENTE" <%= estadoActual === 'PENDIENTE' ? 'selected' : '' %>>📋 Pendiente</option>
+            <option value="EN_PRODUCCION" <%= estadoActual === 'EN_PRODUCCION' ? 'selected' : '' %>>⚙️ En producción</option>
+            <option value="LISTO" <%= estadoActual === 'LISTO' ? 'selected' : '' %>>✅ Listo</option>
+            <option value="ENTREGADO" <%= estadoActual === 'ENTREGADO' ? 'selected' : '' %>>🎉 Entregado</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">💰 Deuda</label>
+          <select name="deuda" class="form-select">
+            <option value="">Todos</option>
+            <option value="con" <%= (typeof deuda !== 'undefined' && deuda === 'con') ? 'selected' : '' %>>Con deuda</option>
+            <option value="sin" <%= (typeof deuda !== 'undefined' && deuda === 'sin') ? 'selected' : '' %>>Sin deuda</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-semibold">📅 Hoy</label>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="hoy" id="hoy" value="1" <%= (typeof hoy !== 'undefined' && hoy === '1') ? 'checked' : '' %>>
+            <label class="form-check-label" for="hoy">Solo entrega hoy</label>
+          </div>
         </div>
 
         <div class="col-md-2">
@@ -118,6 +146,20 @@
             </div>
             <div class="card-body">
               <p><strong>👤 Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <p><strong>🧑‍💼 Responsable:</strong> <%= p.username || '-' %></p>
+              <p><strong>📅 Entrega:</strong> <%= p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-AR') : 'No definida' %></p>
+              <p><strong>📝 Detalle:</strong> 
+                <% const textoDetalle = (p.detalle || '').trim(); %>
+                <% if (!textoDetalle) { %>
+                  <em>No definido</em>
+                <% } else if (textoDetalle.length <= 120) { %>
+                  <%= textoDetalle %>
+                <% } else { %>
+                  <span id="detalleCorto-<%= p.id %>"><%= textoDetalle.substring(0, 120) %>...</span>
+                  <span id="detalleCompleto-<%= p.id %>" class="d-none"><%= textoDetalle %></span>
+                  <a href="#" onclick="event.preventDefault(); document.getElementById('detalleCorto-<%= p.id %>').classList.toggle('d-none'); document.getElementById('detalleCompleto-<%= p.id %>').classList.toggle('d-none');">Ver más</a>
+                <% } %>
+              </p>
               <p><strong>💰 Total:</strong> <span class="text-primary fs-5">$<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span></p>
               <% if ((p.monto_entregado || 0) < (p.precio || 0)) { %>
                 <p class="text-danger"><strong>⚠️ Deuda:</strong> $<%= ((p.precio || 0) - (p.monto_entregado || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
@@ -164,6 +206,10 @@
               <th>ID</th>
               <th>Cliente</th>
               <th>Fecha</th>
+              <th>Entrega</th>
+              <th>Detalle</th>
+              <th>Estado</th>
+              <th>Responsable</th>
               <th>Monto</th>
               <th>Deuda</th>
               <th>Productos</th>
@@ -176,6 +222,20 @@
               <td><strong>#<%= p.id %></strong></td>
               <td><%= p.cliente_nombre || 'N/A' %></td>
               <td><small><%= new Date(p.fecha).toLocaleDateString('es-AR') %></small></td>
+              <td><small><%= p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-AR') : '-' %></small></td>
+              <td style="max-width: 240px;">
+                <% const detalleTexto = (p.detalle || '').trim(); %>
+                <% if (!detalleTexto) { %>
+                  <span class="text-muted">No definido</span>
+                <% } else if (detalleTexto.length <= 60) { %>
+                  <%= detalleTexto %>
+                <% } else { %>
+                  <span><%= detalleTexto.substring(0,60) %>...</span>
+                  <details><summary style="cursor:pointer; color:#0d6efd;">Ver más</summary><div><%= detalleTexto %></div></details>
+                <% } %>
+              </td>
+              <td><span class="badge bg-secondary"><%= p.estado %></span></td>
+              <td><%= p.username || '-' %></td>
               <td class="fw-bold">$<%= (p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
               <td>
                 <% if (p.monto_restante > 0) { %>

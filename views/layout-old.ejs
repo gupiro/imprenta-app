@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : 'Imprenta El Gráfico' %></title>
+
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2c3e50" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <link rel="stylesheet" href="/css/modern-minimal.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #e74c3c;
+      --accent-color: #3498db;
+      --light-bg: #ecf0f1;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      background-color: #f5f6fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      scroll-behavior: auto;
+    }
+
+    body {
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NAVBAR PROFESIONAL
+       ═══════════════════════════════════════════════════════════════ */
+    
+    .navbar {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 0.75rem 0;
+      border-bottom: 3px solid #495057;
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white !important;
+      margin-right: 3rem !important;
+    }
+
+    .navbar-brand img {
+      height: 45px;
+      filter: brightness(1.1);
+    }
+
+    .navbar-brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .navbar-brand-text .main {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .navbar-brand-text .sub {
+      font-size: 0.7rem;
+      opacity: 0.9;
+      letter-spacing: 1px;
+    }
+
+    /* Menú Items */
+    .navbar-nav .nav-item {
+      margin: 0 0.25rem;
+    }
+
+    .navbar-nav .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem !important;
+      border-radius: 0.4rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .navbar-nav .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff !important;
+      transform: translateY(-2px);
+    }
+
+    .navbar-nav .nav-link.active {
+      background-color: var(--secondary-color);
+      color: #fff !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+    }
+
+    /* Dropdown Menú */
+    .dropdown-menu {
+      border: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      padding: 0.5rem 0;
+      border-radius: 0.5rem;
+      min-width: 220px;
+    }
+
+    .dropdown-header {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--primary-color);
+      padding: 0.75rem 1rem;
+      letter-spacing: 0.5px;
+      background-color: var(--light-bg);
+    }
+
+    .dropdown-item {
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      color: #2c3e50;
+    }
+
+    .dropdown-item:hover {
+      background-color: var(--light-bg);
+      color: var(--secondary-color);
+      padding-left: 1.25rem;
+    }
+
+    .dropdown-item i {
+      margin-right: 0.75rem;
+      width: 20px;
+      text-align: center;
+      color: var(--accent-color);
+    }
+
+    .dropdown-divider {
+      margin: 0.25rem 0;
+      opacity: 0.5;
+    }
+
+    /* Badge de Notificaciones */
+    .badge-notification {
+      position: absolute;
+      top: -5px;
+      right: -8px;
+      background-color: #e74c3c;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    /* User Profile Dropdown */
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-left: auto;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.3;
+      color: white;
+    }
+
+    .user-info .username {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .user-info .role {
+      font-size: 0.75rem;
+      opacity: 0.85;
+    }
+
+    /* Responsive */
+    @media (max-width: 992px) {
+      .navbar-brand-text .sub {
+        display: none;
+      }
+
+      .user-info {
+        display: none;
+      }
+
+      .navbar-collapse {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SEMÁFORO FINANCIERO
+       ═══════════════════════════════════════════════════════════════ */
+    .semaforo-dot {
+      width: 11px; height: 11px; border-radius: 50%;
+      display: inline-block; transition: background-color 0.5s;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+    }
+    .semaforo-dot.success  { background: #28a745; box-shadow: 0 0 6px rgba(40,167,69,0.7); }
+    .semaforo-dot.warning { background: #ffc107; box-shadow: 0 0 6px rgba(255,193,7,0.7); }
+    .semaforo-dot.danger   { background: #dc3545; box-shadow: 0 0 6px rgba(220,53,69,0.7); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════════════ */
+
+    main.container {
+      max-width: 1400px;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      overflow: visible;
+    }
+
+    /* Prevenir scroll en páginas específicas */
+    main.container > div {
+      overflow: hidden;
+    }
+
+    .alert {
+      border: none;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ */
+
+    footer {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+      color: rgba(255, 255, 255, 0.8);
+      padding: 1rem 0;
+      margin-top: 0.5rem;
+      border-top: 3px solid var(--secondary-color);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--accent-color);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    footer a:hover {
+      color: white;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       TARJETAS CLICABLES CON HOVER EFFECT
+       ═══════════════════════════════════════════════════════════════ */
+
+    .card {
+      transition: all 0.3s ease;
+    }
+
+    a > .card,
+    a .card {
+      cursor: pointer;
+    }
+
+    a:hover > .card,
+    a:hover .card {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       BADGES DE COLOR PARA ESTADOS
+       ═══════════════════════════════════════════════════════════════ */
+
+    .estado-select {
+      font-weight: 600;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    /* PENDIENTE - Rojo claro */
+    .estado-select[data-estado="PENDIENTE"] {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
+
+    /* EN_PRODUCCION - Amarillo claro */
+    .estado-select[data-estado="EN_PRODUCCION"] {
+      background-color: #fff3cd;
+      color: #856404;
+      border-color: #ffeaa7;
+    }
+
+    /* LISTO - Verde claro */
+    .estado-select[data-estado="LISTO"] {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
+    }
+
+    /* ENTREGADO - Gris claro */
+    .estado-select[data-estado="ENTREGADO"] {
+      background-color: #e2e3e5;
+      color: #383d41;
+      border-color: #d6d8db;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       NAVBAR PROFESIONAL
+       ═══════════════════════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid px-3 px-lg-4">
+      
+      <!-- LOGO + NOMBRE EMPRESA -->
+      <a class="navbar-brand" href="/">
+        <img src="/images/logo.png" alt="Logo El Gráfico">
+        <div class="navbar-brand-text">
+          <div class="main">Imprenta El Gráfico</div>
+          <div class="sub">GESTIÓN DE NEGOCIOS</div>
+        </div>
+      </a>
+
+      <!-- BOTÓN HAMBURGUESA (MOBILE) -->
+      <button class="navbar-toggler text-white border-0" type="button"
+              data-bs-toggle="collapse" data-bs-target="#navbarNav"
+              aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-4"></i>
+      </button>
+
+      <!-- MENÚ PRINCIPAL -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-4">
+          
+          <!-- INICIO -->
+          <li class="nav-item">
+            <a class="nav-link <%= activePage === 'home' ? 'active' : '' %>" href="/">
+              <i class="bi bi-house-fill"></i> Inicio
+            </a>
+          </li>
+
+          <!-- DASHBOARD FINANCIERO - SOLO ADMIN Y VENDEDOR -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+          <li class="nav-item">
+            <a class="nav-link <%= activePage === 'dashboard' ? 'active' : '' %>" href="/dashboard">
+              <i class="bi bi-graph-up"></i> Dashboard
+            </a>
+          </li>
+          <% } %>
+
+          <!-- MI RUTINA - GUÍA PARA NO-CONTABLES -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+          <li class="nav-item">
+            <a class="nav-link <%= activePage === 'guia' ? 'active' : '' %>" href="/guia">
+              📋 Mi Rutina
+            </a>
+          </li>
+          <% } %>
+
+          <!-- ▼ VENTAS -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="ventasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-cart-fill"></i> Ventas
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="ventasDropdown">
+              <li><h6 class="dropdown-header">📋 GESTIÓN DE VENTAS</h6></li>
+              <li><a class="dropdown-item" href="/pedidos/nuevo">
+                <i class="bi bi-plus-circle"></i> Nuevo Pedido
+              </a></li>
+              <li><a class="dropdown-item" href="/pedidos/pendientes">
+                <i class="bi bi-clock-history"></i> Pedidos Pendientes
+              </a></li>
+              <li><a class="dropdown-item" href="/presupuestos/nuevo">
+                <i class="bi bi-calculator"></i> Nuevo Presupuesto
+              </a></li>
+              <li><a class="dropdown-item" href="/presupuestos">
+                <i class="bi bi-file-earmark"></i> Presupuestos
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/clientes">
+                <i class="bi bi-people-fill"></i> Clientes
+              </a></li>
+            </ul>
+          </li>
+
+          <!-- ▼ PRODUCCIÓN -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="produccionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-hammer"></i> Producción
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="produccionDropdown">
+              <li><h6 class="dropdown-header">⚙️ SEGUIMIENTO DE TRABAJOS</h6></li>
+              <li><a class="dropdown-item" href="/pedidos/en-produccion">
+                <i class="bi bi-gear"></i> En Producción
+              </a></li>
+              <li><a class="dropdown-item" href="/pedidos/listos">
+                <i class="bi bi-check-circle"></i> Listos para Entregar
+              </a></li>
+              <li><a class="dropdown-item" href="/pedidos/entregados">
+                <i class="bi bi-box-seam"></i> Entregados
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/catalogo">
+                <i class="bi bi-card-list"></i> Catálogo de Productos
+              </a></li>
+            </ul>
+          </li>
+
+          <!-- ▼ ADMINISTRACIÓN - SOLO PARA ADMIN -->
+          <% if (user && user.rol === 'admin') { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-gear-fill"></i> Admin
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+              <li><h6 class="dropdown-header">💼 ADMINISTRACIÓN</h6></li>
+              <li><a class="dropdown-item" href="/stock">
+                <i class="bi bi-boxes"></i> Stock
+              </a></li>
+              <li><a class="dropdown-item" href="/caja-diaria">
+                <i class="bi bi-cash-coin"></i> Caja Diaria
+              </a></li>
+              <li><a class="dropdown-item" href="/reportes">
+                <i class="bi bi-bar-chart-fill"></i> Reportes
+              </a></li>
+              <li><a class="dropdown-item" href="/reportes/deudores">
+                <i class="bi bi-currency-dollar"></i> Cuentas por Cobrar
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/usuarios">
+                <i class="bi bi-person-gear"></i> Usuarios
+              </a></li>
+              <li><a class="dropdown-item" href="/gastos">
+                <i class="bi bi-receipt"></i> Gastos
+              </a></li>
+              <li><a class="dropdown-item" href="/proveedores">
+                <i class="bi bi-truck"></i> Proveedores
+              </a></li>
+              <li><a class="dropdown-item" href="/deudas">
+                <i class="bi bi-cash-stack"></i> Deudas
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/finanzas/gastos-fijos">
+                <i class="bi bi-receipt"></i> Gastos Fijos
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/compras-cuotas">
+                <i class="bi bi-cart-check"></i> Compras en Cuotas
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/facturas-recibidas">
+                <i class="bi bi-receipt-cutoff"></i> Facturas Recibidas
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/vencimientos-fiscales">
+                <i class="bi bi-calendar-x"></i> Vencimientos Fiscales
+              </a></li>
+            </ul>
+          </li>
+          <% } %>
+
+        </ul>
+
+        <!-- PERFIL DE USUARIO (DERECHA) -->
+        <ul class="navbar-nav">
+          <!-- SEMÁFORO FINANCIERO -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+            <li class="nav-item d-flex align-items-center me-2" title="Cargando...">
+              <span id="semaforo-dot" class="semaforo-dot" style="background:#6c757d;"></span>
+            </li>
+          <% } %>
+
+          <% if (user) { %>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle ps-3" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="user-profile">
+                  <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
+                  </div>
+                  <div class="user-info">
+                    <div class="username"><%= user.username %></div>
+                    <div class="role"><%= user.rol ? user.rol.charAt(0).toUpperCase() + user.rol.slice(1) : 'Usuario' %></div>
+                  </div>
+                </div>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><h6 class="dropdown-header">👤 MI PERFIL</h6></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="bi bi-person"></i> Mi Perfil
+                </a></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="bi bi-shield-lock"></i> Cambiar Contraseña
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/auth/logout">
+                  <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </a></li>
+              </ul>
+            </li>
+          <% } else { %>
+            <li class="nav-item">
+              <a class="nav-link" href="/auth/login">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+              </a>
+            </li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════════════ -->
+  <main class="container">
+    <% if (typeof error !== 'undefined' && Array.isArray(error) && error.length) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        <%= error.join('<br>') %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+    <% if (typeof success !== 'undefined' && Array.isArray(success) && success.length) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i>
+        <%= success.join('<br>') %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+
+    <%- body %>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <p class="mb-0">
+        <strong>Imprenta El Gráfico</strong> &copy; <%= new Date().getFullYear() %> 
+        | Sistema de Gestión Profesional
+      </p>
+      <p class="small mt-2 mb-0">
+        📍 San Ramón de la Nueva Orán, Salta | 📱 (387) 000-0000
+      </p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SCRIPTS
+       ═══════════════════════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+  <script>
+    // Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('✔ SW registrado:', reg.scope))
+          .catch(err => console.error('❌ SW error:', err));
+      });
+    }
+
+    // Marcar página activa
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentPath = window.location.pathname;
+      document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+    // ═══════════════════════════════════════════════════════════════
+    // PREVENIR AUTO-SCROLL AL CARGAR LA PÁGINA
+    // ═══════════════════════════════════════════════════════════════
+    (function() {
+      // Forzar scroll a top al cargar
+      window.addEventListener('load', function() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+
+      // También al inicio del DOM
+      window.scrollTo(0, 0);
+
+      // Prevenir que los gráficos causen scroll
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 100);
+      });
+
+      // Si hay clicks en elementos, mantener en top
+      let lastScrollTop = 0;
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50 && lastScrollTop === 0) {
+          window.scrollTo(0, 0);
+        }
+        lastScrollTop = window.scrollY <= 0 ? 0 : window.scrollY;
+      }, { passive: true });
+
+      // ═════════════════════════════════════════════════════════════
+      // ACTUALIZAR COLORES DE ESTADOS EN SELECT
+      // ═════════════════════════════════════════════════════════════
+      document.querySelectorAll('.estado-select').forEach(select => {
+        // Establecer color inicial
+        const updateColor = () => {
+          select.setAttribute('data-estado', select.value);
+        };
+        updateColor();
+        select.addEventListener('change', updateColor);
+      });
+
+      // ═════════════════════════════════════════════════════════════
+      // INICIALIZAR POPOVERS BOOTSTRAP
+      // ═════════════════════════════════════════════════════════════
+      document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+        new bootstrap.Popover(el, { trigger: 'click', html: false });
+      });
+
+      // ═════════════════════════════════════════════════════════════
+      // SEMÁFORO FINANCIERO EN NAVBAR
+      // ═════════════════════════════════════════════════════════════
+      const semaforoDot = document.getElementById('semaforo-dot');
+      if (semaforoDot) {
+        fetch('/api/semaforo')
+          .then(r => r.json())
+          .then(data => {
+            if (!data.mostrar) return;
+            const mapa = { success: 'success', warning: 'warning', danger: 'danger' };
+            const colorClass = mapa[data.color] || '';
+            semaforoDot.className = 'semaforo-dot ' + colorClass;
+            semaforoDot.closest('[title]').setAttribute('title', data.tooltip);
+            // Inicializar Bootstrap Tooltip
+            new bootstrap.Tooltip(semaforoDot.parentElement, { placement: 'bottom' });
+          })
+          .catch(() => {});
+      }
+    })();
+  </script>
+
+</body>
+</html>

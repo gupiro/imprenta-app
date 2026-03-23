@@ -1,6 +1,7 @@
 const express = require('express');
 const upload = require('../config/multer');
 const checkPermission = require('../middleware/permissions');
+const puppeteer = require('puppeteer');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -113,10 +114,10 @@ module.exports = (db) => {
           detalle = ?,
           precio_extra = ?
         WHERE id = ?
-      `, [clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id]);
+      `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id);
 
       // ELIMINAR items viejos
-      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', [id]);
+      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);
 
       // CREAR items nuevos
       for (let i = 0; i < descripciones.length; i++) {
@@ -130,7 +131,7 @@ module.exports = (db) => {
           await db.run(`
             INSERT INTO presupuesto_items (presupuesto_id, producto_id, descripcion, cantidad, precio_unitario, descuento_item, subtotal)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-          `, [id, prodId, descripciones[i], cant, precio, desc, subtotal]);
+          `, id, prodId, descripciones[i], cant, precio, desc, subtotal);
         }
       }
 
@@ -158,7 +159,7 @@ module.exports = (db) => {
         return res.redirect(`/presupuestos/${presupuestoId}`);
       }
 
-      await db.run('UPDATE presupuestos SET estado = ? WHERE id = ?', [estado, presupuestoId]);
+      await db.run('UPDATE presupuestos SET estado = ? WHERE id = ?', estado, presupuestoId);
 
       req.flash('success', `Presupuesto actualizado a ${estado}`);
       res.redirect(`/presupuestos/${presupuestoId}`);
@@ -237,7 +238,7 @@ module.exports = (db) => {
       }
 
       // Marcar presupuesto como convertido
-      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', [presupuestoId]);
+      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', presupuestoId);
 
       req.flash('success', `✅ Pedido #${pedidoId} creado desde presupuesto`);
       res.redirect(`/pedidos/detalle/${pedidoId}`);
@@ -255,13 +256,158 @@ module.exports = (db) => {
   router.post('/:id/eliminar', checkPermission, async (req, res) => {
     const id = req.params.id;
     try {
-      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', [id]);
-      await db.run('DELETE FROM presupuestos WHERE id = ?', [id]);
+      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);
+      await db.run('DELETE FROM presupuestos WHERE id = ?', id);
       req.flash('success', 'Presupuesto eliminado');
     } catch (err) {
       req.flash('error', 'Error: ' + err.message);
     }
     res.redirect('/presupuestos');
+  });
+
+  // Generar PDF de presupuesto
+  router.get('/:id/pdf', async (req, res) => {
+    try {
+      const id = req.params.id;
+
+      // Obtener presupuesto y datos del cliente
+      const presupuesto = await db.get(`
+        SELECT p.*, c.name, c.phone, c.email, c.address
+        FROM presupuestos p
+        LEFT JOIN clients c ON p.cliente_id = c.id
+        WHERE p.id = ?
+      `, id);
+
+      if (!presupuesto) {
+        return res.status(404).send('Presupuesto no encontrado');
+      }
+
+      // Obtener items del presupuesto
+      const items = await db.all(
+        'SELECT * FROM presupuesto_items WHERE presupuesto_id = ?',
+        id
+      ) || [];
+
+      // Generar HTML del presupuesto
+      const itemsHTML = items.map(item => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd;">${item.descripcion}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: center;">${item.cantidad}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">$${(item.precio_unitario || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">$${(item.subtotal || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</td>
+        </tr>
+      `).join('');
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; margin: 30px; color: #333; }
+            .header { border-bottom: 3px solid #2563eb; padding-bottom: 15px; margin-bottom: 30px; }
+            .empresa { font-size: 24px; font-weight: bold; color: #2563eb; }
+            .empresa-data { font-size: 12px; color: #666; margin-top: 5px; }
+            .title { font-size: 18px; font-weight: bold; margin: 20px 0; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+            .section { }
+            .section h3 { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; margin-bottom: 8px; }
+            .section p { margin: 4px 0; font-size: 12px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            table thead { background: #f0f0f0; }
+            table th { padding: 12px; text-align: left; font-size: 12px; font-weight: bold; border-bottom: 2px solid #ddd; }
+            .totales { margin-top: 20px; text-align: right; }
+            .totales-row { display: flex; justify-content: flex-end; margin: 8px 0; font-size: 12px; }
+            .totales-row .label { width: 150px; }
+            .totales-row .value { width: 100px; text-align: right; font-weight: bold; }
+            .total-final { font-size: 18px; color: #2563eb; border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10px; color: #999; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="empresa">📊 IMPRENTA EL GRÁFICO</div>
+            <div class="empresa-data">El Gráfico de Orán - Salta | Tel: 3878 22-4908</div>
+          </div>
+
+          <div class="title">Presupuesto #${presupuesto.id}</div>
+
+          <div class="grid">
+            <div class="section">
+              <h3>Datos del Presupuesto</h3>
+              <p><strong>Fecha:</strong> ${new Date(presupuesto.fecha_creacion).toLocaleDateString('es-AR')}</p>
+              <p><strong>Estado:</strong> ${presupuesto.estado}</p>
+              <p><strong>Válido hasta:</strong> ${presupuesto.fecha_vencimiento ? new Date(presupuesto.fecha_vencimiento).toLocaleDateString('es-AR') : 'Sin especificar'}</p>
+            </div>
+            <div class="section">
+              <h3>Datos del Cliente</h3>
+              <p><strong>${presupuesto.name || presupuesto.nombre_cliente || 'Cliente'}</strong></p>
+              <p>Teléfono: ${presupuesto.phone || '-'}</p>
+              <p>Email: ${presupuesto.email || '-'}</p>
+              <p>Dirección: ${presupuesto.address || '-'}</p>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: left;">Descripción</th>
+                <th style="text-align: center;">Cantidad</th>
+                <th style="text-align: right;">Precio Unit.</th>
+                <th style="text-align: right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHTML}
+            </tbody>
+          </table>
+
+          <div class="totales">
+            <div class="totales-row">
+              <div class="label">Subtotal:</div>
+              <div class="value">$${(presupuesto.precio_estimado || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+            </div>
+            ${presupuesto.precio_extra ? `
+              <div class="totales-row">
+                <div class="label">Extras:</div>
+                <div class="value">$${(presupuesto.precio_extra).toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+              </div>
+            ` : ''}
+            <div class="totales-row total-final">
+              <div class="label">TOTAL:</div>
+              <div class="value">$${((presupuesto.precio_estimado || 0) + (presupuesto.precio_extra || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2})}</div>
+            </div>
+          </div>
+
+          ${presupuesto.detalle ? `
+            <div style="margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 5px;">
+              <h3 style="font-size: 12px; margin-top: 0;">Observaciones:</h3>
+              <p style="font-size: 12px; color: #666;">${presupuesto.detalle}</p>
+            </div>
+          ` : ''}
+
+          <div class="footer">
+            <p>Este presupuesto es válido por 7 días hábiles desde su emisión.</p>
+            <p>Generado: ${new Date().toLocaleString('es-AR')}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Generar PDF con Puppeteer
+      const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdf = await page.pdf({ format: 'A4', margin: { top: 10, right: 10, bottom: 10, left: 10 } });
+      await browser.close();
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="presupuesto-${id}.pdf"`);
+      res.send(pdf);
+    } catch (err) {
+      console.error('Error al generar PDF de presupuesto:', err);
+      res.status(500).send('Error al generar PDF: ' + err.message);
+    }
   });
 
   return router;

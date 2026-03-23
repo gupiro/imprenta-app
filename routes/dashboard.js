@@ -368,6 +368,7 @@ module.exports = (db) => {
         resultadoProyectado,
         pisoSupervivencia,
         proximos7Dias,
+        proximosVencimientos: proximos7Dias, // Alias para compatibilidad con vista
         totalProximos7Dias,
         totalDeudaTarjetas,
         semaforo,

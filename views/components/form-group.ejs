@@ -1,0 +1,62 @@
+<!-- Form Group Component -->
+<!-- Uso: <%- include('components/form-group', { label: 'Email', name: 'email', type: 'email', value: '', required: true, help: 'Ingresa tu email' }) %> -->
+
+<div class="mb-3">
+  <% if (locals.label) { %>
+    <label for="<%= locals.name %>" class="form-label">
+      <%= locals.label %>
+      <% if (locals.required) { %><span class="text-danger">*</span><% } %>
+    </label>
+  <% } %>
+
+  <% if (locals.type === 'textarea') { %>
+    <textarea
+      class="form-control <%= locals.className || '' %>"
+      id="<%= locals.name %>"
+      name="<%= locals.name %>"
+      rows="<%= locals.rows || 4 %>"
+      <% if (locals.required) { %>required<% } %>
+      <% if (locals.disabled) { %>disabled<% } %>
+      placeholder="<%= locals.placeholder || '' %>"
+    ><%= locals.value || '' %></textarea>
+  <% } else if (locals.type === 'select') { %>
+    <select
+      class="form-select <%= locals.className || '' %>"
+      id="<%= locals.name %>"
+      name="<%= locals.name %>"
+      <% if (locals.required) { %>required<% } %>
+      <% if (locals.disabled) { %>disabled<% } %>
+    >
+      <option value="">Seleccionar...</option>
+      <% if (locals.options && locals.options.length > 0) { %>
+        <% locals.options.forEach(opt => { %>
+          <option value="<%= opt.value %>" <% if (opt.value === locals.value) { %>selected<% } %>>
+            <%= opt.label %>
+          </option>
+        <% }); %>
+      <% } %>
+    </select>
+  <% } else { %>
+    <input
+      type="<%= locals.type || 'text' %>"
+      class="form-control <%= locals.className || '' %>"
+      id="<%= locals.name %>"
+      name="<%= locals.name %>"
+      value="<%= locals.value || '' %>"
+      <% if (locals.required) { %>required<% } %>
+      <% if (locals.disabled) { %>disabled<% } %>
+      <% if (locals.min !== undefined) { %>min="<%= locals.min %>"<% } %>
+      <% if (locals.max !== undefined) { %>max="<%= locals.max %>"<% } %>
+      <% if (locals.step !== undefined) { %>step="<%= locals.step %>"<% } %>
+      placeholder="<%= locals.placeholder || '' %>"
+    >
+  <% } %>
+
+  <% if (locals.help) { %>
+    <small class="form-text text-muted d-block mt-1"><%= locals.help %></small>
+  <% } %>
+
+  <% if (locals.error) { %>
+    <div class="invalid-feedback d-block"><%= locals.error %></div>
+  <% } %>
+</div>

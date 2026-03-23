@@ -1,0 +1,23 @@
+<!-- Modal Component -->
+<!-- Uso: <%- include('components/modal', { id: 'modalId', title: 'Título', children: '...', footer: '...' }) %> -->
+
+<div class="modal fade" id="<%= locals.id || 'modal' %>" tabindex="-1">
+  <div class="modal-dialog <%= locals.size ? 'modal-' + locals.size : 'modal-lg' %>">
+    <div class="modal-content">
+      <% if (locals.title) { %>
+        <div class="modal-header border-bottom">
+          <h5 class="modal-title"><%= locals.title %></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+      <% } %>
+      <div class="modal-body">
+        <%- locals.children || '' %>
+      </div>
+      <% if (locals.footer) { %>
+        <div class="modal-footer border-top">
+          <%- locals.footer %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>

@@ -445,6 +445,112 @@
         font-size: 1.25rem;
       }
     }
+
+    /* ═════════════════════════════════════════════════════════════════
+       DARK MODE STYLES
+       ═════════════════════════════════════════════════════════════════ */
+    :root.dark-mode {
+      --bs-body-bg: #1a1d23;
+      --bs-body-color: #e0e0e0;
+      --bs-border-color: #404854;
+    }
+
+    :root.dark-mode body {
+      background-color: #1a1d23;
+      color: #e0e0e0;
+    }
+
+    :root.dark-mode .navbar-top {
+      background: linear-gradient(135deg, #1e2228 0%, #272d34 100%);
+      border-bottom: 1px solid #404854;
+    }
+
+    :root.dark-mode .sidebar {
+      background: #1e2228;
+      border-right: 1px solid #404854;
+    }
+
+    :root.dark-mode .sidebar-menu-link {
+      color: #b0b8c1;
+    }
+
+    :root.dark-mode .sidebar-menu-link:hover,
+    :root.dark-mode .sidebar-menu-link.active {
+      color: #2563eb;
+      background: rgba(37, 99, 235, 0.1);
+    }
+
+    :root.dark-mode .card-minimal {
+      background: #2a2f36;
+      border-color: #404854;
+    }
+
+    :root.dark-mode .card-minimal:hover {
+      border-color: #2563eb;
+    }
+
+    :root.dark-mode .card-header {
+      color: #e0e0e0;
+      border-color: #404854;
+    }
+
+    :root.dark-mode .table-minimal thead {
+      background-color: #272d34;
+      border-color: #404854;
+    }
+
+    :root.dark-mode .table-minimal th {
+      color: #b0b8c1;
+    }
+
+    :root.dark-mode .table-minimal td {
+      color: #d0d8e0;
+      border-color: #404854;
+    }
+
+    :root.dark-mode .table-minimal tbody tr:hover {
+      background-color: #2a2f36;
+    }
+
+    :root.dark-mode .modal-content {
+      background: #2a2f36;
+      border-color: #404854;
+    }
+
+    :root.dark-mode .modal-header {
+      background: #1e2228;
+      border-color: #404854;
+      color: #e0e0e0;
+    }
+
+    :root.dark-mode .form-control,
+    :root.dark-mode .form-select {
+      background: #1e2228;
+      color: #e0e0e0;
+      border-color: #404854;
+    }
+
+    :root.dark-mode .form-control:focus,
+    :root.dark-mode .form-select:focus {
+      background: #1e2228;
+      color: #e0e0e0;
+      border-color: #2563eb;
+    }
+
+    :root.dark-mode .alert {
+      background: rgba(37, 99, 235, 0.15);
+      border-color: #2563eb;
+      color: #d0d8e0;
+    }
+
+    :root.dark-mode .badge-default {
+      background: #3a3f47;
+      color: #b0b8c1;
+    }
+
+    :root.dark-mode .form-label {
+      color: #d0d8e0;
+    }
   </style>
 </head>
 
@@ -473,6 +579,9 @@
         <%= (user?.email?.charAt(0) || 'U').toUpperCase() %>
       </div>
       <div class="navbar-actions">
+        <button id="darkModeToggle" title="Cambiar tema" onclick="toggleDarkMode()">
+          <i class="bi bi-moon-fill" id="darkModeIcon"></i>
+        </button>
         <button title="Soporte" onclick="alert('Ayuda: 3878 22-4908')">
           <i class="bi bi-question-circle"></i>
         </button>
@@ -634,6 +743,7 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="/js/table-interactive.js"></script>
 
   <script>
     // Toggle Sidebar en móvil
@@ -658,6 +768,37 @@
         link.classList.add('active');
       }
     });
+
+    // Dark Mode Toggle
+    function toggleDarkMode() {
+      const html = document.documentElement;
+      const isDarkMode = html.classList.toggle('dark-mode');
+      const icon = document.getElementById('darkModeIcon');
+
+      // Guardar preferencia en localStorage
+      localStorage.setItem('darkMode', isDarkMode);
+
+      // Cambiar icono
+      icon.className = isDarkMode ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+    }
+
+    // Cargar preferencia de dark mode al iniciar
+    function initDarkMode() {
+      const isDarkMode = localStorage.getItem('darkMode') === 'true';
+      const html = document.documentElement;
+      const icon = document.getElementById('darkModeIcon');
+
+      if (isDarkMode) {
+        html.classList.add('dark-mode');
+        icon.className = 'bi bi-sun-fill';
+      } else {
+        html.classList.remove('dark-mode');
+        icon.className = 'bi bi-moon-fill';
+      }
+    }
+
+    // Inicializar dark mode al cargar
+    document.addEventListener('DOMContentLoaded', initDarkMode);
   </script>
 </body>
 

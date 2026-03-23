@@ -1,0 +1,20 @@
+<!-- Card Component -->
+<!-- Uso: <%- include('components/card', { title: 'Título', icon: '📊', children: '...' }) %> -->
+
+<div class="card-minimal <%= locals.className || '' %>" style="<%= locals.style || '' %>">
+  <% if (locals.title) { %>
+    <div class="card-header">
+      <% if (locals.icon) { %><span style="margin-right: 0.5rem;"><%= locals.icon %></span><% } %>
+      <%= locals.title %>
+      <% if (locals.actions) { %>
+        <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+          <%- locals.actions %>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <div class="card-body">
+    <%- locals.children || '' %>
+  </div>
+</div>

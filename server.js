@@ -145,6 +145,25 @@ app.get('/pedidos/revision/descargar/:filename', authMiddleware.isAuthenticated,
 // ════════════════════════════════════════════════════════════════
 
 async function startServer() {
+    // ✅ Validar SESSION_SECRET antes de cualquier otra cosa
+    const SESSION_SECRET = process.env.SESSION_SECRET;
+    if (!SESSION_SECRET || SESSION_SECRET === 'default_unsafe_secret_change_env') {
+        console.error(
+            '\n❌ ═══════════════════════════════════════════════════════════════════\n' +
+            '   FATAL ERROR: SESSION_SECRET no configurado correctamente\n' +
+            '═══════════════════════════════════════════════════════════════════\n' +
+            '   El servidor no puede iniciarse de forma segura sin un SESSION_SECRET\n' +
+            '   configurado en las variables de entorno.\n\n' +
+            '   Acciones:\n' +
+            '   1. En producción (Render): Establecer SESSION_SECRET en env variables\n' +
+            '   2. En desarrollo: Crear .env con SESSION_SECRET=<valor_seguro>\n' +
+            '   3. Usar una cadena aleatoria de 32+ caracteres\n' +
+            '═══════════════════════════════════════════════════════════════════\n'
+        );
+        process.exit(1);
+    }
+    console.log("✅ SESSION_SECRET validado correctamente");
+
     let dbInstance;
     try {
         dbInstance = await initDbPromise;

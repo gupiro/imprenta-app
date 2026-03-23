@@ -9,7 +9,7 @@
      RESUMEN FINANCIERO (3 KPI Cards) - SOLO PARA ADMIN
      ════════════════════════════════════════════════════════════════ -->
 
-<% if (user && user.rol === 'admin') { %>
+<% if (typeof user !== 'undefined' && user && user.rol === 'admin') { %>
 <div class="row mb-4" id="kpiSection">
   <div class="col-md-4 mb-3">
     <div class="kpi-card">
@@ -243,7 +243,7 @@
      RESÚMENES: POR TURNO + POR MÉTODO DE PAGO (SOLO PARA ADMIN)
      ════════════════════════════════════════════════════════════════ -->
 
-<% if (user && user.rol === 'admin') { %>
+<% if (typeof user !== 'undefined' && user && user.rol === 'admin') { %>
 <div class="row">
   <!-- RESUMEN POR TURNO -->
   <div class="col-md-6">

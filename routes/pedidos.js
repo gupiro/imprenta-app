@@ -814,5 +814,33 @@ module.exports = (db) => {
     }
   });
 
+  // 📊 VISTA RÁPIDA - Resumen de todos los estados
+  router.get('/vista-rapida', checkPermission, async (req, res) => {
+    try {
+      const estados = ['PENDIENTE', 'EN_PRODUCCION', 'LISTO', 'ENTREGADO'];
+      const resumen = {};
+
+      for (const estado of estados) {
+        const result = await db.all(
+          `SELECT p.*, c.name FROM pedidos p
+           LEFT JOIN clients c ON p.client_id = c.id
+           WHERE p.estado = ?
+           ORDER BY p.fecha DESC LIMIT 10`,
+          estado
+        );
+        resumen[estado] = result || [];
+      }
+
+      res.render('pedidos/vista-rapida', {
+        title: 'Vista Rápida de Pedidos',
+        resumen
+      });
+    } catch (err) {
+      console.error('Error vista-rapida:', err);
+      req.flash('error', 'Error al cargar vista rápida');
+      res.redirect('/pedidos');
+    }
+  });
+
   return router;
 };

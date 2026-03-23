@@ -1,0 +1,134 @@
+<!-- Vista Rápida de Pedidos - 4 estados en paralelo -->
+
+<div class="container-fluid py-4">
+  <div class="page-header mb-4">
+    <h1 class="page-title">📊 Vista Rápida de Pedidos</h1>
+    <p class="page-subtitle">Resumen de todos los estados en un vistazo</p>
+  </div>
+
+  <div class="row g-3">
+    <!-- PENDIENTES -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card h-100" style="border-left: 4px solid #ef4444;">
+        <div class="card-header" style="background: #fee2e2; border: none;">
+          <h5 style="margin: 0; color: #991b1b;">
+            <i class="bi bi-clock-history"></i> PENDIENTES
+          </h5>
+          <div style="font-size: 1.8rem; font-weight: bold; color: #dc2626;">
+            <%= resumen.PENDIENTE.length %>
+          </div>
+        </div>
+        <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+          <% if (resumen.PENDIENTE.length > 0) { %>
+            <% resumen.PENDIENTE.forEach(p => { %>
+              <div class="p-2 mb-2" style="background: #fef2f2; border-radius: 4px; border-left: 3px solid #ef4444; cursor: pointer;" onclick="window.location='/pedidos/detalle/<%= p.id %>'">
+                <div style="font-weight: 500; color: #1f2937; font-size: 0.9rem;">Pedido #<%= p.id %></div>
+                <div style="color: #6b7280; font-size: 0.85rem;"><%= p.name || 'Sin cliente' %></div>
+                <div style="color: #059669; font-weight: bold; font-size: 0.9rem;">$<%= p.precio.toLocaleString() %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p style="text-align: center; color: #9ca3af; margin: 10px 0;">Sin pedidos</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- EN PRODUCCIÓN -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card h-100" style="border-left: 4px solid #f59e0b;">
+        <div class="card-header" style="background: #fef3c7; border: none;">
+          <h5 style="margin: 0; color: #92400e;">
+            <i class="bi bi-gear"></i> EN PRODUCCIÓN
+          </h5>
+          <div style="font-size: 1.8rem; font-weight: bold; color: #d97706;">
+            <%= resumen.EN_PRODUCCION.length %>
+          </div>
+        </div>
+        <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+          <% if (resumen.EN_PRODUCCION.length > 0) { %>
+            <% resumen.EN_PRODUCCION.forEach(p => { %>
+              <div class="p-2 mb-2" style="background: #fffbeb; border-radius: 4px; border-left: 3px solid #f59e0b; cursor: pointer;" onclick="window.location='/pedidos/detalle/<%= p.id %>'">
+                <div style="font-weight: 500; color: #1f2937; font-size: 0.9rem;">Pedido #<%= p.id %></div>
+                <div style="color: #6b7280; font-size: 0.85rem;"><%= p.name || 'Sin cliente' %></div>
+                <div style="color: #059669; font-weight: bold; font-size: 0.9rem;">$<%= p.precio.toLocaleString() %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p style="text-align: center; color: #9ca3af; margin: 10px 0;">Sin pedidos</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTOS -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card h-100" style="border-left: 4px solid #3b82f6;">
+        <div class="card-header" style="background: #dbeafe; border: none;">
+          <h5 style="margin: 0; color: #1e3a8a;">
+            <i class="bi bi-check-circle"></i> LISTOS
+          </h5>
+          <div style="font-size: 1.8rem; font-weight: bold; color: #2563eb;">
+            <%= resumen.LISTO.length %>
+          </div>
+        </div>
+        <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+          <% if (resumen.LISTO.length > 0) { %>
+            <% resumen.LISTO.forEach(p => { %>
+              <div class="p-2 mb-2" style="background: #eff6ff; border-radius: 4px; border-left: 3px solid #3b82f6; cursor: pointer;" onclick="window.location='/pedidos/detalle/<%= p.id %>'">
+                <div style="font-weight: 500; color: #1f2937; font-size: 0.9rem;">Pedido #<%= p.id %></div>
+                <div style="color: #6b7280; font-size: 0.85rem;"><%= p.name || 'Sin cliente' %></div>
+                <div style="color: #059669; font-weight: bold; font-size: 0.9rem;">$<%= p.precio.toLocaleString() %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p style="text-align: center; color: #9ca3af; margin: 10px 0;">Sin pedidos</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- ENTREGADOS -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card h-100" style="border-left: 4px solid #10b981;">
+        <div class="card-header" style="background: #d1fae5; border: none;">
+          <h5 style="margin: 0; color: #065f46;">
+            <i class="bi bi-box-seam"></i> ENTREGADOS
+          </h5>
+          <div style="font-size: 1.8rem; font-weight: bold; color: #059669;">
+            <%= resumen.ENTREGADO.length %>
+          </div>
+        </div>
+        <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+          <% if (resumen.ENTREGADO.length > 0) { %>
+            <% resumen.ENTREGADO.forEach(p => { %>
+              <div class="p-2 mb-2" style="background: #f0fdf4; border-radius: 4px; border-left: 3px solid #10b981; cursor: pointer;" onclick="window.location='/pedidos/detalle/<%= p.id %>'">
+                <div style="font-weight: 500; color: #1f2937; font-size: 0.9rem;">Pedido #<%= p.id %></div>
+                <div style="color: #6b7280; font-size: 0.85rem;"><%= p.name || 'Sin cliente' %></div>
+                <div style="color: #059669; font-weight: bold; font-size: 0.9rem;">$<%= p.precio.toLocaleString() %></div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <p style="text-align: center; color: #9ca3af; margin: 10px 0;">Sin pedidos</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="alert alert-info mt-4">
+    <i class="bi bi-info-circle"></i> Haz click en cualquier pedido para ver detalles. Última actualización: <%= new Date().toLocaleTimeString() %>
+  </div>
+</div>
+
+<style>
+  .card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+  }
+</style>

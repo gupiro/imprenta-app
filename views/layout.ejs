@@ -575,6 +575,10 @@
       <button class="navbar-toggle-btn" id="sidebar-toggle" title="Abrir menú">
         <i class="bi bi-list"></i>
       </button>
+      <a href="/" style="background: #10b981; color: white; padding: 0.5rem 0.75rem; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-right: 12px; transition: all 0.2s ease; font-weight: 500;" title="Ir a Inicio" onmouseover="this.style.background='#059669'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='#10b981'; this.style.transform='scale(1)'">
+        <i class="bi bi-house-fill"></i>
+        <span style="font-size: 0.9rem;">HOME</span>
+      </a>
       <div>
         <h1>📊 Imprenta El Gráfico</h1>
         <p>Gestión Integrada</p>
@@ -639,6 +643,12 @@
             <a href="/pedidos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'pedidos') ? 'active' : '' %>">
               <i class="bi bi-kanban-fill"></i>
               <span>Producción</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/pedidos/vista-rapida" class="sidebar-menu-link <%= currentPath === '/pedidos/vista-rapida' ? 'active' : '' %>">
+              <i class="bi bi-lightning-fill"></i>
+              <span>Vista Rápida</span>
             </a>
           </li>
           <li class="sidebar-menu-item">

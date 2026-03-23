@@ -15,6 +15,7 @@
   <!-- Custom Styles -->
   <link rel="stylesheet" href="/css/modern-minimal.css" />
   <link rel="stylesheet" href="/css/layout-new.css" />
+  <link rel="stylesheet" href="/css/sidebar-flotante.css" />
   <link rel="stylesheet" href="/styles.css" />
 
   <style>
@@ -561,7 +562,7 @@
 
   <nav class="navbar-top">
     <div class="navbar-brand-section">
-      <button class="navbar-toggle-btn" id="sidebarToggle" title="Alternar menú">
+      <button class="navbar-toggle-btn" id="sidebar-toggle" title="Abrir menú">
         <i class="bi bi-list"></i>
       </button>
       <div>
@@ -596,9 +597,13 @@
        CONTENEDOR PRINCIPAL
        ════════════════════════════════════════════════════════════════ -->
 
+  <!-- Overlay para cerrar sidebar -->
+  <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
   <div class="main-container">
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
+      <button id="sidebar-close" class="sidebar-close-btn" title="Cerrar menú">✕</button>
       <div class="sidebar-section">
         <div class="sidebar-label">Principal</div>
         <ul class="sidebar-menu">
@@ -829,6 +834,46 @@
 
     // Inicializar dark mode al cargar
     document.addEventListener('DOMContentLoaded', initDarkMode);
+
+    // ════════════════════════════════════════════════════════════════
+    // SIDEBAR FLOTANTE
+    // ════════════════════════════════════════════════════════════════
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (sidebarToggle && sidebar && overlay) {
+      // Abrir sidebar
+      sidebarToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+      });
+
+      // Cerrar sidebar con botón X
+      if (sidebarClose) {
+        sidebarClose.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        });
+      }
+
+      // Cerrar sidebar cuando haces click en overlay
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+
+      // Cerrar sidebar cuando haces click en un link del menú
+      const sidebarLinks = sidebar.querySelectorAll('a');
+      sidebarLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        });
+      });
+    }
   </script>
 </body>
 

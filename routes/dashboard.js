@@ -1,5 +1,6 @@
 const express = require('express');
 const { calcularBalanceMes } = require('../utils/financiero');
+const { getFraseDelDia } = require('../utils/frases');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -351,6 +352,7 @@ module.exports = (db) => {
 
       res.render('dashboard', {
         title: 'Dashboard Ejecutivo',
+        frase: getFraseDelDia(),
         stats,
         // Variables individuales para vista (compatibilidad)
         pendientes: stats.pedidosPendientes,

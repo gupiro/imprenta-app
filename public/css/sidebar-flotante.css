@@ -1,0 +1,198 @@
+/* ════════════════════════════════════════════════════════════════
+   SIDEBAR FLOTANTE - Estilos minimalistas
+   ════════════════════════════════════════════════════════════════ */
+
+/* OVERLAY */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1040;
+  animation: fadeIn 0.3s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* SIDEBAR FLOTANTE */
+.sidebar {
+  position: fixed !important;
+  left: -300px !important;
+  top: 0 !important;
+  width: 300px !important;
+  height: 100vh !important;
+  background: #1e293b !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  z-index: 1050 !important;
+  overflow-y: auto !important;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3) !important;
+  border: none !important;
+}
+
+.sidebar.open {
+  left: 0 !important;
+}
+
+/* BOTÓN CLOSE EN SIDEBAR */
+.sidebar-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  z-index: 10;
+}
+
+.sidebar-close-btn:hover {
+  color: #ffffff;
+}
+
+/* SIDEBAR SECTIONS */
+.sidebar-section {
+  padding: 16px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar-section:first-child {
+  padding-top: 50px;
+}
+
+.sidebar-label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #94a3b8 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  margin-bottom: 8px !important;
+  padding: 0 4px !important;
+}
+
+/* SIDEBAR MENU */
+.sidebar-menu {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.sidebar-menu-item {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sidebar-menu-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 10px 12px !important;
+  color: #cbd5e1 !important;
+  text-decoration: none !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+  font-size: 14px !important;
+  cursor: pointer !important;
+  border: none !important;
+  background: transparent !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.sidebar-menu-link:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.sidebar-menu-link.active {
+  background: #0ea5e9 !important;
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+.sidebar-menu-link i {
+  font-size: 16px !important;
+  min-width: 20px !important;
+}
+
+.sidebar-menu-link span {
+  flex: 1 !important;
+}
+
+/* MAIN CONTENT SIN MARGIN */
+.main-content,
+main {
+  margin-left: 0 !important;
+  width: 100% !important;
+}
+
+/* SIDEBAR TOGGLE BUTTON */
+#sidebar-toggle {
+  background: #0ea5e9 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+  font-size: 18px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  margin-right: 10px !important;
+}
+
+#sidebar-toggle:hover {
+  background: #0284c7 !important;
+  transform: scale(1.05) !important;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100vw !important;
+    max-width: 280px !important;
+  }
+}
+
+/* ANIMACIONES */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* SCROLL BAR DEL SIDEBAR */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

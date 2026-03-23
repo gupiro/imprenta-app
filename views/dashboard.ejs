@@ -17,6 +17,20 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
+       FRASE MOTIVACIONAL
+       ════════════════════════════════════════════════════════════════ -->
+  <% if (frase) { %>
+  <div class="alert alert-info alert-soft mb-4 border-0" style="background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%); border-left: 4px solid #0ea5e9;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span style="font-size: 20px;">💡</span>
+      <p style="margin: 0; font-style: italic; color: #0c2d6b; font-weight: 500;">
+        <%= frase %>
+      </p>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════
        KPI CARDS - 4 COLUMNAS
        ════════════════════════════════════════════════════════════════ -->
   <div class="row mb-5 g-4">

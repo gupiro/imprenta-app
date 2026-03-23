@@ -1,0 +1,650 @@
+<!-- views/finanzas/gastos-fijos.ejs - REDISEÑO COMPLETO CON PANEL EDUCATIVO -->
+
+<div class="container-fluid py-4">
+
+  <!-- HEADER CON BOTÓN DE AYUDA -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">💰 Gastos Fijos Mensuales</h1>
+    <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+      <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+    </button>
+  </div>
+
+  <!-- PANEL EDUCATIVO COLAPSABLE -->
+  <%- include('../components/info-collapse', {
+    id: 'infoGastosFijos',
+    title: '💡 ¿Qué es un Gasto Fijo?',
+    children: `
+      <p class="mb-3">
+        <strong>Los gastos fijos</strong> son los compromisos de dinero que tenés
+        <strong>TODOS LOS MESES</strong>, aunque no vendas nada. Son los que tenés que pagar sí o sí
+        para mantener la imprenta abierta.
+      </p>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <h6 class="fw-bold text-success mb-2">✅ SÍ son gastos fijos:</h6>
+          <ul class="mb-0 small">
+            <li>✓ <strong>Alquiler del local</strong> → se paga todos los meses</li>
+            <li>✓ <strong>Sueldo de empleados</strong> → se paga todos los meses</li>
+            <li>✓ <strong>Cuota del préstamo del banco</strong> → se paga todos los meses</li>
+            <li>✓ <strong>Internet y teléfono del negocio</strong> → se paga todos los meses</li>
+            <li>✓ <strong>Seguro de la imprenta</strong> → puede ser mensual o anual</li>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <h6 class="fw-bold text-danger mb-2">❌ NO son gastos fijos:</h6>
+          <ul class="mb-0 small">
+            <li>✗ <strong>Papel y tinta</strong> → varían según cuánto trabajás</li>
+            <li>✗ <strong>Reparaciones de máquinas</strong> → son eventuales</li>
+            <li>✗ <strong>Compras de equipamiento</strong> → no son periódicas</li>
+            <li>✗ <strong>Gastos de viaje</strong> → varían mes a mes</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="p-3 bg-light border border-success border-opacity-25 rounded">
+        <h6 class="fw-bold mb-2"><i class="bi bi-info-circle me-2"></i>¿Por qué cargarlo acá?</h6>
+        <p class="mb-0 small">
+          El sistema calcula automáticamente tu <strong>PISO DE SUPERVIVENCIA</strong>: el mínimo que necesitás facturar cada mes
+          para no perder dinero. Si en algún mes facturás menos que ese número, sabés que estás en problemas. Todo lo que
+          factures por encima es tu ganancia potencial.
+        </p>
+      </div>
+    `
+  }) %>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- PISO DE SUPERVIVENCIA — CARD GRANDE DESTACADA -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 bg-danger text-white shadow-lg mb-5">
+    <div class="card-body text-center py-5">
+      <h6 class="mb-2 opacity-75"><i class="bi bi-shield-check me-2"></i>🏦 TU PISO DE SUPERVIVENCIA MENSUAL</h6>
+      <div class="display-3 fw-bold">$<%= totalMensual.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+      <p class="mt-3 mb-0 opacity-90">
+        Necesitás facturar <strong>AL MENOS este monto</strong> cada mes para no perder dinero.
+        <br><strong>Todo lo que factures por encima es tu ganancia potencial.</strong>
+      </p>
+      <% if (gastosFijos.length === 0) { %>
+        <small class="d-block mt-3 opacity-75 fst-italic">
+          📝 Cargá tus gastos fijos para ver tu piso real
+        </small>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- ALERTAS -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show role="alert">
+      <i class="bi bi-check-circle me-2"></i><%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <i class="bi bi-exclamation-triangle me-2"></i><%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- CARDS RESUMEN (3 columnas) -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-5">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="mb-2 text-muted small">
+            <i class="bi bi-list-check"></i> Gastos Activos
+          </p>
+          <h3 class="mb-0"><%= cantidadActivos %></h3>
+          <small class="text-muted d-block mt-1">Registrados en el sistema</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="mb-2 text-muted small">
+            <i class="bi bi-hourglass-split"></i> Próximo Vencimiento
+          </p>
+          <% if (proximoVencimiento) { %>
+            <h3 class="mb-0">Día <%= proximoVencimiento.dia_vencimiento %></h3>
+            <small class="text-muted d-block mt-1"><%= proximoVencimiento.nombre %></small>
+          <% } else { %>
+            <h3 class="mb-0">—</h3>
+            <small class="text-muted d-block mt-1">Sin vencimientos próximos</small>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="mb-2 text-muted small">
+            <i class="bi bi-calendar-check"></i> Estado del Mes
+          </p>
+          <h6 class="mb-0 small">
+            <span class="text-success">✅ Pagados:</span>
+            <strong>
+              $<%
+                const totalPagadoMes = gastosFijos.reduce((sum, gf) => sum + gf.pagado_mes, 0);
+              %><%= totalPagadoMes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+            </strong>
+          </h6>
+          <h6 class="mb-0 small mt-1">
+            <span class="text-warning">⏳ Pendientes:</span>
+            <strong>
+              $<%
+                const totalPendienteMes = gastosFijos.reduce((sum, gf) => sum + gf.falta_pagar, 0);
+              %><%= totalPendienteMes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+            </strong>
+          </h6>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- BOTÓN PRINCIPAL + CHIPS DE SUGERENCIAS -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="mb-4">
+    <button class="btn btn-primary btn-lg mb-3 me-2" data-bs-toggle="modal" data-bs-target="#modalNuevoGastoFijo">
+      <i class="bi bi-plus-circle me-2"></i><strong>➕ Agregar Gasto Fijo</strong>
+    </button>
+
+    <br>
+    <span class="text-muted small mb-2 d-block">Agregar rápido (ejemplos):</span>
+    <div class="d-flex flex-wrap gap-2">
+      <button class="btn btn-sm btn-outline-primary" onclick="sugerencia('Alquiler Local', 'Alquiler Local', 'mensual')">+ Alquiler</button>
+      <button class="btn btn-sm btn-outline-primary" onclick="sugerencia('Sueldo Empleado', 'Sueldos y Personal', 'mensual')">+ Sueldo</button>
+      <button class="btn btn-sm btn-outline-primary" onclick="sugerencia('Luz del negocio', 'Servicios (Luz/Gas/Internet negocio)', 'bimestral')">+ Luz</button>
+      <button class="btn btn-sm btn-outline-primary" onclick="sugerencia('Internet/Teléfono', 'Servicios (Luz/Gas/Internet negocio)', 'mensual')">+ Internet</button>
+      <button class="btn btn-sm btn-outline-primary" onclick="sugerencia('Seguro de la imprenta', 'Seguro', 'anual')">+ Seguro</button>
+      <button class="btn btn-sm btn-outline-primary" onclick="sugerencia('Cuota banco', 'Cuota Préstamo Bancario', 'mensual')">+ Cuota banco</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <!-- TABLA DE GASTOS FIJOS -->
+  <!-- ═══════════════════════════════════════════════════════════════ -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-light">
+      <h6 class="mb-0"><i class="bi bi-table"></i> Tus Gastos Fijos</h6>
+    </div>
+
+    <div class="card-body">
+      <% if (gastosFijos && gastosFijos.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 60px;">Estado</th>
+                <th>Nombre</th>
+                <th style="width: 80px;">Monto</th>
+                <th style="width: 80px;">Método</th>
+                <th>Progreso Mes</th>
+                <th style="width: 80px;">Vence</th>
+                <th style="width: 140px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% gastosFijos.forEach(gf => { %>
+                <tr>
+                  <td>
+                    <span title="<%= gf.estado %>" style="font-size: 1.3rem;">
+                      <%= gf.iconoEstado %>
+                    </span>
+                  </td>
+                  <td>
+                    <strong><%= gf.nombre %></strong><br>
+                    <small class="text-muted"><%= gf.categoria %> • <%= gf.frecuencia %></small>
+                    <% if (gf.notas) { %>
+                      <br><small class="text-muted">📝 <%= gf.notas %></small>
+                    <% } %>
+                  </td>
+                  <td class="fw-bold text-primary">
+                    $<%= gf.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                  </td>
+                  <td>
+                    <% if (gf.metodo_pago_default === 'transferencia' || gf.metodo_pago_default === 'Transferencia') { %>
+                      🏦 Transfer.
+                    <% } else if (gf.metodo_pago_default === 'efectivo' || gf.metodo_pago_default === 'Efectivo') { %>
+                      💵 Efectivo
+                    <% } else if (gf.metodo_pago_default === 'tarjeta' || gf.metodo_pago_default === 'Tarjeta') { %>
+                      💳 Tarjeta
+                    <% } else if (gf.metodo_pago_default === 'cheque' || gf.metodo_pago_default === 'Cheque') { %>
+                      📄 Cheque
+                    <% } else { %>
+                      <%= gf.metodo_pago_default || '—' %>
+                    <% } %>
+                  </td>
+                  <td>
+                    <div class="progress" style="height: 20px;">
+                      <div class="progress-bar <%= gf.porcentaje_pagado === 100 ? 'bg-success' : 'bg-warning' %>"
+                           role="progressbar"
+                           style="width: <%= gf.porcentaje_pagado %>%"
+                           aria-valuenow="<%= gf.porcentaje_pagado %>"
+                           aria-valuemin="0"
+                           aria-valuemax="100">
+                        <%= gf.porcentaje_pagado %>%
+                      </div>
+                    </div>
+                    <small class="text-muted d-block mt-1">
+                      $<%= gf.pagado_mes.toLocaleString('es-AR', {minimumFractionDigits: 2}) %> / Falta $<%= gf.falta_pagar.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+                    </small>
+                  </td>
+                  <td>
+                    <small>Día <%= gf.dia_vencimiento %></small>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#modalPagoParcial" onclick="abrirModalPago(<%= gf.id %>, '<%= gf.nombre %>', <%= gf.falta_pagar %>)" title="Registrar pago">
+                        <i class="bi bi-plus-circle"></i> Pago
+                      </button>
+                      <button class="btn btn-outline-success" onclick="marcarPagado(<%= gf.id %>, '<%= gf.nombre %>')" title="Pago completo">
+                        <i class="bi bi-check-circle"></i> Completo
+                      </button>
+                      <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditarGastoFijo" onclick="abrirEditar(<%= gf.id %>, '<%= gf.nombre %>', '<%= gf.categoria %>', '<%= gf.frecuencia %>', <%= gf.monto %>, <%= gf.dia_vencimiento %>, '<%= gf.notas || '' %>', '<%= gf.metodo_pago_default || 'transferencia' %>')" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                      </button>
+                      <button class="btn btn-outline-danger" onclick="eliminar(<%= gf.id %>, '<%= gf.nombre %>')" title="Eliminar">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } else { %>
+        <div class="text-center py-5">
+          <div class="mb-3" style="font-size:3rem; opacity:0.4;">📅</div>
+          <h4 class="text-muted mb-2">No tenés gastos fijos cargados todavía</h4>
+          <p class="text-muted mb-4 mx-auto" style="max-width:420px;">
+            Los gastos fijos son los que pagás todos los meses sí o sí: alquiler, sueldos, internet, seguro. Sin cargarlos, el sistema no puede decirte cuánto necesitás facturar para no perder dinero.
+          </p>
+          <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevoGastoFijo">
+            <i class="bi bi-plus-circle me-2"></i>Cargar primer gasto fijo
+          </button>
+          <div class="mt-4 p-3 bg-light rounded mx-auto text-start" style="max-width:420px;">
+            <small class="text-muted"><strong>Ejemplo:</strong><br>Alquiler del local → $80.000 → Mensual → Vence el día 5</small>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: NUEVO GASTO FIJO -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalNuevoGastoFijo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nuevo Gasto Fijo</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/finanzas/gastos-fijos/crear" method="POST">
+        <div class="modal-body">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Nombre del Gasto *</label>
+            <input type="text" id="inputNombre" name="nombre" class="form-control form-control-lg"
+                   placeholder="Ej: Alquiler Local Calle Belgrano" required>
+            <small class="text-muted d-block mt-2">
+              Poné un nombre claro para identificarlo fácilmente
+            </small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select id="selectCategoria" name="categoria" class="form-select form-select-lg" required>
+                <option value="">— Seleccionar —</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+              <small class="text-muted d-block mt-2">Clasificalo para agrupar en reportes</small>
+            </div>
+
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Frecuencia *</label>
+              <select id="selectFrecuencia" name="frecuencia" class="form-select form-select-lg" required>
+                <option value="">— Seleccionar —</option>
+                <% FRECUENCIAS.forEach(freq => { %>
+                  <option value="<%= freq.value %>"><%= freq.label %></option>
+                <% }); %>
+              </select>
+              <small class="text-muted d-block mt-2">¿Cada cuánto se paga?</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Monto ($) *</label>
+              <input type="number" name="monto" class="form-control form-control-lg"
+                     step="0.01" min="0" placeholder="0.00" required>
+              <small class="text-muted d-block mt-2">
+                Si es anual dividilo por 12. Si varía, poné el promedio de los últimos 3 meses
+              </small>
+            </div>
+
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Día de Vencimiento (1-31) *</label>
+              <input type="number" name="dia_vencimiento" class="form-control form-control-lg"
+                     min="1" max="31" placeholder="Ej: 15" required>
+              <small class="text-muted d-block mt-2">
+                ¿Qué día del mes vence normalmente este gasto?
+              </small>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select name="metodo_pago_default" class="form-select form-select-lg">
+                <option value="transferencia">🏦 Transferencia</option>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="cheque">📄 Cheque</option>
+              </select>
+              <small class="text-muted d-block mt-2">¿Cómo se suele pagar este gasto?</small>
+            </div>
+
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Notas (Opcional)</label>
+              <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-save me-2"></i>Guardar Gasto Fijo
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: PAGO PARCIAL (mantener original) -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPagoParcial" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Registrar Pago Parcial</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formPagoParcial" method="POST">
+        <div class="modal-body">
+          <div class="alert alert-info mb-3">
+            <strong id="gastoNombreLabel"></strong><br>
+            <small>Pendiente: <strong id="montoFaltaLabel"></strong></small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a Pagar ($) *</label>
+            <input type="number" id="inputMontoPago" name="monto" class="form-control form-control-lg"
+                   step="0.01" min="0.01" placeholder="0.00" required>
+            <small class="text-muted">Dejar en blanco para pagar el monto faltante</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Método de Pago</label>
+            <select id="selectMetodoPago" name="metodo_pago" class="form-select form-select-lg">
+              <option value="efectivo">💵 Efectivo</option>
+              <option value="transferencia">🏦 Transferencia</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+              <option value="qr">📱 QR</option>
+              <option value="cheque">📝 Cheque</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea id="inputNotas" name="notas" class="form-control" rows="2" placeholder="Detalles del pago..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-info btn-lg">
+            <i class="bi bi-check-circle me-2"></i>Registrar Pago
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDITAR GASTO FIJO -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalEditarGastoFijo" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Gasto Fijo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarGasto" method="POST">
+        <div class="modal-body">
+          <div class="mb-4">
+            <label class="form-label fw-bold">Nombre del Gasto *</label>
+            <input type="text" id="editNombre" name="nombre" class="form-control form-control-lg" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select id="editCategoria" name="categoria" class="form-select form-select-lg" required>
+                <option value="">— Seleccionar —</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-4">
+              <label class="form-label fw-bold">Frecuencia *</label>
+              <select id="editFrecuencia" name="frecuencia" class="form-select form-select-lg" required>
+                <option value="">— Seleccionar —</option>
+                <% FRECUENCIAS.forEach(freq => { %>
+                  <option value="<%= freq.value %>"><%= freq.label %></option>
+                <% }); %>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-4 mb-4">
+              <label class="form-label fw-bold">Monto ($) *</label>
+              <input type="number" id="editMonto" name="monto" class="form-control form-control-lg"
+                     step="0.01" min="0" required>
+            </div>
+
+            <div class="col-md-4 mb-4">
+              <label class="form-label fw-bold">Día Vencimiento (1-31) *</label>
+              <input type="number" id="editDiaVencimiento" name="dia_vencimiento" class="form-control form-control-lg"
+                     min="1" max="31" required>
+            </div>
+
+            <div class="col-md-4 mb-4">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select id="editMetodo" name="metodo_pago_default" class="form-select form-select-lg">
+                <option value="transferencia">🏦 Transferencia</option>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="cheque">📄 Cheque</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea id="editNotas" name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning btn-lg">
+            <i class="bi bi-save me-2"></i>Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Gastos Fijos</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Los gastos fijos son tus compromisos mensuales que NO varían: alquiler, sueldos, servicios. Esta sección te ayuda a calcular el "piso de supervivencia" — el mínimo que necesitás facturar cada mes para no perder dinero.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Al empezar:</strong> Cargá todos tus compromisos fijos (alquiler, sueldos, servicios, seguros, cuotas de préstamos)</li>
+      <li><strong>Si cambian:</strong> Si un gasto sube o baja, editalo en la tabla</li>
+      <li><strong>Cada mes:</strong> Si pagaste las cuotas, marcalas como "completo" o registrá pagos parciales</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>Olvidar cargar algunos gastos (y luego el piso sale menor al real)</li>
+      <li>No actualizar los montos cuando suben los servicios</li>
+      <li>Mezclar gastos variables (papel, tinta) con gastos fijos (no van acá, van en Gastos)</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Imprenta El Gráfico:</strong><br>
+      • Alquiler: $80.000<br>
+      • Sueldo empleado: $35.000<br>
+      • Luz/Internet: $5.000<br>
+      • Seguro: $2.000<br>
+      <strong>= PISO SUPERVIVENCIA: $122.000 mensual</strong><br>
+      Necesita facturar mínimo $122.000 para no perder dinero.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<script>
+let pagoEnProceso = { id: null, nombre: '', falta: 0 };
+
+// Función para agregar rápido desde chips de sugerencias
+function sugerencia(nombre, categoria, frecuencia) {
+  document.getElementById('inputNombre').value = nombre;
+  document.getElementById('selectCategoria').value = categoria;
+  document.getElementById('selectFrecuencia').value = frecuencia;
+  new bootstrap.Modal(document.getElementById('modalNuevoGastoFijo')).show();
+}
+
+// Función para abrir modal de editar
+function abrirEditar(id, nombre, categoria, frecuencia, monto, dia, notas, metodo) {
+  document.getElementById('editNombre').value = nombre;
+  document.getElementById('editCategoria').value = categoria;
+  document.getElementById('editFrecuencia').value = frecuencia;
+  document.getElementById('editMonto').value = monto;
+  document.getElementById('editDiaVencimiento').value = dia;
+  document.getElementById('editNotas').value = notas;
+  document.getElementById('editMetodo').value = metodo || 'transferencia';
+  document.getElementById('formEditarGasto').action = `/finanzas/gastos-fijos/${id}/editar`;
+}
+
+// Función para abrir modal de pago parcial
+function abrirModalPago(id, nombre, falta) {
+  pagoEnProceso = { id, nombre, falta };
+  document.getElementById('gastoNombreLabel').textContent = nombre;
+  document.getElementById('montoFaltaLabel').textContent =
+    '$' + falta.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+  document.getElementById('inputMontoPago').value = falta.toFixed(2);
+  document.getElementById('inputMontoPago').max = falta;
+
+  const formPago = document.getElementById('formPagoParcial');
+  formPago.action = `/finanzas/gastos-fijos/${id}/pago-parcial`;
+}
+
+// Registrar pago parcial
+document.getElementById('formPagoParcial')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const monto = document.getElementById('inputMontoPago').value;
+  const metodo = document.getElementById('selectMetodoPago').value;
+  const notas = document.getElementById('inputNotas').value;
+
+  if (!monto || monto <= 0) {
+    alert('❌ El monto debe ser mayor a 0');
+    return;
+  }
+
+  const response = await fetch(`/finanzas/gastos-fijos/${pagoEnProceso.id}/pago-parcial`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ monto: parseFloat(monto), metodo_pago: metodo, notas })
+  });
+
+  const data = await response.json();
+  if (data.success) {
+    alert(`✅ ${data.message}`);
+    bootstrap.Modal.getInstance(document.getElementById('modalPagoParcial')).hide();
+    location.reload();
+  } else {
+    alert('❌ Error: ' + data.error);
+  }
+});
+
+// Marcar como pagado completo
+function marcarPagado(id, nombre) {
+  if (confirm(`¿Marcar "${nombre}" como COMPLETAMENTE pagado hoy? Se registrará en Caja Diaria.`)) {
+    fetch(`/finanzas/gastos-fijos/${id}/marcar-pagado`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert('✅ Gasto marcado como pagado. Se registró en Caja Diaria.');
+        location.reload();
+      } else {
+        alert('❌ Error: ' + data.error);
+      }
+    })
+    .catch(e => alert('Error: ' + e));
+  }
+}
+
+// Eliminar gasto fijo
+function eliminar(id, nombre) {
+  if (confirm(`¿Eliminar el gasto "${nombre}"? No se puede deshacer.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/finanzas/gastos-fijos/${id}/eliminar`;
+    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">';
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+</script>

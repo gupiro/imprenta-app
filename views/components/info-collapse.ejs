@@ -1,0 +1,41 @@
+<!-- Info Collapse Component - Panel de Información Colapsable -->
+<!-- Uso: <%- include('components/info-collapse', {
+  id: 'infoGastos',
+  title: '💡 ¿Cómo registro un gasto?',
+  children: '<p>Contenido...</p>'
+}) %> -->
+
+<div class="card mb-3 border-info">
+  <button class="btn btn-link w-100 text-start p-3 collapsed"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#<%= locals.id %>"
+          aria-expanded="false"
+          aria-controls="<%= locals.id %>"
+          style="text-decoration: none; color: #0c2d6b; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+    <i class="bi bi-chevron-right" style="transition: transform 0.3s;"></i>
+    <%= locals.title || 'Información' %>
+  </button>
+
+  <div class="collapse" id="<%= locals.id %>">
+    <div class="card-body border-top">
+      <%- locals.children || '' %>
+    </div>
+  </div>
+</div>
+
+<style>
+  [data-bs-toggle="collapse"] .bi-chevron-right {
+    transform: rotate(0deg);
+    transition: transform 0.3s ease;
+  }
+
+  [data-bs-toggle="collapse"]:not(.collapsed) .bi-chevron-right {
+    transform: rotate(90deg);
+  }
+
+  [data-bs-toggle="collapse"]:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    border-radius: 0.375rem;
+  }
+</style>

@@ -1,53 +1,55 @@
-<!-- views/gastos/index.ejs - REDISEÑO COMPLETO CON PANEL EDUCATIVO -->
+<!-- views/gastos/index.ejs - REDISEÑO CON PANEL EDUCATIVO COLAPSABLE -->
 
 <div class="container-fluid py-4">
 
-  <!-- PANEL EDUCATIVO - SIEMPRE VISIBLE -->
-  <div class="alert alert-info border-start border-4 border-info mb-4">
-    <h5 class="alert-heading mb-3"><i class="bi bi-info-circle me-2"></i>📋 ¿Cómo registro un gasto?</h5>
-    <hr>
-    <p class="mb-3"><strong>Un gasto</strong> es cualquier dinero que <strong>SALE</strong> de tu negocio o de tu bolsillo personal.</p>
+  <!-- PANEL EDUCATIVO - COLAPSABLE -->
+  <%- include('../components/info-collapse', {
+    id: 'infoGastos',
+    title: '📋 ¿Cómo registro un gasto?',
+    children: `
+      <p class="mb-3"><strong>Un gasto</strong> es cualquier dinero que <strong>SALE</strong> de tu negocio o de tu bolsillo personal.</p>
 
-    <div class="row g-3 mb-3">
-      <div class="col-md-6">
-        <div class="p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25">
-          <h6 class="fw-bold text-danger mb-2"><i class="bi bi-briefcase me-2"></i>💼 GASTO DE NEGOCIO</h6>
-          <small class="d-block text-muted mb-2">Todo lo que necesitás para producir o vender</small>
-          <small class="d-block">
-            ✓ Tinta y tonificadores<br>
-            ✓ Resmas de papel<br>
-            ✓ Sueldos de empleados<br>
-            ✓ Alquiler del local<br>
-            ✓ Luz y servicios del negocio<br>
-            ✓ Reparaciones de máquinas
-          </small>
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <div class="p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-25">
+            <h6 class="fw-bold text-danger mb-2"><i class="bi bi-briefcase me-2"></i>💼 GASTO DE NEGOCIO</h6>
+            <small class="d-block text-muted mb-2">Todo lo que necesitás para producir o vender</small>
+            <small class="d-block">
+              ✓ Tinta y tonificadores<br>
+              ✓ Resmas de papel<br>
+              ✓ Sueldos de empleados<br>
+              ✓ Alquiler del local<br>
+              ✓ Luz y servicios del negocio<br>
+              ✓ Reparaciones de máquinas
+            </small>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="p-3 bg-info bg-opacity-10 rounded-3 border border-info border-opacity-25">
+            <h6 class="fw-bold text-info mb-2"><i class="bi bi-person me-2"></i>👤 GASTO PERSONAL</h6>
+            <small class="d-block text-muted mb-2">Para tu vida personal, no tiene que ver con la imprenta</small>
+            <small class="d-block">
+              ✓ Comida y almuerzo<br>
+              ✓ Ropa y zapatos<br>
+              ✓ Visita al médico<br>
+              ✓ Peluquería<br>
+              ✓ Luz de tu casa<br>
+              ✓ Transporte personal
+            </small>
+          </div>
         </div>
       </div>
-      <div class="col-md-6">
-        <div class="p-3 bg-info bg-opacity-10 rounded-3 border border-info border-opacity-25">
-          <h6 class="fw-bold text-info mb-2"><i class="bi bi-person me-2"></i>👤 GASTO PERSONAL</h6>
-          <small class="d-block text-muted mb-2">Para tu vida personal, no tiene que ver con la imprenta</small>
-          <small class="d-block">
-            ✓ Comida y almuerzo<br>
-            ✓ Ropa y zapatos<br>
-            ✓ Visita al médico<br>
-            ✓ Peluquería<br>
-            ✓ Luz de tu casa<br>
-            ✓ Transporte personal
-          </small>
-        </div>
-      </div>
-    </div>
 
-    <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25">
-      <i class="bi bi-lightbulb me-2 text-warning"></i>
-      <strong class="text-dark">¿Por qué es importante separar?</strong>
-      <br><small class="text-muted d-block mt-2">
-        Mantener separados los gastos personales de los del negocio te permite saber si tu imprenta gana o pierde dinero de verdad.
-        Si mezclas todo, los reportes van a estar mal y no vas a poder tomar buenas decisiones para tu negocio.
-      </small>
-    </div>
-  </div>
+      <div class="p-3 bg-warning bg-opacity-10 rounded-3 border border-warning border-opacity-25">
+        <i class="bi bi-lightbulb me-2 text-warning"></i>
+        <strong class="text-dark">¿Por qué es importante separar?</strong>
+        <br><small class="text-muted d-block mt-2">
+          Mantener separados los gastos personales de los del negocio te permite saber si tu imprenta gana o pierde dinero de verdad.
+          Si mezclas todo, los reportes van a estar mal y no vas a poder tomar buenas decisiones para tu negocio.
+        </small>
+      </div>
+    `
+  }) %>
 
   <!-- HEADER CON BOTÓN -->
   <div class="d-flex justify-content-between align-items-center mb-4">

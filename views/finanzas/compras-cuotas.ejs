@@ -1,0 +1,559 @@
+<!-- views/finanzas/compras-cuotas.ejs -->
+<div class="container-fluid py-4">
+  <!-- HEADER -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 mb-1"><i class="bi bi-cart-check"></i> Compras en Cuotas</h1>
+          <p class="text-muted mb-0">Seguimiento de todo lo que compraste en cuotas</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+          <i class="bi bi-question-circle me-1"></i> ¿Cómo uso esta sección?
+        </button>
+      </div>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaCompra">
+        <i class="bi bi-plus-circle"></i> Registrar Compra en Cuotas
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- PANEL EDUCATIVO COLAPSABLE -->
+  <%- include('../components/info-collapse', {
+    id: 'infoComprasCuotas',
+    title: '💳 ¿Qué registro acá?',
+    children: `
+      <p class="mb-2">Cada vez que comprás algo <strong>en cuotas</strong> — ya sea con tarjeta de crédito, financiación del proveedor o un plan de pagos — registralo acá.</p>
+
+      <p class="mb-2"><strong>¿Por qué es importante?</strong><br>
+      Porque las cuotas son <strong>compromisos de pago FUTUROS</strong>. Si compraste una guillotina en 12 cuotas, ese dinero ya está "comprometido" aunque todavía no lo hayas pagado. Necesitás saber cuánto te cae por mes de cuotas para planificar tu flujo de caja.</p>
+
+      <p class="mb-2"><strong>Ejemplos:</strong></p>
+      <ul class="mb-0 ps-3">
+        <li>✅ Compraste papel en 6 cuotas con tarjeta Naranja</li>
+        <li>✅ Compraste una máquina con financiación del proveedor en 18 cuotas</li>
+        <li>✅ Tomaste un préstamo personal y lo pagás en 24 cuotas</li>
+        <li>❌ Una compra que pagaste de una sola vez no va acá (eso va en <strong>Gastos</strong>)</li>
+      </ul>
+    `
+  }) %>
+
+  <!-- RESUMEN: Total cuotas este mes -->
+  <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white;">
+    <div class="card-body text-center py-5">
+      <p class="mb-2 opacity-75 fs-5">💳 Total que te cae en cuotas este mes</p>
+      <h1 class="display-3 fw-bold mb-3">$<%= totalEsteMes.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></h1>
+      <% if (Object.keys(desglosePago).length > 0) { %>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+          <% Object.entries(desglosePago).forEach(([medio, monto]) => { %>
+            <span class="badge bg-white text-dark px-3 py-2 fs-6">
+              <% const etiquetas = {
+                'tarjeta': '💳 Tarjeta',
+                'financiacion': '🏦 Financiación',
+                'prestamo': '💰 Préstamo',
+                'efectivo': '💵 Efectivo',
+                'otro': '📝 Otro'
+              }; %>
+              <%= etiquetas[medio] || medio %>: $<%= monto.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %>
+            </span>
+          <% }); %>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- TIMELINE: Próximos 6 meses -->
+  <% if (timeline && timeline.length > 0) { %>
+    <div class="card mb-4 border-0 shadow-sm">
+      <div class="card-header bg-light border-bottom">
+        <h6 class="mb-0"><i class="bi bi-calendar-event"></i> 📅 Cuotas por mes — Próximos 6 meses</h6>
+      </div>
+      <div class="card-body">
+        <div class="row g-2" style="margin: 0;">
+          <%
+            const maxTimeline = Math.max(...timeline.map(t => t.total || 0), 1);
+          %>
+          <% timeline.forEach(t => { %>
+            <div class="col text-center">
+              <small class="fw-bold d-block mb-1"><%= t.label %></small>
+              <div style="height: 100px; display: flex; align-items: flex-end; justify-content: center; margin: 4px 0; gap: 4px;">
+                <div class="w-100 rounded-top" style="
+                  height: <%= Math.max(Math.round((t.total / maxTimeline) * 100), 4) %>px;
+                  background: <%= t.esActual ? '#7c3aed' : '#d8c5f8' %>;
+                  transition: all 0.2s;
+                " title="<%= t.compras.map(c => c.desc + ' $' + c.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})).join(', ') %>">
+                </div>
+              </div>
+              <small class="d-block <%= t.esActual ? 'fw-bold' : 'text-muted' %>">
+                $<%= t.total.toLocaleString('es-AR', { minimumFractionDigits: 0 }) %>
+              </small>
+              <% if (t.esActual) { %>
+                <span class="badge mt-1" style="background:#7c3aed; font-size: 0.65rem;">Este mes</span>
+              <% } %>
+            </div>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- COMPRAS EN CUOTAS (CARDS) -->
+  <% if (compras && compras.length > 0) { %>
+    <div class="row g-3">
+      <% compras.forEach(compra => { %>
+        <div class="col-lg-6 col-xl-4">
+          <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #7c3aed !important; border-left-width: 4px !important; border-top: none; border-right: none; border-bottom: none;">
+
+            <!-- Encabezado -->
+            <div class="card-header bg-light border-bottom">
+              <div class="d-flex justify-content-between align-items-start">
+                <div>
+                  <h6 class="mb-1 fw-bold"><%= compra.descripcion %></h6>
+                  <% if (compra.proveedor) { %>
+                    <small class="text-muted"><i class="bi bi-shop"></i> <%= compra.proveedor %></small>
+                  <% } %>
+                </div>
+                <span class="badge" style="background: #7c3aed;">
+                  <%= compra.categoria || 'Sin categoría' %>
+                </span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <!-- Cuota actual / total -->
+              <div class="text-center mb-3">
+                <span class="badge bg-secondary fs-6 px-3 py-2">
+                  Cuota <%= compra.cuota_actual %> de <%= compra.cant_cuotas %>
+                </span>
+              </div>
+
+              <!-- Barra de progreso -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <small class="fw-semibold">Progreso</small>
+                  <small class="fw-bold"><%= compra.porcentaje_pagado %>%</small>
+                </div>
+                <div class="progress" style="height: 14px;">
+                  <div class="progress-bar" role="progressbar" style="width: <%= compra.porcentaje_pagado %>%; background: #7c3aed;" aria-valuenow="<%= compra.porcentaje_pagado %>" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted d-block mt-1"><%= compra.cuotas_pagadas %> cuota(s) pagada(s)</small>
+              </div>
+
+              <!-- Saldo pendiente -->
+              <% if (compra.cuotas_pendientes > 0) { %>
+                <div class="alert alert-light border-start border-4 border-warning mb-3 py-2" style="border-color: #fbbf24 !important;">
+                  <small class="text-muted d-block">Te quedan</small>
+                  <strong class="text-dark"><%= compra.cuotas_pendientes %> cuotas = $<%= compra.saldo_pendiente.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %> por pagar</strong>
+                </div>
+              <% } else { %>
+                <div class="alert alert-success mb-3 py-2">
+                  <i class="bi bi-check-circle"></i> <strong>¡Compra completamente pagada!</strong>
+                </div>
+              <% } %>
+
+              <!-- Próxima cuota -->
+              <% if (compra.cuotas_pendientes > 0) { %>
+                <div class="mb-3 pb-3 border-bottom">
+                  <small class="text-muted d-block mb-1">
+                    Próxima cuota
+                    <% if (compra.vencida) { %>
+                      <span class="badge bg-danger ms-1">⚠️ VENCIDA</span>
+                    <% } %>
+                  </small>
+                  <div class="d-flex justify-content-between align-items-baseline">
+                    <strong class="<%= compra.vencida ? 'text-danger' : '' %>"><%= compra.proxima_cuota_fecha %></strong>
+                    <span class="badge <%= compra.vencida ? 'bg-danger' : 'bg-success' %>">$<%= compra.monto_cuota.toLocaleString('es-AR', { minimumFractionDigits: 2 }) %></span>
+                  </div>
+                </div>
+              <% } %>
+
+              <!-- Método de pago -->
+              <% if (compra.medio_pago) { %>
+                <small class="text-muted d-block">
+                  <% const iconoPago = {
+                    'tarjeta': '💳',
+                    'financiacion': '🏦',
+                    'prestamo': '💰',
+                    'efectivo': '💵'
+                  }; %>
+                  <%= iconoPago[compra.medio_pago] || '📝' %> <%= compra.medio_pago %>
+                </small>
+              <% } %>
+            </div>
+
+            <!-- Footer con botones -->
+            <div class="card-footer bg-transparent border-top">
+              <% if (compra.cuotas_pendientes > 0) { %>
+                <button class="btn btn-success w-100 mb-2 btn-sm" onclick="registrarCuota(<%= compra.id %>, '<%= compra.descripcion %>', <%= compra.cuota_actual %>, <%= compra.cant_cuotas %>)">
+                  <i class="bi bi-check-circle"></i> Marcar cuota <%= compra.cuota_actual %> como pagada
+                </button>
+              <% } %>
+              <div class="btn-group w-100" role="group">
+                <button class="btn btn-outline-secondary btn-sm" onclick="abrirEditar(<%= JSON.stringify(compra) %>)" data-bs-toggle="modal" data-bs-target="#modalEditarCompra">
+                  <i class="bi bi-pencil"></i> Editar
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="eliminar(<%= compra.id %>, '<%= compra.descripcion %>')">
+                  <i class="bi bi-trash"></i> Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } else { %>
+    <div class="text-center py-5">
+      <div class="mb-3" style="font-size:3rem; opacity:0.4;">🛒</div>
+      <h4 class="text-muted mb-2">No tenés compras en cuotas registradas</h4>
+      <p class="text-muted mb-4 mx-auto" style="max-width:420px;">
+        Cuando comprás algo en cuotas —con tarjeta, plan de pagos o financiado— cargalo acá para saber cuánto dinero ya está comprometido mes a mes.
+      </p>
+      <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaCompra">
+        <i class="bi bi-plus-circle me-2"></i>Registrar primera compra
+      </button>
+      <div class="mt-4 p-3 bg-light rounded mx-auto text-start" style="max-width:420px;">
+        <small class="text-muted"><strong>Ejemplo:</strong><br>Guillotina nueva → 12 cuotas de $15.000 → Tarjeta Naranja</small>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="mt-4">
+    <a href="/" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Volver al Inicio
+    </a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: NUEVA COMPRA EN CUOTAS -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalNuevaCompra" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Registrar Nueva Compra en Cuotas</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/finanzas/compras-cuotas/crear" method="POST">
+        <div class="modal-body">
+          <!-- ¿Qué compraste? -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">¿Qué compraste? *</label>
+            <input type="text" name="descripcion" class="form-control"
+                   placeholder="Ej: 'Guillotina Polar 76', 'Papel Bond 90gr x 500 resmas'" required>
+            <small class="text-muted">Descripción clara del bien o servicio comprado</small>
+          </div>
+
+          <div class="row">
+            <!-- Categoría -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select name="categoria" class="form-select" required>
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <!-- Proveedor -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Proveedor</label>
+              <input type="text" name="proveedor" class="form-control" placeholder="Ej: Juan García SRL">
+              <small class="text-muted">Quién te vendió el producto</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Monto total -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Valor total de la compra ($) *</label>
+              <input type="number" id="montoTotal" name="monto_total" class="form-control"
+                     step="0.01" min="0" placeholder="0.00" required>
+              <small class="text-muted">El precio total, sin importar la cantidad de cuotas</small>
+            </div>
+
+            <!-- Cantidad de cuotas -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Cantidad de cuotas *</label>
+              <input type="number" id="cantCuotas" name="cant_cuotas" class="form-control"
+                     min="1" placeholder="Ej: 12" required>
+              <small class="text-muted">¿En cuántas cuotas lo financiaste?</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Monto por cuota (auto-calculado) -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Valor de cada cuota ($)</label>
+              <input type="number" id="montoCuota" name="monto_cuota" class="form-control"
+                     step="0.01" min="0" placeholder="0.00" readonly style="background-color: #f3f4f6;">
+              <small class="text-muted">Se calcula automáticamente (o podés editarlo)</small>
+            </div>
+
+            <!-- Fecha primera cuota -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Primera cuota: ¿cuándo cae? *</label>
+              <input type="date" name="fecha_primera_cuota" class="form-control" required>
+              <small class="text-muted">Fecha en que pagás la primera cuota</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Método de pago -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">¿Con qué se paga?</label>
+              <select name="medio_pago" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                <option value="tarjeta">💳 Tarjeta de Crédito</option>
+                <option value="financiacion">🏦 Financiación Proveedor</option>
+                <option value="prestamo">💰 Préstamo</option>
+                <option value="efectivo">💵 Débito automático / Transferencia</option>
+                <option value="otro">📝 Otro</option>
+              </select>
+            </div>
+
+            <!-- Fecha de compra -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de compra</label>
+              <input type="date" name="fecha_compra" class="form-control">
+              <small class="text-muted">Opcional: cuándo compraste</small>
+            </div>
+          </div>
+
+          <!-- Notas -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales, acuerdos especiales, etc."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Registrar Compra
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDITAR COMPRA EN CUOTAS -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalEditarCompra" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Compra en Cuotas</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formEditarCompra" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">¿Qué compraste? *</label>
+            <input type="text" id="editDescripcion" name="descripcion" class="form-control" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select id="editCategoria" name="categoria" class="form-select" required>
+                <option value="">-- Seleccionar --</option>
+                <% CATEGORIAS.forEach(cat => { %>
+                  <option value="<%= cat %>"><%= cat %></option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Proveedor</label>
+              <input type="text" id="editProveedor" name="proveedor" class="form-control">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto Total ($) *</label>
+              <input type="number" id="editMontoTotal" name="monto_total" class="form-control"
+                     step="0.01" min="0" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Cantidad de Cuotas *</label>
+              <input type="number" id="editCantCuotas" name="cant_cuotas" class="form-control"
+                     min="1" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Valor de cada cuota ($)</label>
+              <input type="number" id="editMontoCuota" name="monto_cuota" class="form-control"
+                     step="0.01" min="0">
+              <small class="text-muted">Dejá en blanco para calcular automáticamente</small>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Primera Cuota: ¿cuándo cae? *</label>
+              <input type="date" id="editFechaPrimeraCuota" name="fecha_primera_cuota" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Método de Pago</label>
+              <select id="editMedioPago" name="medio_pago" class="form-select">
+                <option value="">-- Seleccionar --</option>
+                <option value="tarjeta">💳 Tarjeta de Crédito</option>
+                <option value="financiacion">🏦 Financiación Proveedor</option>
+                <option value="prestamo">💰 Préstamo</option>
+                <option value="efectivo">💵 Débito automático / Transferencia</option>
+                <option value="otro">📝 Otro</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Compra</label>
+              <input type="date" id="editFechaCompra" name="fecha_compra" class="form-control">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas</label>
+            <textarea id="editNotas" name="notas" class="form-control" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-save"></i> Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- OFFCANVAS AYUDA -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAyuda">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title">Compras en Cuotas</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+    <h6 class="text-primary mb-1">¿Para qué sirve esta sección?</h6>
+    <p class="small text-muted">Cuando comprás algo en cuotas, ese dinero está "comprometido" mes a mes. Esta sección te ayuda a saber cuánto dinero de tus ingresos futuros ya está hablado, para que no hagas promesas que no podés cumplir.</p>
+    <hr>
+    <h6 class="text-primary mb-1">¿Qué cargar y cuándo?</h6>
+    <ul class="small text-muted ps-3">
+      <li><strong>Cada compra en cuotas:</strong> Con tarjeta de crédito, financiación de proveedores, préstamos personales</li>
+      <li><strong>Cuando recibís un invoice:</strong> Cargalo con los datos: cantidad de cuotas, montos, fechas de vencimiento</li>
+      <li><strong>Cuando pagás una cuota:</strong> Marcala en el sistema para mantener el historial actualizado</li>
+    </ul>
+    <hr>
+    <h6 class="text-warning mb-1">⚠️ Errores comunes</h6>
+    <ul class="small text-muted ps-3">
+      <li>Cargar solo el total y no desglosar por cuotas (después no sabés cuánto cae cada mes)</li>
+      <li>Olvidar compras recientes (el total se vuelve irreal)</li>
+      <li>No actualizar cuando se atrasa un pago o se renegocia el plan</li>
+    </ul>
+    <hr>
+    <h6 class="text-success mb-1">Ejemplo concreto</h6>
+    <div class="p-3 bg-light rounded small">
+      <strong>Compra de guillotina:</strong><br>
+      • Modelo: Polar 76<br>
+      • Precio total: $180.000<br>
+      • 12 cuotas de $15.000 c/u<br>
+      • Tarjeta Naranja<br>
+      <strong>Resultado:</strong> Sabés que los próximos 12 meses, $15.000 de tus ingresos van directo a pagar la guillotina.
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+// Auto-calcular monto_cuota
+function setupMontoCalculation() {
+  const montoInput = document.getElementById('montoTotal');
+  const cuotasInput = document.getElementById('cantCuotas');
+  const montoCuotaInput = document.getElementById('montoCuota');
+
+  function calcMontoCuota() {
+    const monto = parseFloat(montoInput.value) || 0;
+    const cuotas = parseInt(cuotasInput.value) || 1;
+    if (monto > 0 && cuotas > 0) {
+      montoCuotaInput.value = (monto / cuotas).toFixed(2);
+    }
+  }
+
+  montoInput.addEventListener('input', calcMontoCuota);
+  cuotasInput.addEventListener('input', calcMontoCuota);
+}
+
+function abrirEditar(compra) {
+  const form = document.getElementById('formEditarCompra');
+  form.action = `/finanzas/compras-cuotas/${compra.id}/editar`;
+
+  document.getElementById('editDescripcion').value = compra.descripcion || '';
+  document.getElementById('editCategoria').value = compra.categoria || '';
+  document.getElementById('editProveedor').value = compra.proveedor || '';
+  document.getElementById('editMontoTotal').value = compra.monto_total || 0;
+  document.getElementById('editCantCuotas').value = compra.cant_cuotas || 1;
+  document.getElementById('editMontoCuota').value = compra.monto_cuota || 0;
+  document.getElementById('editFechaPrimeraCuota').value = compra.fecha_primera_cuota || '';
+  document.getElementById('editMedioPago').value = compra.medio_pago || '';
+  document.getElementById('editFechaCompra').value = compra.fecha_compra || '';
+  document.getElementById('editNotas').value = compra.notas || '';
+}
+
+function registrarCuota(id, descripcion, cuotaActual, totalCuotas) {
+  if (confirm(`¿Marcar la cuota ${cuotaActual}/${totalCuotas} de "${descripcion}" como pagada? Se registrará en Caja Diaria.`)) {
+    fetch(`/finanzas/compras-cuotas/${id}/registrar-cuota`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        alert(`✅ ${data.message}`);
+        location.reload();
+      } else {
+        alert('❌ Error: ' + data.error);
+      }
+    })
+    .catch(e => alert('Error: ' + e.message));
+  }
+}
+
+function eliminar(id, descripcion) {
+  if (confirm(`¿Eliminar la compra "${descripcion}"? No se puede deshacer.`)) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/finanzas/compras-cuotas/${id}/eliminar`;
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', setupMontoCalculation);
+</script>

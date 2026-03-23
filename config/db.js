@@ -729,6 +729,17 @@ async function initDb() {
         `);
 
         console.log('✅ Base de datos lista\n');
+
+        // ════════════════════════════════════════════════════════════════
+        // IMPORTAR DATOS DE BACKUP SI BD ESTÁ VACÍA
+        // ════════════════════════════════════════════════════════════════
+        try {
+            const importData = require('./import-data');
+            await importData(db);
+        } catch (importError) {
+            console.log('ℹ️  No se pudo importar datos (opcional)');
+        }
+
         return db;
 
     } catch (error) {

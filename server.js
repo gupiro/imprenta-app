@@ -29,9 +29,6 @@ const app = express();
 // CONFIGURACIÓN BÁSICA
 // ════════════════════════════════════════════════════════════════
 
-// Confiar en proxy (para Render, Heroku, etc)
-app.set('trust proxy', 1);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -219,11 +216,10 @@ async function startServer() {
     // Rate limiting: máximo 5 intentos de login por 15 minutos
     const loginLimiter = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 20,                   // 20 intentos máximo
+        max: 5,                    // 5 intentos máximo
         message: 'Demasiados intentos de login. Intenta más tarde.',
         standardHeaders: true,
         legacyHeaders: false,
-        skip: (req) => process.env.NODE_ENV !== 'production', // Deshabilitar en desarrollo
     });
 
     app.post('/auth/login', loginLimiter);
@@ -258,6 +254,12 @@ async function startServer() {
     app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
     app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
     app.use('/guia',         authMiddleware.isAuthenticated,               guiaRouterConfigured);
+
+    // ────────────────────────────────────────────────────────────────────
+    // ADMIN - IMPORTACIÓN DE DATOS
+    // ────────────────────────────────────────────────────────────────────
+    const adminImportRouterConfigured = require('./routes/admin-import')(dbInstance);
+    app.use('/', authMiddleware.isAuthenticated, adminImportRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA
@@ -308,8 +310,9 @@ async function startServer() {
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
         async (req, res, next) => {
-            // Flag para mostrar/ocultar números contables: admin y recepcionistas ven los números
-            res.locals.puedeVerNumeros = ['admin', 'recepcionista'].includes(req.session.user?.rol);
+            // Flag para mostrar/ocultar números contables: únicamente admin ve totales/desglose
+            res.locals.puedeVerNumeros = req.session.user?.rol === 'admin';
+            res.locals.user = req.session.user;
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );

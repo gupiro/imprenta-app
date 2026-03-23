@@ -647,13 +647,43 @@
           <li class="sidebar-menu-item">
             <a href="/gastos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'gastos') ? 'active' : '' %>">
               <i class="bi bi-receipt"></i>
-              <span>Gastos</span>
+              <span>Gastos Directos</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/finanzas/gastos-fijos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'gastos-fijos') ? 'active' : '' %>">
+              <i class="bi bi-building"></i>
+              <span>Gastos Fijos</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/finanzas/compras-cuotas" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'compras-cuotas') ? 'active' : '' %>">
+              <i class="bi bi-calendar2-week"></i>
+              <span>Compras a Cuotas</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/finanzas/facturas-recibidas" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'facturas-recibidas') ? 'active' : '' %>">
+              <i class="bi bi-file-earmark-text"></i>
+              <span>Facturas Recibidas</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/finanzas/vencimientos-fiscales" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'vencimientos-fiscales') ? 'active' : '' %>">
+              <i class="bi bi-calendar-range"></i>
+              <span>Vencimientos Fiscales</span>
+            </a>
+          </li>
+          <li class="sidebar-menu-item">
+            <a href="/deudas" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'deudas') ? 'active' : '' %>">
+              <i class="bi bi-credit-card"></i>
+              <span>Deudas (Tarjetas, Cheques, Préstamos)</span>
             </a>
           </li>
           <li class="sidebar-menu-item">
             <a href="/pagos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'pagos') ? 'active' : '' %>">
               <i class="bi bi-calendar-check"></i>
-              <span>Centro Pagos</span>
+              <span>Centro de Pagos</span>
             </a>
           </li>
           <li class="sidebar-menu-item">

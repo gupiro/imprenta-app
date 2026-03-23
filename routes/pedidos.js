@@ -323,7 +323,7 @@ module.exports = (db) => {
       }
 
       const nuevo_entregado = (pedido.monto_entregado || 0) + monto;
-      const nuevo_saldo = Math.max(0, (pedido.precio || 0) - nuevo_entregado);
+      const nuevo_saldo = (pedido.precio || 0) - nuevo_entregado;
       const { timestamp: fecha_ahora } = obtenerFechaLocal();
 
       await db.run('UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, fecha_pago = ?, medio_pago = ?, estado_pago = CASE WHEN ? <= 0.01 THEN "PAGADO" ELSE "PARCIAL" END WHERE id = ?', [nuevo_entregado, nuevo_saldo, fecha_ahora, metodo_pago || 'Efectivo', nuevo_saldo, id]);
@@ -709,7 +709,7 @@ module.exports = (db) => {
 
       // Recalcular totales
       const nuevoEntregado = parseFloat(monto_entregado) || pedido.monto_entregado || 0;
-      const nuevoRestante  = Math.max(0, totalItems - nuevoEntregado);
+      const nuevoRestante  = totalItems - nuevoEntregado;
       const estadoPago     = nuevoRestante <= 0 ? 'PAGADO' : (nuevoEntregado > 0 ? 'PARCIAL' : 'PENDIENTE');
 
       await db.run(
@@ -734,8 +734,8 @@ module.exports = (db) => {
       // Recalcular total del pedido
       const items = await db.all('SELECT precio FROM productos WHERE pedido_id = ?', id);
       const nuevoTotal = items.reduce((s, i) => s + (i.precio || 0), 0);
-      const pedido = await db.get('SELECT monto_entregado FROM pedidos WHERE id = ?', id);
-      const nuevoRestante = Math.max(0, nuevoTotal - (pedido?.monto_entregado || 0));
+      const pedido = await db.get('SELECT monto_entregado FROM pedidos WHERE id = ?', [id]);
+      const nuevoRestante = nuevoTotal - (pedido?.monto_entregado || 0);
       await db.run('UPDATE pedidos SET precio = ?, monto_restante = ? WHERE id = ?', [nuevoTotal, nuevoRestante, id]);
       req.flash('success', 'Producto eliminado');
     } catch (err) {

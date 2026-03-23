@@ -50,8 +50,8 @@ services:
     # Auto-deploy on git push
     autoDeployOnPush: true
 
-# Cron jobs (optional - for automated backups, cleanup, etc.)
-# crons:
-#   - id: db-backup
-#     command: "node scripts/backup-db.js"
-#     schedule: "0 2 * * *"  # Daily at 2 AM UTC
+# Cron jobs (automated backups)
+crons:
+  - id: db-backup
+    command: "node scripts/backup-render.js"
+    schedule: "0 2 * * *"  # Daily at 2 AM UTC (toda las noches)

@@ -29,6 +29,9 @@ const app = express();
 // CONFIGURACIÓN BÁSICA
 // ════════════════════════════════════════════════════════════════
 
+// Confiar en proxy (para Render, Heroku, etc)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -216,10 +219,11 @@ async function startServer() {
     // Rate limiting: máximo 5 intentos de login por 15 minutos
     const loginLimiter = rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 5,                    // 5 intentos máximo
+        max: 20,                   // 20 intentos máximo
         message: 'Demasiados intentos de login. Intenta más tarde.',
         standardHeaders: true,
         legacyHeaders: false,
+        skip: (req) => process.env.NODE_ENV !== 'production', // Deshabilitar en desarrollo
     });
 
     app.post('/auth/login', loginLimiter);

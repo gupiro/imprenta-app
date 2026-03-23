@@ -270,17 +270,38 @@ module.exports = (db) => {
               id: c.id
           }));
 
+      // Función para determinar prioridad según diasHasta
+      const calcularPrioridad = (diasHasta) => {
+          if (diasHasta < 0) {
+              return { clase: 'badge-danger', label: 'VENCIDO' };
+          } else if (diasHasta <= 3) {
+              return { clase: 'badge-warning', label: 'URGENTE' };
+          } else if (diasHasta <= 7) {
+              return { clase: 'badge-info', label: 'PRÓXIMO' };
+          } else {
+              return { clase: 'badge-success', label: 'OK' };
+          }
+      };
+
       // Combinar y ordenar próximos 7 días (incluye vencidos con diasHasta < 0)
       const proximos7Dias = [
-          ...cuotasVencidas,
-          ...tarjetas7Dias,
+          ...cuotasVencidas.map(c => ({
+              ...c,
+              prioridad: calcularPrioridad(c.diasHasta)
+          })),
+          ...tarjetas7Dias.map(t => ({
+              ...t,
+              prioridad: calcularPrioridad(t.diasHasta)
+          })),
           ...gastosPendientes7Dias.map(g => ({
               ...g,
-              diasHasta: Math.round((new Date(g.fecha_str) - hoyDate) / 86400000)
+              diasHasta: Math.round((new Date(g.fecha_str) - hoyDate) / 86400000),
+              prioridad: calcularPrioridad(Math.round((new Date(g.fecha_str) - hoyDate) / 86400000))
           })),
           ...vencimientosFiscales7Dias.map(v => ({
               ...v,
-              diasHasta: Math.round((new Date(v.fecha_str) - hoyDate) / 86400000)
+              diasHasta: Math.round((new Date(v.fecha_str) - hoyDate) / 86400000),
+              prioridad: calcularPrioridad(Math.round((new Date(v.fecha_str) - hoyDate) / 86400000))
           }))
       ].sort((a, b) => (a.diasHasta || 0) - (b.diasHasta || 0));
 

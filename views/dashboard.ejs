@@ -189,13 +189,14 @@
         </thead>
         <tbody>
           <% proximosVencimientos.forEach(v => { %>
+          <% const prioridad = v.prioridad || { clase: 'badge-default', label: 'Sin prioridad' }; %>
           <tr>
             <td><strong><%= v.concepto %></strong></td>
-            <td><%= new Date(v.fecha).toLocaleDateString('es-AR') %></td>
+            <td><%= new Date(v.fecha_str || v.fecha).toLocaleDateString('es-AR') %></td>
             <td>$<%= v.monto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></td>
             <td>
-              <span class="badge-minimal <%= v.prioridad.clase %>">
-                <%= v.prioridad.label %>
+              <span class="badge-minimal <%= prioridad.clase %>">
+                <%= prioridad.label %>
               </span>
             </td>
           </tr>

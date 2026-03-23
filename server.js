@@ -114,9 +114,30 @@ if (!fs.existsSync(path.join(uploadsDir, 'thumbs'))) fs.mkdirSync(path.join(uplo
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(uploadsDir));
 
-app.get('/pedidos/revision/descargar/:filename', async (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'uploads', req.params.filename);
-    res.download(filePath);
+// ✅ File download con validación y autenticación
+app.get('/pedidos/revision/descargar/:filename', authMiddleware.isAuthenticated, async (req, res) => {
+    // Validar que filename solo contiene caracteres seguros (prevenir path traversal)
+    const filename = req.params.filename;
+    if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
+        return res.status(400).send('❌ Nombre de archivo inválido');
+    }
+
+    const filePath = path.join(__dirname, 'public', 'uploads', filename);
+
+    // Verificar que el archivo existe y está dentro de uploads/
+    const uploadsDir = path.join(__dirname, 'public', 'uploads');
+    const resolvedPath = path.resolve(filePath);
+    const resolvedUploadsDir = path.resolve(uploadsDir);
+
+    if (!resolvedPath.startsWith(resolvedUploadsDir)) {
+        return res.status(403).send('❌ Acceso denegado');
+    }
+
+    res.download(filePath, (err) => {
+        if (err && err.code === 'ENOENT') {
+            res.status(404).send('❌ Archivo no encontrado');
+        }
+    });
 });
 
 // ════════════════════════════════════════════════════════════════
@@ -252,11 +273,11 @@ async function startServer() {
     app.use('/proveedores',  permitirRoles('admin'),                       proveedoresRouterConfigured);
     app.use('/stock',        permitirRoles('admin'),                       stockRouterConfigured);
     app.use('/gastos',       permitirRoles('admin'),                       gastosRouterConfigured);
-    app.use('/reportes',     permitirRoles('admin','vendedor'),                       reportesRouterConfigured);
+    app.use('/reportes',     permitirRoles('admin'),                       reportesRouterConfigured);
     app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
     app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
     app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
-    app.use('/guia',         authMiddleware.isAuthenticated,               guiaRouterConfigured);
+    app.use('/guia',         permitirRoles('admin','vendedor'),            guiaRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────
     // ADMIN - IMPORTACIÓN DE DATOS
@@ -550,7 +571,8 @@ async function startServer() {
     // DEBUG: Ver conteos en consola
     // ────────────────────────────────────────────────────────────────────
 
-    app.get('/debug/counts', async (_, res) => {
+    // ✅ DEBUG endpoint protegido por autenticación
+    app.get('/debug/counts', authMiddleware.isAuthenticated, permitirRoles('admin'), async (_, res) => {
         const counts = {
             pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
             en_produccion: (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,

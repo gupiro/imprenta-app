@@ -6,9 +6,10 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════
-     RESUMEN FINANCIERO (3 KPI Cards)
+     RESUMEN FINANCIERO (3 KPI Cards) - SOLO PARA ADMIN
      ════════════════════════════════════════════════════════════════ -->
 
+<% if (user && user.rol === 'admin') { %>
 <div class="row mb-4" id="kpiSection">
   <div class="col-md-4 mb-3">
     <div class="kpi-card">
@@ -47,6 +48,7 @@
     </div>
   </div>
 </div>
+<% } %>
 
 <!-- ════════════════════════════════════════════════════════════════
      FORMULARIO PRINCIPAL - REGISTRAR MOVIMIENTO
@@ -238,9 +240,10 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════
-     RESÚMENES: POR TURNO + POR MÉTODO DE PAGO
+     RESÚMENES: POR TURNO + POR MÉTODO DE PAGO (SOLO PARA ADMIN)
      ════════════════════════════════════════════════════════════════ -->
 
+<% if (user && user.rol === 'admin') { %>
 <div class="row">
   <!-- RESUMEN POR TURNO -->
   <div class="col-md-6">
@@ -330,6 +333,7 @@
     </div>
   </div>
 </div>
+<% } %>
 
 <!-- ════════════════════════════════════════════════════════════════
      SCRIPTS
@@ -439,24 +443,40 @@
       }
     });
 
-    // Actualizar KPI cards
-    document.getElementById('totalIngresos').textContent = totalIngresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
-    document.getElementById('totalEgresos').textContent = totalEgresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    // Actualizar KPI cards (solo si existen)
+    const totalIngresosElem = document.getElementById('totalIngresos');
+    if (totalIngresosElem) totalIngresosElem.textContent = totalIngresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+    const totalEgresosElem = document.getElementById('totalEgresos');
+    if (totalEgresosElem) totalEgresosElem.textContent = totalEgresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
 
     const saldo = totalIngresos - totalEgresos;
-    document.getElementById('saldoValue').textContent = '$' + saldo.toLocaleString('es-AR', {minimumFractionDigits: 2});
-    document.getElementById('saldoValue').style.color = saldo >= 0 ? '#10b981' : '#ef4444';
+    const saldoElem = document.getElementById('saldoValue');
+    if (saldoElem) {
+      saldoElem.textContent = '$' + saldo.toLocaleString('es-AR', {minimumFractionDigits: 2});
+      saldoElem.style.color = saldo >= 0 ? '#10b981' : '#ef4444';
+    }
 
-    // Actualizar resumen por turno
-    document.getElementById('turnoMañanaIngresos').textContent = turnoMañanaIngresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
-    document.getElementById('turnoMañanaEgresos').textContent = turnoMañanaEgresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
-    document.getElementById('turnoMañanaSaldo').textContent = (turnoMañanaIngresos - turnoMañanaEgresos).toLocaleString('es-AR', {minimumFractionDigits: 2});
+    // Actualizar resumen por turno (solo si existen)
+    const turnoMañanaIngElem = document.getElementById('turnoMañanaIngresos');
+    if (turnoMañanaIngElem) turnoMañanaIngElem.textContent = turnoMañanaIngresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
 
-    document.getElementById('turnoTardeIngresos').textContent = turnoTardeIngresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
-    document.getElementById('turnoTardeEgresos').textContent = turnoTardeEgresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
-    document.getElementById('turnoTardeSaldo').textContent = (turnoTardeIngresos - turnoTardeEgresos).toLocaleString('es-AR', {minimumFractionDigits: 2});
+    const turnoMañanaEgrElem = document.getElementById('turnoMañanaEgresos');
+    if (turnoMañanaEgrElem) turnoMañanaEgrElem.textContent = turnoMañanaEgresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
 
-    // Actualizar resumen por método
+    const turnoMañanaSaldoElem = document.getElementById('turnoMañanaSaldo');
+    if (turnoMañanaSaldoElem) turnoMañanaSaldoElem.textContent = (turnoMañanaIngresos - turnoMañanaEgresos).toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+    const turnoTardeIngElem = document.getElementById('turnoTardeIngresos');
+    if (turnoTardeIngElem) turnoTardeIngElem.textContent = turnoTardeIngresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+    const turnoTardeEgrElem = document.getElementById('turnoTardeEgresos');
+    if (turnoTardeEgrElem) turnoTardeEgrElem.textContent = turnoTardeEgresos.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+    const turnoTardeSaldoElem = document.getElementById('turnoTardeSaldo');
+    if (turnoTardeSaldoElem) turnoTardeSaldoElem.textContent = (turnoTardeIngresos - turnoTardeEgresos).toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+    // Actualizar resumen por método (solo si existen)
     Object.entries(metodos).forEach(([metodo, total]) => {
       const elem = document.querySelector(`[data-metodo="${metodo}"]`);
       if (elem) {
@@ -464,7 +484,8 @@
       }
     });
 
-    document.getElementById('totalCaja').textContent = (totalIngresos - totalEgresos).toLocaleString('es-AR', {minimumFractionDigits: 2});
+    const totalCajaElem = document.getElementById('totalCaja');
+    if (totalCajaElem) totalCajaElem.textContent = (totalIngresos - totalEgresos).toLocaleString('es-AR', {minimumFractionDigits: 2});
   }
 
   // Cargar movimientos al iniciar

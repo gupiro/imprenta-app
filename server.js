@@ -29,6 +29,9 @@ const app = express();
 // CONFIGURACIÓN BÁSICA
 // ════════════════════════════════════════════════════════════════
 
+// Trust proxy - IMPORTANTE para Render (usa proxy reverso)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());

@@ -4,27 +4,44 @@ module.exports = (db) => {
 
     const listarClientes = async (req, res) => {
         try {
+            // Obtener todos los clientes
             const clients = await db.all('SELECT * FROM clients ORDER BY name ASC');
-            
-            for (const client of clients) {
-                const deuda = await db.get(`
-                    SELECT COALESCE(SUM(monto_restante), 0) AS total_deuda
-                    FROM pedidos
-                    WHERE client_id = ? AND monto_restante > 0
-                `, client.id);
-                client.deuda_total = deuda?.total_deuda || 0;
-                
-                // Agregar presupuestos pendientes
-                const presupuestosPendientes = await db.all(`
-                    SELECT id, fecha_creacion, precio_estimado, estado
-                    FROM presupuestos
-                    WHERE cliente_id = ? AND estado IN ('PENDIENTE', 'ACEPTADO')
-                    ORDER BY fecha_creacion DESC
-                `, client.id);
-                client.presupuestos_pendientes = presupuestosPendientes || [];
+
+            // Obtener TODAS las deudas en una sola query
+            const deudasPorCliente = await db.all(`
+                SELECT client_id, COALESCE(SUM(monto_restante), 0) AS total_deuda
+                FROM pedidos
+                WHERE monto_restante > 0
+                GROUP BY client_id
+            `);
+
+            // Convertir a Map para búsqueda rápida O(1) en lugar de O(n)
+            const deudaMap = new Map(deudasPorCliente.map(d => [d.client_id, d.total_deuda]));
+
+            // Obtener TODOS los presupuestos pendientes en una sola query
+            const presupuestosPorCliente = await db.all(`
+                SELECT cliente_id, id, fecha_creacion, precio_estimado, estado
+                FROM presupuestos
+                WHERE estado IN ('PENDIENTE', 'ACEPTADO')
+                ORDER BY fecha_creacion DESC
+            `);
+
+            // Convertir a Map agrupado por cliente
+            const presupuestosMap = new Map();
+            presupuestosPorCliente.forEach(p => {
+                if (!presupuestosMap.has(p.cliente_id)) {
+                    presupuestosMap.set(p.cliente_id, []);
+                }
+                presupuestosMap.get(p.cliente_id).push(p);
+            });
+
+            // Enriquecer cada cliente en memoria (sin queries adicionales)
+            clients.forEach(client => {
+                client.deuda_total = deudaMap.get(client.id) || 0;
+                client.presupuestos_pendientes = presupuestosMap.get(client.id) || [];
                 client.cant_presupuestos = client.presupuestos_pendientes.length;
-            }
-            
+            });
+
             res.render('clientes/list', {
                 title: 'Clientes',
                 clients,

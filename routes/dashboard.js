@@ -1,4 +1,5 @@
 const express = require('express');
+const { calcularBalanceMes } = require('../utils/financiero');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -7,9 +8,20 @@ module.exports = (db) => {
   router.get('/', async (req, res) => {
     try {
       const hoy = new Date().toISOString().slice(0, 10);
-      const inicioMes = new Date();
-      inicioMes.setDate(1);
-      const fechaInicio = inicioMes.toISOString().slice(0, 10);
+      const mesActual = hoy.slice(0, 7); // 'YYYY-MM'
+
+      // Balance consolidado del mes (fuente única de verdad)
+      const balance = await calcularBalanceMes(db, mesActual);
+      const ingresosMes          = balance.ingresosCaja;
+      const gastosMes            = balance.gastosNegocio;
+      const gastosfijosMes       = balance.gastosfijosPagados;
+      const cuotasMes            = balance.cuotasPagadas;
+      const gastosTotalMes       = balance.gastosTotales;
+      const saldoNeto            = balance.resultadoNeto;
+      const gastosFijosPendientes = balance.gastosFijosPendientes;
+      const cuotasPendientes     = balance.cuotasPendientes;
+      const totalPendiente       = balance.totalPendiente;
+      const resultadoProyectado  = balance.resultadoProyectado;
 
       // Contadores principales
       const stats = {
@@ -26,19 +38,6 @@ module.exports = (db) => {
         "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?",
         hoy
       ))?.total || 0;
-
-      const ingresosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) >= ?",
-        fechaInicio
-      ))?.total || 0;
-
-      // Gastos del mes (solo negocio)
-      const gastosMes = (await db.get(
-        "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')"
-      ))?.total || 0;
-
-      // Saldo neto
-      const saldoNeto = ingresosMes - gastosMes;
 
       // Ingresos mes anterior
       const ingresosMesAnterior = (await db.get(`
@@ -247,8 +246,33 @@ module.exports = (db) => {
           id: t.id
       }));
 
-      // Combinar y ordenar próximos 7 días
+      // Cuotas vencidas no pagadas
+      const comprasCuotasDash = await db.all(
+          "SELECT id, descripcion, monto_cuota, cant_cuotas, cuotas_pagadas, fecha_primera_cuota FROM compras_cuotas WHERE activo = 1 AND cuotas_pagadas < cant_cuotas"
+      ) || [];
+      const hoyDateMidnight = new Date(hoyDate);
+      hoyDateMidnight.setHours(0, 0, 0, 0);
+      const cuotasVencidas = comprasCuotasDash
+          .map(c => {
+              const proxFecha = new Date(c.fecha_primera_cuota);
+              proxFecha.setMonth(proxFecha.getMonth() + c.cuotas_pagadas);
+              proxFecha.setHours(0, 0, 0, 0);
+              const diasHasta = Math.round((proxFecha - hoyDateMidnight) / 86400000);
+              return { c, proxFecha, diasHasta };
+          })
+          .filter(({ diasHasta }) => diasHasta < 0)
+          .map(({ c, proxFecha, diasHasta }) => ({
+              tipo: 'cuota',
+              concepto: `Cuota ${c.cuotas_pagadas + 1}/${c.cant_cuotas} — ${c.descripcion}`,
+              fecha_str: proxFecha.toLocaleDateString('es-AR'),
+              diasHasta,
+              monto: c.monto_cuota,
+              id: c.id
+          }));
+
+      // Combinar y ordenar próximos 7 días (incluye vencidos con diasHasta < 0)
       const proximos7Dias = [
+          ...cuotasVencidas,
           ...tarjetas7Dias,
           ...gastosPendientes7Dias.map(g => ({
               ...g,
@@ -262,13 +286,13 @@ module.exports = (db) => {
 
       const totalProximos7Dias = proximos7Dias.reduce((s, v) => s + (v.monto || 0), 0);
 
-      // Semáforo financiero
+      // Semáforo financiero (usa gastos consolidados)
       const semaforo = (() => {
-          if (ingresosMes === 0 && gastosMes === 0) {
+          if (ingresosMes === 0 && gastosTotalMes === 0) {
               return { color: 'secondary', estado: 'Sin datos aún', clase: 'bg-secondary text-dark' };
           }
-          const margen = ingresosMes > 0 ? ((ingresosMes - gastosMes) / ingresosMes) * 100 : -100;
-          if (gastosMes > ingresosMes) {
+          const margen = ingresosMes > 0 ? ((ingresosMes - gastosTotalMes) / ingresosMes) * 100 : -100;
+          if (gastosTotalMes > ingresosMes) {
               return { color: 'danger', clase: 'bg-danger text-white', estado: 'Atención: estás gastando más de lo que ingresa ❌' };
           }
           if (margen < 10) {
@@ -307,9 +331,17 @@ module.exports = (db) => {
       res.render('dashboard', {
         title: 'Dashboard Ejecutivo',
         stats,
+        // Variables individuales para vista (compatibilidad)
+        pendientes: stats.pedidosPendientes,
+        en_produccion: stats.pedidosEnProduccion,
+        listos: stats.pedidosListos,
+        entregados: stats.pedidosEntregados,
         ingresosHoy,
         ingresosMes,
         gastosMes,
+        gastosfijosMes,
+        cuotasMes,
+        gastosTotalMes,
         saldoNeto,
         deudaTotal,
         pedidosActivos,
@@ -330,6 +362,10 @@ module.exports = (db) => {
         graficoDatos: JSON.stringify(graficoDatos),
         estadoLabels: JSON.stringify(estadoLabels),
         estadoDatos: JSON.stringify(estadoDatos),
+        gastosFijosPendientes,
+        cuotasPendientes,
+        totalPendiente,
+        resultadoProyectado,
         pisoSupervivencia,
         proximos7Dias,
         totalProximos7Dias,

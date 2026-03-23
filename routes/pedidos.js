@@ -145,7 +145,15 @@ module.exports = (db) => {
       const { timestamp: fecha } = obtenerFechaLocal();
       const usuarioId = req.session.user?.id || null;
 
-      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId]);
+      // Calcular estado_pago basado en adelanto
+      let estadoPago = 'PENDIENTE';
+      if (entregado >= precio) {
+        estadoPago = 'PAGADO';
+      } else if (entregado > 0) {
+        estadoPago = 'PARCIAL';
+      }
+
+      const infoPed = await db.run('INSERT INTO pedidos (client_id, precio, fecha, estado, monto_entregado, monto_restante, medio_pago, presupuesto_id, fecha_entrega, usuario_id, estado_pago) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [clientId, precio, fecha, 'PENDIENTE', entregado, restante, medio_pago, presupuestoId, fecha_entrega || null, usuarioId, estadoPago]);
       const pedidoId = infoPed.lastID;
 
       // 💰 REGISTRAR ADELANTO EN CAJA DIARIA (si hay monto adelantado)

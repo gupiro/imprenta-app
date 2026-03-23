@@ -455,12 +455,14 @@ async function initDb() {
         // ════════════════════════════════════════════════════════════════
 
         // Usuario admin
-        const adminExists = await db.get('SELECT id FROM users WHERE username = ?', 'admin');
+        const adminExists = await db.get('SELECT id FROM users WHERE username = ?', ['admin']);
         if (!adminExists) {
             const bcrypt = require('bcryptjs');
             const passwordHash = bcrypt.hashSync('admin123', 10);
-            await db.run('INSERT INTO users (username, password, rol) VALUES (?, ?, ?)', 'admin', passwordHash, 'admin');
+            await db.run('INSERT INTO users (username, password, rol) VALUES (?, ?, ?)', ['admin', passwordHash, 'admin']);
             console.log('✅ Usuario admin creado (admin/admin123)');
+        } else {
+            console.log('✅ Usuario admin ya existe');
         }
 
         // Rol EMPLEADO añadido - solo acceso a Caja y opciones limitadas

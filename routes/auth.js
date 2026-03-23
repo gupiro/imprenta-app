@@ -21,32 +21,42 @@ module.exports = (db) => {
 
     // Procesar login
     router.post('/login', async (req, res) => {
-        const username = req.body.username?.trim();
-        const password = req.body.password;
-        if (!username || !password) {
-            req.flash('error', 'Todos los campos son obligatorios.');
-            return res.redirect('/auth/login');
+        try {
+            const username = req.body.username?.trim();
+            const password = req.body.password;
+
+            if (!username || !password) {
+                req.flash('error', 'Todos los campos son obligatorios.');
+                return res.redirect('/auth/login');
+            }
+
+            const user = await db.get('SELECT * FROM users WHERE username = ?', [username]); // Usamos db.get de sqlite
+
+            if (!user || !(await bcrypt.compare(password, user.password))) {
+                console.log('❌ Login fallido:', username);
+                req.flash('error', 'Usuario o contraseña inválidos.');
+                return res.redirect('/auth/login');
+            }
+
+            // Cargamos los permisos según el rol
+            const permisos = rolePermissions[user.rol] || [];
+
+            // Guardar en sesión
+            req.session.user = {
+                id:       user.id,
+                username: user.username,
+                rol:      user.rol,
+                permisos
+            };
+
+            console.log('✅ Login exitoso:', username, user.rol);
+            req.flash('success', `¡Bienvenido, ${user.username}!`);
+            res.redirect('/');
+        } catch (error) {
+            console.error('❌ Error en login:', error);
+            req.flash('error', 'Error al procesar login');
+            res.redirect('/auth/login');
         }
-
-        const user = await db.get('SELECT * FROM users WHERE username = ?', username); // Usamos db.get de sqlite
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            req.flash('error', 'Usuario o contraseña inválidos.');
-            return res.redirect('/auth/login');
-        }
-
-        // Cargamos los permisos según el rol
-        const permisos = rolePermissions[user.rol] || [];
-
-        // Guardar en sesión
-        req.session.user = {
-            id:       user.id,        // Agregar ID del usuario
-            username: user.username,
-            rol:      user.rol,
-            permisos  // ← lista de permisos asignada
-        };
-
-        req.flash('success', `¡Bienvenido, ${user.username}!`);
-        res.redirect('/');
     });
 
     // Logout

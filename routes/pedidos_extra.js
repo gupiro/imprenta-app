@@ -1,51 +1,55 @@
 const express = require('express');
-const router = express.Router();
-const db = require('../database');
-const permit = require('../middleware/permissions');
+const permitirRoles = require('../middleware/roles');
 const pedidosController = require('../controllers/pedidosController');
 
-// ▶ Ver historial de trabajos
-router.get('/historial', permit('Admin','Atención'), pedidosController.verHistorial);
+module.exports = (db) => {
+  const router = express.Router();
 
-// ▶ Exportar historial a PDF
-router.get('/historial/pdf', permit('Admin','Atención'), pedidosController.exportarHistorialPDF);
+  // ▶ Ver historial de trabajos
+  router.get('/historial', permitirRoles('admin','vendedor'), pedidosController.verHistorial);
 
-// ▶ Ver trabajos terminados
-router.get('/terminados', permit('Admin','Atención'), pedidosController.verTerminados);
+  // ▶ Exportar historial a PDF
+  router.get('/historial/pdf', permitirRoles('admin','vendedor'), pedidosController.exportarHistorialPDF);
 
-// ▶ Repetir trabajo desde historial
-router.get('/:id/repetir', permit('Admin','Atención'), pedidosController.repetirTrabajo);
+  // ▶ Ver trabajos terminados
+  router.get('/terminados', permitirRoles('admin','vendedor'), pedidosController.verTerminados);
 
-// ▶ Completar pago de pedido entregado
-router.post('/:id/completar-pago', permit('Admin','Atención'), (req, res) => {
-  const { id } = req.params;
-  const montoPagado = parseFloat(req.body.monto_pagado) || 0;
+  // ▶ Repetir trabajo desde historial
+  router.get('/:id/repetir', permitirRoles('admin','vendedor'), pedidosController.repetirTrabajo);
 
-  const pedido = db.prepare('SELECT monto_restante, monto_entregado, precio FROM pedidos WHERE id = ?').get(id);
-  if (!pedido) {
-    req.flash('error', 'Pedido no encontrado');
-    return res.redirect('/pedidos/entregados');
-  }
+  // ▶ Completar pago de pedido entregado
+  router.post('/:id/completar-pago', permitirRoles('admin','vendedor'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const montoPagado = parseFloat(req.body.monto_pagado) || 0;
 
-  const nuevoEntregado = (pedido.monto_entregado || 0) + montoPagado;
-  const nuevoSaldo     = Math.max(0, pedido.precio - nuevoEntregado);
-  const nuevoEstadoPago = nuevoSaldo <= 0 ? 'PAGADO' : 'PENDIENTE';
-  const fechaPago = nuevoEstadoPago === 'PAGADO' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null;
+      const pedido = await db.get('SELECT monto_restante, monto_entregado, precio FROM pedidos WHERE id = ?', id);
+      if (!pedido) {
+        req.flash('error', 'Pedido no encontrado');
+        return res.redirect('/pedidos/entregados');
+      }
 
-  db.prepare(`
-    UPDATE pedidos
-    SET monto_entregado = ?,
-        monto_restante  = ?,
-        estado_pago     = ?,
-        fecha_pago      = COALESCE(?, fecha_pago)
-    WHERE id = ?
-  `).run(nuevoEntregado, nuevoSaldo, nuevoEstadoPago, fechaPago, id);
+      const nuevoEntregado = (pedido.monto_entregado || 0) + montoPagado;
+      const nuevoSaldo     = Math.max(0, pedido.precio - nuevoEntregado);
+      const nuevoEstadoPago = nuevoSaldo <= 0 ? 'PAGADO' : 'PENDIENTE';
+      const fechaPago = nuevoEstadoPago === 'PAGADO' ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null;
 
-  req.flash('success', nuevoEstadoPago === 'PAGADO'
-    ? '✅ Pago completado. Trabajo totalmente abonado.'
-    : '💰 Pago parcial registrado correctamente.');
+      await db.run(
+        `UPDATE pedidos SET monto_entregado = ?, monto_restante = ?, estado_pago = ?, fecha_pago = COALESCE(?, fecha_pago) WHERE id = ?`,
+        [nuevoEntregado, nuevoSaldo, nuevoEstadoPago, fechaPago, id]
+      );
 
-  res.redirect('/pedidos/entregados');
-});
+      req.flash('success', nuevoEstadoPago === 'PAGADO'
+        ? '✅ Pago completado. Trabajo totalmente abonado.'
+        : '💰 Pago parcial registrado correctamente.');
 
-module.exports = router;
+      res.redirect('/pedidos/entregados');
+    } catch (err) {
+      console.error('Error al completar pago:', err);
+      req.flash('error', 'Error: ' + err.message);
+      res.redirect('/pedidos/entregados');
+    }
+  });
+
+  return router;
+};

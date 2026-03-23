@@ -1,20 +1,6 @@
 // controllers/presupuestosController.js
 
-// Función auxiliar para obtener fecha y hora en zona horaria local (no UTC)
-function obtenerFechaLocal() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const mes = String(now.getMonth() + 1).padStart(2, '0');
-  const dia = String(now.getDate()).padStart(2, '0');
-  const horas = String(now.getHours()).padStart(2, '0');
-  const minutos = String(now.getMinutes()).padStart(2, '0');
-  const segundos = String(now.getSeconds()).padStart(2, '0');
-
-  return {
-    fecha: `${year}-${mes}-${dia}`,
-    timestamp: `${year}-${mes}-${dia} ${horas}:${minutos}:${segundos}`
-  };
-}
+const { obtenerFechaLocal } = require('../utils/dateHelper');
 
 module.exports = (db) => {
 

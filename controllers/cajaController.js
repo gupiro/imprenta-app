@@ -1,27 +1,6 @@
 // controllers/cajaController.js - ACTUALIZADO CON GASTOS
 
-// Función auxiliar para obtener fecha y hora en zona horaria local (no UTC)
-function obtenerFechaLocal() {
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
-  const year = now.getFullYear();
-  const mes = String(now.getMonth() + 1).padStart(2, '0');
-  const dia = String(now.getDate()).padStart(2, '0');
-  const horas = String(now.getHours()).padStart(2, '0');
-  const minutos = String(now.getMinutes()).padStart(2, '0');
-  const segundos = String(now.getSeconds()).padStart(2, '0');
-
-  return {
-    fecha: `${year}-${mes}-${dia}`,
-    timestamp: `${year}-${mes}-${dia} ${horas}:${minutos}:${segundos}`
-  };
-}
-
-// Función para determinar turno por hora actual (mañana: <14:00, tarde: >=14:00)
-function turnoByHora(fechaTimestamp) {
-  const d = fechaTimestamp ? new Date(fechaTimestamp) : new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }));
-  const hora = d.getHours();
-  return hora < 14 ? 'mañana' : 'tarde';
-}
+const { obtenerFechaLocal, turnoByHora } = require('../utils/dateHelper');
 
 module.exports = (db) => {
   return {
@@ -53,12 +32,17 @@ module.exports = (db) => {
         const columnaSQL = columnasPermitidas[sortBy] || 'm.fecha';
 
         // Construir query dinámica con JOIN a users para obtener username
+        // Soporte de fechas UTC vs local en el campo fecha
         let query = `
           SELECT m.*, u.username FROM movimientos_caja m
           LEFT JOIN users u ON m.usuario_id = u.id
-          WHERE SUBSTR(m.fecha, 1, 10) = ?
+          WHERE (
+            DATE(m.fecha) = ? OR
+            DATE(m.fecha, 'localtime') = ? OR
+            SUBSTR(m.fecha, 1, 10) = ?
+          )
         `;
-        const params = [hoy];
+        const params = [hoy, hoy, hoy];
 
         const filtroTurno = req.query.turno || '';
         if (filtroTurno) {
@@ -81,6 +65,15 @@ module.exports = (db) => {
         query += ` ORDER BY ${columnaSQL} ${sortDir}`;
         const movimientos = await db.all(query, params) || [];
 
+        const rolUsuario = req.session.user?.rol || 'empleado';
+        const esAdmin = rolUsuario === 'admin';
+        const usuarioId = req.session.user?.id || null;
+
+        let movimientosFiltrados = movimientos;
+        if (!esAdmin) {
+          movimientosFiltrados = movimientos.filter(m => m.usuario_id === usuarioId);
+        }
+
         const totales = {
           ingresos: 0,
           egresos: 0,
@@ -96,7 +89,7 @@ module.exports = (db) => {
           tarde:   { ingresos: 0, egresos: 0, saldo: 0 }
         };
 
-        movimientos.forEach(m => {
+        movimientosFiltrados.forEach(m => {
           if (m.tipo === 'ingreso') {
             totales.ingresos += m.monto;
           } else {
@@ -129,19 +122,30 @@ module.exports = (db) => {
         // Turno actual (para default en form)
         const turnoActual = turnoByHora();
 
+        const [anio, mes, dia] = hoy.split('-').map(Number);
+        const fechaObj = new Date(anio, mes - 1, dia);
+        const fechaMostrada = fechaObj.toLocaleDateString('es-AR', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+
         res.render('cajaDiaria', {
           title: 'Caja Diaria',
-          movimientos,
+          movimientos: movimientosFiltrados,
           totales,
           totalesTurno,
           turnosCerrados,
           turnoActual,
           fechaSeleccionada: hoy,
+          fechaMostrada,
           filtros: { tipo, concepto, metodo, turno: filtroTurno },
           sortBy,
           sortDir: sortDir.toLowerCase(),
           error: req.flash('error'),
-          success: req.flash('success')
+          success: req.flash('success'),
+          user: req.session.user
         });
       } catch (err) {
         console.error('Error:', err);
@@ -160,14 +164,18 @@ module.exports = (db) => {
           return res.redirect('/caja-diaria');
         }
 
-        const { timestamp, fecha } = obtenerFechaLocal();
+        const fechaForm = req.body.fecha || null;
+        const fechaHoy = obtenerFechaLocal();
+        const fechaRegistroBase = fechaForm && /^\d{4}-\d{2}-\d{2}$/.test(fechaForm) ? fechaForm : fechaHoy.fecha;
+        const fechaRegistroHora = fechaHoy.time;
+        const fechaRegistro = `${fechaRegistroBase} ${fechaRegistroHora}`;
         const usuarioId = req.session.user?.id || null;
-        const turnoUsado = turno || turnoByHora();
+        const turnoUsado = turno || turnoByHora(fechaRegistro);
 
         // Validar que el turno no esté cerrado
         const cierre = await db.get(
           "SELECT id FROM cierres_turno WHERE fecha = ? AND turno = ?",
-          [fecha, turnoUsado]
+          [fechaRegistroBase, turnoUsado]
         );
         if (cierre) {
           req.flash('error', `El turno ${turnoUsado} ya está cerrado para hoy. No se pueden agregar movimientos.`);
@@ -176,11 +184,11 @@ module.exports = (db) => {
 
         await db.run(
           'INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, turno, fecha, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [tipo, concepto.trim(), categoria || 'General', montoNum, metodo_pago || 'Efectivo', turnoUsado, timestamp, usuarioId]
+          [tipo, concepto.trim(), categoria || 'General', montoNum, metodo_pago || 'Efectivo', turnoUsado, fechaRegistro, usuarioId]
         );
 
         req.flash('success', `✅ ${tipo === 'ingreso' ? 'Ingreso' : 'Egreso'} de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado en turno ${turnoUsado}`);
-        res.redirect('/caja-diaria');
+        res.redirect(`/caja-diaria?fecha=${encodeURIComponent(fechaRegistroBase)}`);
       } catch (err) {
         console.error('Error:', err);
         req.flash('error', 'Error: ' + err.message);

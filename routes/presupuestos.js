@@ -113,10 +113,10 @@ module.exports = (db) => {
           detalle = ?,
           precio_extra = ?
         WHERE id = ?
-      `, clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id);
+      `, [clienteIdFinal || null, nombreFinal, emailFinal, telefonoFinal, totalPresupuesto, detalle, precioExtraVal, id]);
 
       // ELIMINAR items viejos
-      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);
+      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', [id]);
 
       // CREAR items nuevos
       for (let i = 0; i < descripciones.length; i++) {
@@ -130,7 +130,7 @@ module.exports = (db) => {
           await db.run(`
             INSERT INTO presupuesto_items (presupuesto_id, producto_id, descripcion, cantidad, precio_unitario, descuento_item, subtotal)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-          `, id, prodId, descripciones[i], cant, precio, desc, subtotal);
+          `, [id, prodId, descripciones[i], cant, precio, desc, subtotal]);
         }
       }
 
@@ -158,7 +158,7 @@ module.exports = (db) => {
         return res.redirect(`/presupuestos/${presupuestoId}`);
       }
 
-      await db.run('UPDATE presupuestos SET estado = ? WHERE id = ?', estado, presupuestoId);
+      await db.run('UPDATE presupuestos SET estado = ? WHERE id = ?', [estado, presupuestoId]);
 
       req.flash('success', `Presupuesto actualizado a ${estado}`);
       res.redirect(`/presupuestos/${presupuestoId}`);
@@ -237,7 +237,7 @@ module.exports = (db) => {
       }
 
       // Marcar presupuesto como convertido
-      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', presupuestoId);
+      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', [presupuestoId]);
 
       req.flash('success', `✅ Pedido #${pedidoId} creado desde presupuesto`);
       res.redirect(`/pedidos/detalle/${pedidoId}`);
@@ -255,8 +255,8 @@ module.exports = (db) => {
   router.post('/:id/eliminar', checkPermission, async (req, res) => {
     const id = req.params.id;
     try {
-      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', id);
-      await db.run('DELETE FROM presupuestos WHERE id = ?', id);
+      await db.run('DELETE FROM presupuesto_items WHERE presupuesto_id = ?', [id]);
+      await db.run('DELETE FROM presupuestos WHERE id = ?', [id]);
       req.flash('success', 'Presupuesto eliminado');
     } catch (err) {
       req.flash('error', 'Error: ' + err.message);

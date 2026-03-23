@@ -120,7 +120,7 @@ module.exports = (db) => {
     const eliminarProducto = async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM catalogo_productos WHERE id = ?', id);
+            await db.run('DELETE FROM catalogo_productos WHERE id = ?', [id]);
             req.flash('success', 'Producto eliminado correctamente');
             res.redirect('/catalogo');
         } catch (err) {

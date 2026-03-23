@@ -9,7 +9,9 @@
   "scripts": {
     "reset": "node resetDb.js && npm run start",
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "prepare-render": "node scripts/prepare-render-deploy.js",
+    "export-data": "node export-datos.js"
   },
   "keywords": [
     "imprenta",

@@ -1,0 +1,57 @@
+# Render.com Deployment Configuration
+# This file configures automatic deployment on Render
+# Documentation: https://render.com/docs/infrastructure-as-code
+
+services:
+  - type: web
+    name: imprenta-app
+    env: node
+    plan: free  # Change to paid plan if needed
+    
+    # Build command
+    buildCommand: npm install
+    
+    # Start command
+    startCommand: node server.js
+    
+    # Environment variables (set in Render dashboard, not here)
+    # Never commit secrets to this file!
+    envVars:
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 3000
+      
+      - key: SESSION_SECRET
+        # IMPORTANT: Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        # Set in Render Dashboard under Environment
+        sync: false
+      
+      - key: DATABASE_URL
+        # Render automatically sets this if using Persistent Disk
+        # Format: /opt/render/project/src/imprenta.db
+        sync: false
+      
+      - key: ANTHROPIC_API_KEY
+        # Get from: https://console.anthropic.com/account/keys
+        # Set in Render Dashboard under Environment
+        sync: false
+    
+    # Persistent disk for SQLite database
+    disk:
+      name: data
+      mountPath: /opt/render/project/src
+      sizeGB: 1  # 1GB should be enough for SQLite
+    
+    # Health check
+    healthCheckPath: /
+    
+    # Auto-deploy on git push
+    autoDeployOnPush: true
+
+# Cron jobs (optional - for automated backups, cleanup, etc.)
+# crons:
+#   - id: db-backup
+#     command: "node scripts/backup-db.js"
+#     schedule: "0 2 * * *"  # Daily at 2 AM UTC

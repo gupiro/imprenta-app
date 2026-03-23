@@ -2,7 +2,20 @@ const sqlite  = require('sqlite');
 const sqlite3 = require('sqlite3');
 const path    = require('path');
 
-const dbFile = process.env.DB_FILE || path.join(__dirname, '../imprenta.db');
+// Support for DATABASE_URL (Render) or local SQLite file
+let dbFile;
+
+if (process.env.DATABASE_URL) {
+    // Render: Use persistent storage path if provided
+    dbFile = process.env.DATABASE_URL;
+} else if (process.env.DB_FILE) {
+    // Legacy: Support custom DB_FILE environment variable
+    dbFile = process.env.DB_FILE;
+} else {
+    // Default: Local SQLite file (development/localhost)
+    dbFile = path.join(__dirname, '../imprenta.db');
+}
+
 console.log('🔍 Base de datos:', dbFile);
 
 let db = null;

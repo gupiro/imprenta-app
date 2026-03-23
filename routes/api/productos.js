@@ -5,17 +5,17 @@ const router  = express.Router();
 module.exports = (db) => { // Recibe 'db' como argumento
 
     // GET /api/productos — Listar productos (JSON)
-    router.get('/', (req, res) => {
+    router.get('/', async (req, res) => {
         try {
-            const rows = db.prepare('SELECT * FROM productos ORDER BY id ASC').all(); // Usa el 'db' pasado
-            res.json(rows);
+            const rows = await db.all('SELECT * FROM productos ORDER BY id ASC');
+            res.json(rows || []);
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     });
 
     // POST /api/productos — Crear producto (JSON)
-    router.post('/', (req, res) => {
+    router.post('/', async (req, res) => {
         const {
             pedido_id,
             material,
@@ -30,21 +30,22 @@ module.exports = (db) => { // Recibe 'db' como argumento
         }
 
         try {
-            const info = db.prepare(`
-                INSERT INTO productos
+            const result = await db.run(
+                `INSERT INTO productos
                 (pedido_id, material, ancho, alto, cantidad, precio_unitario)
-                VALUES (?, ?, ?, ?, ?, ?)
-            `).run(
-                pedido_id || null,
-                material.trim(),
-                parseFloat(ancho)           || 0,
-                parseFloat(alto)            || 0,
-                parseFloat(cantidad)        || 1,
-                parseFloat(precio_unitario) || 0
+                VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    pedido_id || null,
+                    material.trim(),
+                    parseFloat(ancho)           || 0,
+                    parseFloat(alto)            || 0,
+                    parseFloat(cantidad)        || 1,
+                    parseFloat(precio_unitario) || 0
+                ]
             );
 
             res.status(201).json({
-                id: info.lastInsertRowid,
+                id: result.lastID,
                 pedido_id: pedido_id || null,
                 material: material.trim(),
                 ancho: parseFloat(ancho)            || 0,

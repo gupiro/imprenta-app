@@ -2,11 +2,12 @@
 
 ## Overview
 
-El sistema cuenta con 3 componentes EJS reutilizables que estandarizan la interfaz y reducen código duplicado:
+El sistema cuenta con 4 componentes EJS reutilizables que estandarizan la interfaz y reducen código duplicado:
 
 1. **Card** - Contenedor principal para agrupar contenido
 2. **Modal** - Diálogos modales para formularios y confirmaciones
 3. **FormGroup** - Campos de formulario consistentes
+4. **InfoCollapse** - Paneles informativos colapsables (nuevos!)
 
 ---
 
@@ -161,7 +162,58 @@ El sistema cuenta con 3 componentes EJS reutilizables que estandarizan la interf
 
 ---
 
-## 3️⃣ FormGroup Component
+## 3️⃣ InfoCollapse Component
+
+**Archivo:** `views/components/info-collapse.ejs`
+
+**Propósito:** Paneles informativos/educativos que se pueden contraer/expandir
+
+**Props:**
+```javascript
+{
+  id: "infoGastos",        // ID único para el collapse
+  title: "📋 ¿Cómo uso esto?",  // Título del panel
+  children: "contenido HTML"     // Contenido que se expande
+}
+```
+
+**Ejemplo de uso:**
+```ejs
+<%- include('components/info-collapse', {
+  id: 'infoGastos',
+  title: '💡 ¿Cómo registro un gasto?',
+  children: `
+    <p>Un gasto es dinero que sale de tu negocio.</p>
+    <ul>
+      <li>✓ Tinta y papel</li>
+      <li>✓ Servicios</li>
+    </ul>
+  `
+}) %>
+```
+
+**Características:**
+- ✅ Panel contraído por defecto (ahorra espacio)
+- ✅ Click en título para expandir/contraer
+- ✅ Icono chevron que rota al expandir
+- ✅ Animación suave de collapse
+- ✅ Soporta dark mode automáticamente
+
+**Casos de uso:**
+- Paneles de ayuda en formularios
+- Explicaciones educativas
+- Guías de uso en vistas principales
+- Cualquier contenido que el usuario pueda necesitar pero no siempre
+
+**Aplicado en:**
+- Gastos (explicación negocio vs personal)
+- Gastos Fijos (qué es, piso de supervivencia)
+- Compras a Cuotas (compromisos futuros)
+- Vencimientos Fiscales (obligaciones impositivas)
+
+---
+
+## 4️⃣ FormGroup Component
 
 **Archivo:** `views/components/form-group.ejs`
 

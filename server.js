@@ -252,6 +252,25 @@ async function startServer() {
         }
     });
 
+    // GET /api/caja-movimientos - Obtener movimientos del día
+    app.get('/api/caja-movimientos', authMiddleware.isAuthenticated, async (req, res) => {
+        try {
+            const hoy = new Date().toISOString().slice(0, 10);
+            const movimientos = await dbInstance.all(
+                `SELECT id, tipo, concepto, monto, metodo_pago, turno, fecha
+                 FROM movimientos_caja
+                 WHERE DATE(fecha) = ?
+                 ORDER BY fecha DESC`,
+                [hoy]
+            ) || [];
+
+            res.json(movimientos);
+        } catch(e) {
+            console.error('Error en /api/caja-movimientos:', e.message);
+            res.status(500).json({ error: e.message });
+        }
+    });
+
     // ────────────────────────────────────────────────────────────────────
     // AUTH (Público) - Con protección de rate limiting
     // ────────────────────────────────────────────────────────────────────

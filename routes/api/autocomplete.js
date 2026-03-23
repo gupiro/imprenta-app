@@ -65,7 +65,7 @@ module.exports = (db) => {
         SELECT p.id, p.id AS text, p.nombre_cliente, p.precio_estimado, p.estado, c.name
         FROM presupuestos p
         LEFT JOIN clients c ON p.cliente_id = c.id
-        WHERE p.nombre_cliente LIKE ? OR c.name LIKE ? OR p.id LIKE ?
+        WHERE (p.nombre_cliente LIKE ? OR c.name LIKE ? OR CAST(p.id AS TEXT) LIKE ?)
         AND p.estado = 'PENDIENTE'
         ORDER BY p.fecha_creacion DESC
         LIMIT 10

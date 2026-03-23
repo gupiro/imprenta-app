@@ -50,7 +50,20 @@
   <div class="card mb-4 border-start border-primary border-5">
     <div class="card-body">
       <h6 class="text-muted mb-3">👤 CLIENTE</h6>
-      <h5><%= pedido.cliente_nombre %></h5>
+      <div class="d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><%= pedido.cliente_nombre %></h5>
+        <button class="btn btn-sm btn-success" onclick="enviarWhatsApp(<%= pedido.id %>, '<%= pedido.cliente_nombre.replace(/'/g, "\\'") %>', <%= pedido.monto_restante %>, '<%= pedido.estado %>')">
+          <i class="bi bi-whatsapp"></i> Contactar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETALLE DEL TRABAJO -->
+  <div class="card mb-4 border-start border-secondary border-5">
+    <div class="card-body">
+      <h6 class="text-muted mb-3">📝 DETALLE DEL TRABAJO</h6>
+      <p><%= pedido.detalle ? pedido.detalle.replace(/\n/g, '<br>') : '<em>No definido</em>' %></p>
     </div>
   </div>
 
@@ -573,27 +586,42 @@
     form.submit();
   }
 
-  function enviarWhatsApp(pedidoId, cliente, deuda) {
+  // Enviar mensajePor WhatsApp (dinámico según estado)
+  function enviarWhatsApp(pedidoId, cliente, deuda, estado) {
     fetch(`/api/pedidos/${pedidoId}/cliente-phone`)
       .then(r => r.json())
       .then(data => {
         if (data.phone) {
           const tel = data.phone.replace(/\D/g, '');
-          const precio = deuda ? '$' + Math.round(deuda) : 'a definir';
-          const msg = encodeURIComponent(
-            `Hola ${cliente},\n\n` +
-            `✅ Tu pedido #${pedidoId} está listo para retirar.\n\n` +
-            `💰 Deuda pendiente: ${precio}\n\n` +
-            `¿Te va bien? ¡Gracias!`
-          );
+          let mensaje = `Hola ${cliente},\n\n`;
+
+          // Personalizar mensaje según estado del pedido
+          if (estado === 'LISTO') {
+            mensaje += `✅ Tu pedido #${pedidoId} está listo para retirar.\n\n`;
+          } else if (estado === 'EN_PRODUCCION') {
+            mensaje += `⚙️ Tu pedido #${pedidoId} está en producción.\n\n`;
+          } else if (estado === 'ENTREGADO') {
+            mensaje += `🎉 Tu pedido #${pedidoId} fue entregado.\n\n`;
+          } else {
+            mensaje += `📋 Sobre tu pedido #${pedidoId}:\n\n`;
+          }
+
+          // Agregar monto si hay deuda
+          if (deuda && deuda > 0) {
+            mensaje += `💰 Deuda pendiente: $${Math.round(deuda)}\n\n`;
+          }
+
+          mensaje += `Imprenta El Gráfico | 3878 22-4908`;
+
+          const msg = encodeURIComponent(mensaje);
           window.open(`https://wa.me/549${tel}?text=${msg}`, '_blank');
         } else {
-          alert('No hay número de teléfono disponible');
+          alert('⚠️ No hay número de teléfono disponible para este cliente');
         }
       })
       .catch(err => {
         console.error('Error:', err);
-        alert('Error al obtener el teléfono');
+        alert('❌ Error al obtener el teléfono');
       });
   }
 </script>

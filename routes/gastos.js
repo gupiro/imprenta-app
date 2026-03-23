@@ -2,6 +2,7 @@
 
 const express = require('express');
 const checkPermission = require('../middleware/permissions');
+const { obtenerFechaLocal, turnoByHora } = require('../utils/dateHelper');
 
 module.exports = (db) => {
     const router = express.Router();
@@ -206,13 +207,43 @@ module.exports = (db) => {
         res.redirect('/gastos');
     });
 
-    // Marcar gasto como pagado
+    // Marcar gasto como pagado y registrar en caja diaria
     router.post('/:id/pagar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
+
+            // Obtener datos del gasto
+            const gasto = await db.get("SELECT * FROM gastos WHERE id = ?", id);
+            if (!gasto) {
+                req.flash('error', 'Gasto no encontrado');
+                return res.redirect('/gastos');
+            }
+
+            // Actualizar estado_pago a 'pagado'
             await db.run("UPDATE gastos SET estado_pago = 'pagado' WHERE id = ?", id);
-            req.flash('success', '✅ Gasto marcado como pagado');
+
+            // Registrar el egreso en movimientos_caja
+            const fechaLocal = obtenerFechaLocal();
+            const turno = turnoByHora(fechaLocal.timestamp);
+
+            await db.run(
+                `INSERT INTO movimientos_caja
+                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    'egreso',
+                    `Gasto pagado - ${gasto.descripcion || gasto.categoria}`,
+                    gasto.categoria,
+                    gasto.monto,
+                    gasto.metodo_pago || 'manual',
+                    fechaLocal.timestamp,
+                    turno
+                ]
+            );
+
+            req.flash('success', '✅ Gasto marcado como pagado y registrado en caja');
         } catch (err) {
+            console.error('Error al pagar gasto:', err);
             req.flash('error', 'Error: ' + err.message);
         }
         res.redirect('/gastos');

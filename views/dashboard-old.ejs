@@ -1,0 +1,786 @@
+<!-- views/dashboard.ejs -->
+<div class="container-fluid py-4">
+  <% if (user && user.rol === 'admin') { %>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 1: SEMÁFORO FINANCIERO DEL MES -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm <%= semaforo.clase %> py-4">
+        <div class="card-body text-center">
+          <h4 class="mb-3"><%= semaforo.estado %></h4>
+          <div class="display-4 fw-bold mb-3">
+            <%= saldoNeto >= 0 ? '+' : '-' %>$<%= Math.abs(saldoNeto).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+          </div>
+          <% if (ingresosMes > 0) { %>
+            <% const por100 = Math.abs(Math.round((saldoNeto / ingresosMes) * 100)); %>
+            <% const msg = saldoNeto >= 0
+              ? `Por cada $100 que ingresó, te quedaron $${por100} de ganancia`
+              : `Por cada $100 que ingresó, gastaste $${por100} de más — necesitás reducir gastos o aumentar ventas`; %>
+            <p class="mb-0 opacity-75"><%= msg %></p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 2: RESUMEN DEL MES (Lenguaje simple) -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-lg-2 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <p class="card-text small text-muted mb-0">💰 Ingresó este mes</p>
+            <small title="Comparado con el mes anterior" data-bs-toggle="tooltip">
+              <% if (cambioIngresos >= 0) { %>
+                <span class="badge bg-success">↑ <%= cambioIngresos.toFixed(0) %>%</span>
+              <% } else { %>
+                <span class="badge bg-danger">↓ <%= Math.abs(cambioIngresos).toFixed(0) %>%</span>
+              <% } %>
+            </small>
+          </div>
+          <h5 class="mb-0">$<%= ingresosMes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></h5>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <p class="card-text small text-muted mb-0">💸 Gastaste este mes</p>
+            <small title="Gastos directos + gastos fijos pagados + cuotas del mes" data-bs-toggle="tooltip">❓</small>
+          </div>
+          <h5 class="mb-0">-$<%= gastosTotalMes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></h5>
+          <div class="mt-1" style="font-size: 0.7rem; color: #888; line-height: 1.6;">
+            <div>📋 Directos: $<%= gastosMes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></div>
+            <div>🔒 Fijos pag.: $<%= gastosfijosMes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></div>
+            <div>📦 Cuotas: $<%= cuotasMes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <p class="card-text small text-muted mb-0">📊 Resultado neto</p>
+            <small title="Ingresos menos gastos directos + fijos pagados + cuotas" data-bs-toggle="tooltip">❓</small>
+          </div>
+          <h5 class="mb-0 <%= saldoNeto >= 0 ? 'text-success' : 'text-danger' %>">
+            <%= saldoNeto >= 0 ? '+' : '-' %>$<%= Math.abs(saldoNeto).toLocaleString('es-AR', {minimumFractionDigits: 0}) %>
+          </h5>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <p class="card-text small text-muted mb-0">🏦 Debés en tarjetas</p>
+            <small title="Saldo adeudado total en tarjetas activas" data-bs-toggle="tooltip">❓</small>
+          </div>
+          <h5 class="mb-0 text-warning">$<%= totalDeudaTarjetas.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></h5>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-2 col-sm-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <p class="card-text small text-muted mb-0">👥 Te deben clientes</p>
+            <small title="Total monto restante de pedidos no entregados" data-bs-toggle="tooltip">❓</small>
+          </div>
+          <h5 class="mb-0 text-info">$<%= deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 3: COMPROMISOS PENDIENTES DEL MES -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <% if (totalPendiente > 0) { %>
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-warning shadow-sm">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">⚠️ Compromisos pendientes este mes</h5>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <!-- Desglose -->
+            <div class="col-lg-5">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <% if (gastosFijosPendientes > 0) { %>
+                  <tr>
+                    <td class="text-muted">🔒 Gastos fijos sin pagar</td>
+                    <td class="text-end fw-bold text-danger">-$<%= gastosFijosPendientes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+                  </tr>
+                  <% } %>
+                  <% if (cuotasPendientes > 0) { %>
+                  <tr>
+                    <td class="text-muted">📦 Cuotas no pagadas</td>
+                    <td class="text-end fw-bold text-danger">-$<%= cuotasPendientes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+                  </tr>
+                  <% } %>
+                  <tr class="table-warning">
+                    <td class="fw-bold">TOTAL comprometido</td>
+                    <td class="text-end fw-bold text-danger">-$<%= totalPendiente.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- Resultados -->
+            <div class="col-lg-7">
+              <div class="row g-3">
+                <div class="col-6">
+                  <div class="card border-0 bg-light text-center p-3">
+                    <p class="text-muted small mb-1">✅ Resultado actual (pagado)</p>
+                    <h4 class="mb-0 <%= saldoNeto >= 0 ? 'text-success' : 'text-danger' %>">
+                      <%= saldoNeto >= 0 ? '+' : '' %>$<%= saldoNeto.toLocaleString('es-AR', {minimumFractionDigits: 0}) %>
+                    </h4>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="card border-0 <%= resultadoProyectado >= 0 ? 'bg-light' : 'bg-danger bg-opacity-10' %> text-center p-3">
+                    <p class="text-muted small mb-1">📉 Proyectado (si pagás todo)</p>
+                    <h4 class="mb-0 <%= resultadoProyectado >= 0 ? 'text-success' : 'text-danger' %>">
+                      <%= resultadoProyectado >= 0 ? '+' : '' %>$<%= resultadoProyectado.toLocaleString('es-AR', {minimumFractionDigits: 0}) %>
+                    </h4>
+                  </div>
+                </div>
+              </div>
+              <% if (resultadoProyectado < 0) { %>
+              <div class="alert alert-danger mt-3 mb-0 py-2">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Si pagás todos los compromisos, el mes cierra en <strong>rojo</strong> por $<%= Math.abs(resultadoProyectado).toLocaleString('es-AR', {minimumFractionDigits: 0}) %>.
+                Necesitás ingresar al menos $<%= Math.abs(resultadoProyectado).toLocaleString('es-AR', {minimumFractionDigits: 0}) %> más.
+              </div>
+              <% } else { %>
+              <div class="alert alert-success mt-3 mb-0 py-2">
+                <i class="bi bi-check-circle"></i>
+                Incluso pagando todo, el mes cierra en <strong>verde</strong> con $<%= resultadoProyectado.toLocaleString('es-AR', {minimumFractionDigits: 0}) %> de ganancia.
+              </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 4: PRÓXIMOS 7 DÍAS — LO QUE TENÉS QUE PAGAR -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">⏰ Próximos 7 días — Lo que tenés que pagar</h5>
+        </div>
+        <div class="card-body">
+          <% if (proximos7Dias.length === 0) { %>
+            <div class="alert alert-success mb-0">
+              <i class="bi bi-check-circle"></i> No tenés pagos urgentes en los próximos 7 días 🎉
+            </div>
+          <% } else { %>
+            <% if (totalProximos7Dias > ingresosHoy) { %>
+              <div class="alert alert-danger mb-3">
+                <i class="bi bi-exclamation-triangle-fill"></i> ⚠️ No tenés suficiente ingresado hoy ($<%= ingresosHoy.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>) para cubrir los vencimientos próximos ($<%= totalProximos7Dias.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>)
+              </div>
+            <% } %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Concepto</th>
+                    <th style="width: 100px;">Fecha/Días</th>
+                    <th style="width: 100px;">Monto</th>
+                    <th style="width: 100px;">Tipo</th>
+                    <th style="width: 80px;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% proximos7Dias.forEach(item => {
+                    const tipoColor = item.tipo === 'tarjeta' ? 'primary' : (item.tipo === 'cuota' ? 'danger' : (item.tipo === 'gasto' ? 'warning' : 'info'));
+                    const tipoLabel = item.tipo === 'tarjeta' ? 'Tarjeta' : (item.tipo === 'cuota' ? 'Cuota' : (item.tipo === 'gasto' ? 'Gasto' : 'Fiscal'));
+                  %>
+                    <tr class="<%= item.diasHasta < 0 ? 'table-danger' : '' %>">
+                      <td><strong><%= item.concepto %></strong></td>
+                      <td>
+                        <small>
+                          <%= item.fecha_str %>
+                          <% if (item.diasHasta < 0) { %>
+                            <br><span class="badge bg-danger">⚠️ VENCIDA</span>
+                          <% } else if (item.diasHasta !== null && item.diasHasta <= 5) { %>
+                            <br><span class="badge bg-danger">en <%= item.diasHasta %> día(s)</span>
+                          <% } %>
+                        </small>
+                      </td>
+                      <td>
+                        <strong class="text-danger">$<%= (item.monto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+                      </td>
+                      <td>
+                        <span class="badge bg-<%= tipoColor %>"><%= tipoLabel %></span>
+                      </td>
+                      <td>
+                        <% if (item.tipo === 'tarjeta') { %>
+                          <a href="/deudas/tarjetas" class="btn btn-sm btn-outline-primary" title="Ir a Tarjetas">
+                            <i class="bi bi-link-45deg"></i>
+                          </a>
+                        <% } else if (item.tipo === 'cuota') { %>
+                          <a href="/finanzas/compras-cuotas" class="btn btn-sm btn-outline-danger" title="Ir a Cuotas">
+                            <i class="bi bi-link-45deg"></i>
+                          </a>
+                        <% } else if (item.tipo === 'gasto') { %>
+                          <a href="/gastos" class="btn btn-sm btn-outline-warning" title="Ir a Gastos">
+                            <i class="bi bi-link-45deg"></i>
+                          </a>
+                        <% } else { %>
+                          <a href="/finanzas/vencimientos-fiscales" class="btn btn-sm btn-outline-info" title="Ir a Vencimientos">
+                            <i class="bi bi-link-45deg"></i>
+                          </a>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-3 p-3 bg-light rounded">
+              <p class="mb-0">
+                Para los próximos 7 días necesitás tener disponible:
+                <strong class="display-6 d-block">$<%= totalProximos7Dias.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+              </p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 4: PISO DE SUPERVIVENCIA -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <% if (pisoSupervivencia > 0) { %>
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0">💡 Tu Piso de Supervivencia</h5>
+          </div>
+          <div class="card-body">
+            <p class="mb-3">
+              Para mantener la imprenta abierta necesitás facturar <strong>al menos $<%= pisoSupervivencia.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></strong> por mes.
+            </p>
+            <% const porcentajePiso = (ingresosMes / pisoSupervivencia) * 100;
+               const colorPiso = porcentajePiso >= 80 ? 'success' : (porcentajePiso >= 50 ? 'warning' : 'danger'); %>
+            <div class="mb-2 d-flex justify-content-between">
+              <span>Llevas en el mes actual:</span>
+              <strong><%= porcentajePiso.toFixed(0) %>%</strong>
+            </div>
+            <div class="progress" style="height: 25px;">
+              <div class="progress-bar bg-<%= colorPiso %>" style="width: <%= Math.min(100, porcentajePiso) %>%">
+                $<%= ingresosMes.toLocaleString('es-AR', {minimumFractionDigits: 0}) %> de $<%= pisoSupervivencia.toLocaleString('es-AR', {minimumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle"></i>
+          Cargá tus gastos fijos en <a href="/finanzas/gastos-fijos" class="alert-link">Gastos Fijos</a> para ver tu piso de supervivencia mensual.
+        </div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 5: TOP 5 DEUDORES -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">👥 Top Deudores</h5>
+        </div>
+        <div class="card-body">
+          <% if (deudores.length === 0) { %>
+            <p class="text-muted mb-0">¡Excelente! No tenés deudores. Todos los clientes están al día.</p>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-sm mb-3">
+                <thead class="table-light">
+                  <tr>
+                    <th>Cliente</th>
+                    <th style="width: 80px;">Teléfono</th>
+                    <th style="width: 100px;">Monto</th>
+                    <th style="width: 80px;">Días</th>
+                    <th style="width: 100px;">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% deudores.slice(0, 5).forEach(d => {
+                    let badgeClass = 'info';
+                    if (d.dias_deuda > 30) badgeClass = 'danger';
+                    else if (d.dias_deuda > 7) badgeClass = 'warning';
+                  %>
+                    <tr>
+                      <td><strong><%= d.cliente_nombre %></strong></td>
+                      <td><small><%= d.phone || '-' %></small></td>
+                      <td>
+                        <strong class="text-danger">$<%= d.monto_restante.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+                      </td>
+                      <td><%= d.dias_deuda %> días</td>
+                      <td><span class="badge bg-<%= badgeClass %>"><%= d.dias_deuda > 30 ? 'Vencido' : (d.dias_deuda > 7 ? 'Alerta' : 'Normal') %></span></td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-3 p-3 bg-light rounded">
+              <p class="mb-0">
+                Total que te deben: <strong>$<%= deudaTotal.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong>
+                <% if (pisoSupervivencia > 0 && deudaTotal > 0) {
+                   const mesesCubiertos = (deudaTotal / pisoSupervivencia).toFixed(1);
+                %>
+                  <br><small class="text-muted">Si cobrás todo, eso cubre <strong><%= mesesCubiertos %> mes(es)</strong> de gastos fijos.</small>
+                <% } %>
+              </p>
+            </div>
+            <div class="mt-3 text-center">
+              <a href="/reportes/deudores" class="btn btn-sm btn-outline-primary">Ver todos los deudores</a>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 6: GRÁFICOS (Pestañas) -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+          <ul class="nav nav-tabs card-header-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tab-7dias" data-bs-toggle="tab" data-bs-target="#panel-7dias" type="button" role="tab">📊 Últimos 7 días</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-6meses" data-bs-toggle="tab" data-bs-target="#panel-6meses" type="button" role="tab">📈 Últimos 6 meses</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-estados" data-bs-toggle="tab" data-bs-target="#panel-estados" type="button" role="tab">🔄 Estados de Pedidos</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-gastos" data-bs-toggle="tab" data-bs-target="#panel-gastos" type="button" role="tab">💸 Gastos por Categoría</button>
+            </li>
+          </ul>
+        </div>
+        <div class="card-body">
+          <div class="tab-content">
+            <!-- Tab 1: Últimos 7 días -->
+            <div class="tab-pane fade show active" id="panel-7dias" role="tabpanel">
+              <canvas id="grafico7Dias" style="max-height: 300px;"></canvas>
+            </div>
+            <!-- Tab 2: Últimos 6 meses -->
+            <div class="tab-pane fade" id="panel-6meses" role="tabpanel">
+              <canvas id="grafico6Meses" style="max-height: 300px;"></canvas>
+            </div>
+            <!-- Tab 3: Estados -->
+            <div class="tab-pane fade" id="panel-estados" role="tabpanel">
+              <div class="row">
+                <div class="col-md-6">
+                  <canvas id="graficoPedidos" style="max-height: 300px;"></canvas>
+                </div>
+                <div class="col-md-6">
+                  <div id="legendaPedidos"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Tab 4: Gastos por Categoría -->
+            <div class="tab-pane fade" id="panel-gastos" role="tabpanel">
+              <div class="row">
+                <div class="col-md-6">
+                  <canvas id="graficoGastos" style="max-height: 300px;"></canvas>
+                </div>
+                <div class="col-md-6">
+                  <div id="legendaGastos"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 7: PRODUCCIÓN (Colapsable) -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">
+            <button class="btn btn-link text-dark text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#seccionProduccion">
+              📦 Estado de Producción
+            </button>
+          </h5>
+        </div>
+        <div id="seccionProduccion" class="collapse show">
+          <div class="card-body">
+            <!-- Stats de producción -->
+            <div class="row mb-4">
+              <div class="col-lg-2 col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h3 class="text-warning"><%= stats.pedidosPendientes %></h3>
+                    <p class="text-muted mb-0">Pendientes</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-2 col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h3 class="text-info"><%= stats.pedidosEnProduccion %></h3>
+                    <p class="text-muted mb-0">En Producción</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-2 col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h3 class="text-success"><%= stats.pedidosListos %></h3>
+                    <p class="text-muted mb-0">Listos</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-2 col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h3 class="text-secondary"><%= stats.pedidosEntregados %></h3>
+                    <p class="text-muted mb-0">Entregados</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-2 col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h3 class="text-primary"><%= stats.presupuestosAbiertos %></h3>
+                    <p class="text-muted mb-0">Presupuestos</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-2 col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                  <div class="card-body text-center">
+                    <h3><%= stats.clientesActivos %></h3>
+                    <p class="text-muted mb-0">Clientes</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Últimos Pedidos -->
+            <h6 class="mb-3">Últimos Pedidos</h6>
+            <div class="table-responsive mb-4">
+              <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>#Pedido</th>
+                    <th>Cliente</th>
+                    <th>Monto</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% ultimosPedidos.forEach(p => {
+                    const estadoColor = p.estado === 'ENTREGADO' ? 'success' : (p.estado === 'LISTO' ? 'info' : (p.estado === 'EN_PRODUCCION' ? 'warning' : 'secondary'));
+                  %>
+                    <tr>
+                      <td><small>#<%= p.id %></small></td>
+                      <td><small><%= p.cliente_nombre %></small></td>
+                      <td><small><strong>$<%= p.precio.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></small></td>
+                      <td><small><span class="badge bg-<%= estadoColor %>"><%= p.estado %></span></small></td>
+                      <td><small><%= new Date(p.fecha).toLocaleDateString('es-AR') %></small></td>
+                      <td>
+                        <a href="/pedidos/detalle/<%= p.id %>" class="btn btn-xs btn-sm btn-outline-primary" title="Ver detalle">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                      </td>
+                    </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Presupuestos Pendientes -->
+            <% if (presupuestosPendientes.length > 0) { %>
+              <div class="alert alert-warning">
+                <strong>⚠️ Hay <%= presupuestosPendientes.length %> presupuestos sin respuesta hace más de 3 días</strong>
+                <div class="mt-2">
+                  <% presupuestosPendientes.forEach(p => { %>
+                    <small class="d-block">• <%= p.nombre_cliente %> — Hace <%= Math.floor((new Date() - new Date(p.fecha_creacion)) / 86400000) %> días</small>
+                  <% }); %>
+                </div>
+              </div>
+            <% } %>
+
+            <!-- Stock bajo -->
+            <% if (stockBajo.length > 0) { %>
+              <div class="alert alert-danger">
+                <strong>❌ Hay <%= stockBajo.length %> item(s) con stock bajo</strong>
+              </div>
+            <% } else { %>
+              <div class="alert alert-success mb-0">
+                <strong>✅ Stock en buen estado</strong> — Todos los items tienen stock adecuado
+              </div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- SECCIÓN 8: ANÁLISIS IA -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <button class="btn btn-lg btn-primary w-100" onclick="abrirAnalisisIA()">
+        <i class="bi bi-robot"></i> 🤖 Análisis Financiero con IA
+      </button>
+    </div>
+  </div>
+
+  <!-- BOTÓN "¿Qué hago ahora?" (flotante) -->
+  <button class="btn btn-warning position-fixed bottom-0 end-0 m-4 shadow-lg" style="z-index: 999;"
+          data-bs-toggle="offcanvas" data-bs-target="#offcanvasAcciones" title="Acciones prioritarias del día">
+    💡 ¿Qué hago ahora?
+  </button>
+
+  <!-- OFFCANVAS "¿Qué hago ahora?" -->
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasAcciones">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title">💡 Acciones Prioritarias</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+      <% if (accionesAhora.length === 0) { %>
+        <div class="alert alert-success">
+          ✅ Todo en orden por ahora — no hay acciones urgentes
+        </div>
+      <% } else { %>
+        <% accionesAhora.forEach((accion, idx) => { %>
+          <div class="alert alert-<%= accion.urgencia %> mb-3">
+            <strong><%= idx + 1 %>. <%= accion.icono %></strong><br>
+            <%= accion.texto %>
+          </div>
+        <% }); %>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Si el usuario no es admin -->
+  <% } else { %>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card border-0 shadow-sm bg-info text-white">
+          <div class="card-body text-center py-5">
+            <h4 class="mb-2">💰 Caja Diaria</h4>
+            <p class="mb-3">Accedé al registro de movimientos diarios de la imprenta.</p>
+            <a href="/caja-diaria" class="btn btn-light">Ir a Caja Diaria →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<!-- MODALES IA (Mantener existentes) -->
+<!-- Modal Análisis IA -->
+<div class="modal fade" id="modalAnalisisIA" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">🤖 Análisis Financiero con IA</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="analisisiaContent" class="text-muted text-center py-5">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Analizando...</span>
+          </div>
+          <p class="mt-3">Analizando datos financieros...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Predicciones -->
+<div class="modal fade" id="modalPredicciones" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📊 Predicción de Flujo de Caja</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="prediccionesContent" class="text-muted text-center py-5">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="mt-3">Generando predicciones...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let chart7Dias, chart6Meses, chartPedidos, chartGastos;
+
+  // Inicializar tooltips
+  document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Inicializar gráficos con delay
+    setTimeout(() => {
+      if (document.getElementById('grafico7Dias').offsetParent !== null) {
+        inicializarGrafico7Dias();
+      }
+    }, 300);
+  });
+
+  function inicializarGrafico7Dias() {
+    if (chart7Dias) return;
+    const datos7Dias = <%- graficoLabels && graficoDatos ? `{labels: ${graficoLabels}, data: ${graficoDatos}}` : '{labels: [], data: []}' %>;
+    const ctx = document.getElementById('grafico7Dias').getContext('2d');
+    chart7Dias = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: datos7Dias.labels,
+        datasets: [{
+          label: 'Ingresos',
+          data: datos7Dias.data,
+          backgroundColor: 'rgba(75, 192, 192, 0.5)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  // Tab change event para inicializar otros gráficos
+  document.getElementById('tab-6meses')?.addEventListener('shown.bs.tab', function() {
+    if (!chart6Meses) {
+      const datos6Meses = <%- meses6Labels && ingresos6Meses && egresos6Meses ? `{labels: ${meses6Labels}, ingresos: ${ingresos6Meses}, egresos: ${egresos6Meses}}` : '{labels: [], ingresos: [], egresos: []}' %>;
+      const ctx = document.getElementById('grafico6Meses').getContext('2d');
+      chart6Meses = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: datos6Meses.labels,
+          datasets: [
+            { label: 'Ingresos', data: datos6Meses.ingresos, backgroundColor: 'rgba(75, 192, 192, 0.5)' },
+            { label: 'Egresos', data: datos6Meses.egresos, backgroundColor: 'rgba(255, 99, 132, 0.5)' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: true } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+  });
+
+  document.getElementById('tab-estados')?.addEventListener('shown.bs.tab', function() {
+    if (!chartPedidos) {
+      const datosPedidos = <%- estadoLabels && estadoDatos ? `{labels: ${estadoLabels}, data: ${estadoDatos}}` : '{labels: [], data: []}' %>;
+      const ctx = document.getElementById('graficoPedidos').getContext('2d');
+      chartPedidos = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: datosPedidos.labels,
+          datasets: [{
+            data: datosPedidos.data,
+            backgroundColor: ['#ffc107', '#0dcaf0', '#198754', '#6c757d']
+          }]
+        },
+        options: { responsive: true }
+      });
+      // Leyenda manual
+      const legendaDiv = document.getElementById('legendaPedidos');
+      legendaDiv.innerHTML = datosPedidos.labels.map((label, i) =>
+        `<div class="mb-2"><span style="display:inline-block;width:12px;height:12px;background:${['#ffc107', '#0dcaf0', '#198754', '#6c757d'][i]};margin-right:8px;"></span>${label}: ${datosPedidos.data[i]}</div>`
+      ).join('');
+    }
+  });
+
+  document.getElementById('tab-gastos')?.addEventListener('shown.bs.tab', function() {
+    if (!chartGastos) {
+      const datosGastos = <%- gastosPorCategoria ? `JSON.parse('${gastosPorCategoria}')` : '[]' %>;
+      const ctx = document.getElementById('graficoGastos').getContext('2d');
+      const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+      chartGastos = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: datosGastos.map(g => g.label),
+          datasets: [{
+            data: datosGastos.map(g => g.value),
+            backgroundColor: colors.slice(0, datosGastos.length)
+          }]
+        },
+        options: { responsive: true }
+      });
+      // Leyenda manual
+      const legendaDiv = document.getElementById('legendaGastos');
+      legendaDiv.innerHTML = datosGastos.map((g, i) =>
+        `<div class="mb-2"><span style="display:inline-block;width:12px;height:12px;background:${colors[i % colors.length]};margin-right:8px;"></span>${g.label}: $${g.value.toLocaleString('es-AR', {minimumFractionDigits: 0})}</div>`
+      ).join('');
+    }
+  });
+
+  // Funciones IA
+  function abrirAnalisisIA() {
+    const modal = new bootstrap.Modal(document.getElementById('modalAnalisisIA'));
+    modal.show();
+    fetch('/api/ia/analizar', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        document.getElementById('analisisiaContent').innerHTML = `<pre style="text-align:left;max-height:400px;overflow-y:auto;">${data.analisis || data.error}</pre>`;
+      })
+      .catch(e => {
+        document.getElementById('analisisiaContent').innerHTML = `<p class="text-danger">Error: ${e.message}</p>`;
+      });
+  }
+</script>

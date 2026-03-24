@@ -514,44 +514,34 @@
 
   // Función para exportar movimientos a CSV
   function exportarCaja(turno, label) {
-    // Obtener fecha de la URL o del parámetro query
-    const urlParams = new URLSearchParams(window.location.search);
-    const fechaURL = urlParams.get('fecha');
-
-    // Fallback: obtener del elemento de fecha si existe
-    const fechaInput = document.querySelector('input[name="fecha"]')?.value;
-
-    // Último fallback: usar la fecha del servidor (EJS variable)
+    // Obtener fecha del servidor (pasada por EJS)
     const fechaServidor = '<%= fechaSeleccionada %>';
 
-    const fechaSeleccionada = fechaURL || fechaInput || fechaServidor;
+    // Obtener fecha de la URL o usar del servidor
+    const urlParams = new URLSearchParams(window.location.search);
+    const fechaURL = urlParams.get('fecha') || fechaServidor;
 
-    if (!fechaSeleccionada || fechaSeleccionada.includes('<%')) {
-      // Si aún no funciona, obtener del título de la página
-      const textoFecha = document.getElementById('fechaActual')?.textContent || '';
-      if (!textoFecha) {
-        alert('⚠️ Error: No se pudo obtener la fecha. Recarga la página.');
-        return;
-      }
-      // Usar la fecha actual como fallback final
+    let fechaFinal = fechaURL;
+
+    // Si no tenemos fecha, usar la actual
+    if (!fechaFinal || fechaFinal === '') {
       const hoy = new Date();
-      const fechaFallback = hoy.getFullYear() + '-' +
-                           String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
-                           String(hoy.getDate()).padStart(2, '0');
-      fechaSeleccionada = fechaFallback;
+      fechaFinal = hoy.getFullYear() + '-' +
+                   String(hoy.getMonth() + 1).padStart(2, '0') + '-' +
+                   String(hoy.getDate()).padStart(2, '0');
     }
 
-    let url = `/caja-diaria/exportar?fecha=${fechaSeleccionada}`;
+    let url = `/caja-diaria/exportar?fecha=${fechaFinal}`;
     if (turno) {
       url += `&turno=${turno}`;
     }
 
-    console.log('📥 Exportando CSV:', { fecha: fechaSeleccionada, turno, url });
+    console.log('📥 Exportando CSV:', { fecha: fechaFinal, turno, url });
 
     // Crear un elemento <a> temporal para descargar
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Caja-${fechaSeleccionada}${turno ? '-' + label : ''}.csv`;
+    link.download = `Caja-${fechaFinal}${turno ? '-' + label : ''}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

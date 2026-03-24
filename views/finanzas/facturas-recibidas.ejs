@@ -1,21 +1,21 @@
 <!-- views/finanzas/facturas-recibidas.ejs - Profesional y responsive -->
-<div class="container-fluid py-4">
+<div class="container-lg py-4">
   <div class="row mb-4">
-    <div class="col-md-8">
-      <div class="d-flex justify-content-between align-items-start">
+    <div class="col-12">
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start gap-3">
         <div>
           <h1 class="display-6 mb-1"><i class="bi bi-file-earmark-invoice"></i> Facturas Recibidas</h1>
           <p class="text-muted mb-0">Gestión de comprobantes de proveedores</p>
         </div>
-        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
-          <i class="bi bi-question-circle me-1"></i> ¿Cómo usar?
-        </button>
+        <div class="d-flex gap-2 w-100 w-md-auto">
+          <button class="btn btn-outline-secondary btn-sm flex-grow-1 flex-md-grow-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+            <i class="bi bi-question-circle me-1"></i> <span class="d-none d-md-inline">¿Cómo usar?</span>
+          </button>
+          <button type="button" class="btn btn-primary flex-grow-1 flex-md-grow-0" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
+            <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">Nueva</span> Factura
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="col-md-4 text-end">
-      <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
-        <i class="bi bi-plus-circle"></i> Nueva Factura
-      </button>
     </div>
   </div>
 
@@ -38,35 +38,35 @@
     <div class="col-12">
       <div class="card border-0 shadow-sm">
         <div class="card-body py-3">
-          <div class="row align-items-end g-3">
-            <div class="col-md-4">
-              <label class="form-label small fw-bold">📅 Filtrar por Período</label>
-              <input type="month" id="filtropPeriodo" class="form-control" value="<%= periodo %>">
+          <div class="row g-2">
+            <div class="col-12 col-sm-6 col-md-4">
+              <label class="form-label small fw-bold d-block">📅 Período</label>
+              <input type="month" id="filtropPeriodo" class="form-control form-control-sm" value="<%= periodo %>">
             </div>
-            <div class="col-md-3">
-              <label class="form-label small fw-bold">⚡ Estado</label>
-              <select id="filtroEstado" class="form-select">
-                <option value="todos" <%= estado === 'todos' ? 'selected' : '' %>>Todos los estados</option>
+            <div class="col-12 col-sm-6 col-md-3">
+              <label class="form-label small fw-bold d-block">⚡ Estado</label>
+              <select id="filtroEstado" class="form-select form-select-sm">
+                <option value="todos" <%= estado === 'todos' ? 'selected' : '' %>>Todos</option>
                 <option value="pendiente" <%= estado === 'pendiente' ? 'selected' : '' %>>Pendiente</option>
                 <option value="parcial" <%= estado === 'parcial' ? 'selected' : '' %>>Parcial</option>
                 <option value="pagada" <%= estado === 'pagada' ? 'selected' : '' %>>Pagada</option>
               </select>
             </div>
-            <div class="col-md-3">
-              <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
-                <i class="bi bi-funnel"></i> Filtrar
+            <div class="col-6 col-md-3">
+              <button class="btn btn-primary btn-sm w-100 mt-2" onclick="aplicarFiltros()">
+                <i class="bi bi-funnel"></i> <span class="d-none d-md-inline">Filtrar</span>
               </button>
             </div>
-            <div class="col-md-2">
-              <button class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
-                <i class="bi bi-arrow-clockwise"></i> Limpiar
+            <div class="col-6 col-md-2">
+              <button class="btn btn-outline-secondary btn-sm w-100 mt-2" onclick="limpiarFiltros()">
+                <i class="bi bi-arrow-clockwise"></i> <span class="d-none d-md-inline">Limpiar</span>
               </button>
             </div>
           </div>
           <small class="text-muted d-block mt-2">
-            <i class="bi bi-info-circle"></i> Mostrando: <strong><%= facturas.length %></strong> factura(s)
+            <i class="bi bi-info-circle"></i> <strong><%= facturas.length %></strong> factura(s)
             <% if (periodo) { %>
-              del período <strong><%= periodo %></strong>
+              de <strong><%= periodo %></strong>
             <% } else { %>
               de <strong>TODOS los períodos</strong>
             <% } %>
@@ -139,35 +139,38 @@
   <div class="row">
     <div class="col-12">
       <div class="card border-0 shadow-sm">
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
+        <div class="table-responsive-sm">
+          <table class="table table-hover table-sm mb-0">
             <thead class="table-light">
               <tr>
-                <th style="width: 100px;">Tipo</th>
+                <th class="d-none d-md-table-cell" style="width: 80px;">Tipo</th>
                 <th>Proveedor</th>
-                <th style="width: 120px;">Comprobante</th>
-                <th style="width: 100px;">Emitido</th>
-                <th style="width: 110px;">Monto</th>
-                <th style="width: 80px;">IVA</th>
-                <th style="width: 100px;">Total</th>
-                <th style="width: 80px;">Estado</th>
-                <th style="width: 120px;">Acciones</th>
+                <th class="d-none d-lg-table-cell" style="width: 100px;">Comprobante</th>
+                <th class="d-none d-lg-table-cell" style="width: 80px;">Emitido</th>
+                <th style="width: 90px;">Monto</th>
+                <th class="d-none d-md-table-cell" style="width: 70px;">Total</th>
+                <th style="width: 70px;">Estado</th>
+                <th style="width: 80px;">Acc.</th>
               </tr>
             </thead>
             <tbody>
               <% facturas.forEach(f => { %>
               <tr>
-                <td><span class="badge bg-info"><%= f.tipo_comprobante || 'FC' %></span></td>
+                <td class="d-none d-md-table-cell"><span class="badge bg-info" style="font-size: 0.7rem;"><%= f.tipo_comprobante || 'FC' %></span></td>
                 <td>
-                  <strong class="truncate-text" title="<%= f.razon_social || '-' %>" style="max-width: 250px; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    <%= f.razon_social || '-' %>
-                  </strong>
+                  <div>
+                    <strong class="d-block" style="font-size: 0.9rem; max-width: 100%;">
+                      <%= f.razon_social || '-' %>
+                    </strong>
+                    <small class="text-muted d-md-none">
+                      <%= f.numero_comprobante || '-' %>
+                    </small>
+                  </div>
                 </td>
-                <td><small><%= f.numero_comprobante || '-' %></small></td>
-                <td><small><%= f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString('es-AR') : '-' %></small></td>
-                <td>$<%= (f.monto_neto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
-                <td>$<%= (f.monto_iva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
-                <td><strong>$<%= ((f.monto_neto || 0) + (f.monto_iva || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                <td class="d-none d-lg-table-cell"><small><%= f.numero_comprobante || '-' %></small></td>
+                <td class="d-none d-lg-table-cell"><small><%= f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString('es-AR', {dateStyle: 'short'}) : '-' %></small></td>
+                <td style="font-size: 0.9rem;"><strong>$<%= (f.monto_neto || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %></strong></td>
+                <td class="d-none d-md-table-cell"><strong>$<%= ((f.monto_neto || 0) + (f.monto_iva || 0)).toLocaleString('es-AR', {minimumFractionDigits: 0}) %></strong></td>
                 <td>
                   <%
                     const montoTotal = (f.monto_neto || 0) + (f.monto_iva || 0);
@@ -902,9 +905,27 @@ document.getElementById('filtroEstado')?.addEventListener('change', function(e) 
     background-color: #f8f9fa;
   }
 
+  /* Responsive improvements */
+  @media (max-width: 576px) {
+    .container-lg { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .display-6 { font-size: 1.5rem; }
+    .table { font-size: 0.75rem; }
+    .table th, .table td { padding: 0.4rem 0.25rem; }
+    .btn-sm { padding: 0.25rem 0.4rem; font-size: 0.65rem; }
+    .card-body { padding: 0.75rem; }
+    h1 { margin-bottom: 0.5rem; }
+    .gap-3 { gap: 0.75rem !important; }
+  }
+
   @media (max-width: 768px) {
-    .table { font-size: 0.875rem; }
-    .table th, .table td { padding: 0.5rem; }
-    .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+    .table { font-size: 0.8rem; }
+    .table th, .table td { padding: 0.5rem 0.25rem; }
+    .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.7rem; }
+  }
+
+  /* Ocultar texto en botones pequeños en mobile */
+  @media (max-width: 576px) {
+    .btn-sm i + span { display: none !important; }
+    .btn-sm { padding: 0.3rem 0.5rem; }
   }
 </style>

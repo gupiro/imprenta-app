@@ -957,7 +957,6 @@ Responde SOLO con el nombre de la categoría más apropiada, sin explicación ad
             }
 
             // Calcular saldo y obligaciones (similar a la ruta de tesorería)
-            const { calcularPrioridad } = require('../utils/pagosHelper');
 
             // Saldo real
             const balanceResult = await db.all(`

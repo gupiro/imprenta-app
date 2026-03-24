@@ -225,8 +225,18 @@ module.exports = (db) => {
       // Crear productos del pedido desde items del presupuesto
       for (const item of items) {
         await db.run(
-          'INSERT INTO productos (pedido_id, material, descuento, precio, descripcion) VALUES (?, ?, ?, ?, ?)',
-          [pedidoId, item.descripcion, item.descuento_item || 0, item.subtotal, item.descripcion]
+          'INSERT INTO productos (pedido_id, material, ancho, alto, descuento, precio, descripcion, cantidad, precio_unitario) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [
+            pedidoId,
+            item.descripcion,
+            item.ancho || null,
+            item.alto || null,
+            item.descuento_item || 0,
+            item.subtotal,
+            item.descripcion,
+            item.cantidad || 1,
+            item.precio_unitario || (item.subtotal / (item.cantidad || 1))
+          ]
         );
       }
 

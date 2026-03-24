@@ -252,21 +252,90 @@ async function startServer() {
         }
     });
 
-    // GET /api/caja-movimientos - Obtener movimientos del día
+    // GET /api/caja-movimientos - Obtener movimientos del día (con zona horaria correcta)
     app.get('/api/caja-movimientos', authMiddleware.isAuthenticated, async (req, res) => {
         try {
-            const hoy = new Date().toISOString().slice(0, 10);
+            const { obtenerFechaLocal } = require('./utils/dateHelper');
+            const hoy = obtenerFechaLocal().fecha;
             const movimientos = await dbInstance.all(
-                `SELECT id, tipo, concepto, monto, metodo_pago, turno, fecha
+                `SELECT id, tipo, concepto, monto, metodo_pago, turno, fecha, categoria
                  FROM movimientos_caja
-                 WHERE DATE(fecha) = ?
+                 WHERE (
+                    DATE(fecha) = ? OR
+                    DATE(fecha, 'localtime') = ? OR
+                    SUBSTR(fecha, 1, 10) = ?
+                 )
                  ORDER BY fecha DESC`,
-                [hoy]
+                [hoy, hoy, hoy]
             ) || [];
 
             res.json(movimientos);
         } catch(e) {
             console.error('Error en /api/caja-movimientos:', e.message);
+            res.status(500).json({ error: e.message });
+        }
+    });
+
+    // GET /caja-diaria/exportar - Exportar movimientos a CSV
+    app.get('/caja-diaria/exportar', authMiddleware.isAuthenticated, async (req, res) => {
+        try {
+            const { obtenerFechaLocal } = require('./utils/dateHelper');
+            const fecha = req.query.fecha || obtenerFechaLocal().fecha;
+            const turno = req.query.turno || ''; // 'mañana', 'tarde', o vacío para ambos
+
+            let query = `
+                SELECT tipo, concepto, monto, metodo_pago, turno, fecha, categoria
+                FROM movimientos_caja
+                WHERE (
+                    DATE(fecha) = ? OR
+                    DATE(fecha, 'localtime') = ? OR
+                    SUBSTR(fecha, 1, 10) = ?
+                )
+            `;
+            const params = [fecha, fecha, fecha];
+
+            if (turno) {
+                query += ' AND turno = ?';
+                params.push(turno);
+            }
+
+            query += ' ORDER BY fecha DESC';
+            const movimientos = await dbInstance.all(query, params) || [];
+
+            // Calcular totales
+            let totalIngresos = 0, totalEgresos = 0;
+            movimientos.forEach(m => {
+                if (m.tipo === 'ingreso') totalIngresos += m.monto;
+                else totalEgresos += m.monto;
+            });
+
+            // Generar CSV
+            const headers = ['Tipo', 'Concepto', 'Monto', 'Método de Pago', 'Turno', 'Fecha', 'Categoría'];
+            const rows = movimientos.map(m => [
+                m.tipo.toUpperCase(),
+                m.concepto,
+                m.monto.toFixed(2),
+                m.metodo_pago || '-',
+                m.turno || '-',
+                new Date(m.fecha).toLocaleString('es-AR'),
+                m.categoria || '-'
+            ]);
+
+            // Agregar totales
+            rows.push([]);
+            rows.push(['INGRESOS', '', totalIngresos.toFixed(2)]);
+            rows.push(['EGRESOS', '', totalEgresos.toFixed(2)]);
+            rows.push(['SALDO', '', (totalIngresos - totalEgresos).toFixed(2)]);
+
+            const csv = [headers, ...rows].map(row =>
+                row.map(cell => `"${cell}"`).join(',')
+            ).join('\n');
+
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="Caja-${fecha}${turno ? '-' + turno : ''}.csv"`);
+            res.send('\uFEFF' + csv); // BOM para Excel con UTF-8
+        } catch(e) {
+            console.error('Error en exportar caja:', e.message);
             res.status(500).json({ error: e.message });
         }
     });

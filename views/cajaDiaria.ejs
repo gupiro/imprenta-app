@@ -1,8 +1,26 @@
 <!-- views/cajaDiaria.ejs - Rediseño UX -->
 
 <div class="page-header">
-  <h1 class="page-title">💰 Caja Diaria</h1>
-  <p class="page-subtitle" id="fechaActual"></p>
+  <div>
+    <h1 class="page-title">💰 Caja Diaria</h1>
+    <p class="page-subtitle" id="fechaActual"></p>
+  </div>
+  <div class="d-flex gap-2">
+    <div class="btn-group" role="group">
+      <button type="button" class="btn btn-outline-success btn-sm"
+              onclick="exportarCaja('', 'todos')" title="Exportar ambos turnos">
+        <i class="bi bi-download"></i> Exportar Todo
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm"
+              onclick="exportarCaja('mañana', 'mañana')" title="Exportar solo turno mañana">
+        <i class="bi bi-download"></i> 🌅 Mañana
+      </button>
+      <button type="button" class="btn btn-outline-warning btn-sm"
+              onclick="exportarCaja('tarde', 'tarde')" title="Exportar solo turno tarde">
+        <i class="bi bi-download"></i> 🌆 Tarde
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════
@@ -493,6 +511,24 @@
 
   // Recargar cada 30 segundos
   setInterval(cargarMovimientos, 30000);
+
+  // Función para exportar movimientos a CSV
+  function exportarCaja(turno, label) {
+    const fechaSeleccionada = document.querySelector('input[name="fecha"]')?.value ||
+                               new Date().toISOString().split('T')[0];
+    let url = `/caja-diaria/exportar?fecha=${fechaSeleccionada}`;
+    if (turno) {
+      url += `&turno=${turno}`;
+    }
+
+    // Crear un elemento <a> temporal para descargar
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Caja-${fechaSeleccionada}${turno ? '-' + label : ''}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 </script>
 
 <style>

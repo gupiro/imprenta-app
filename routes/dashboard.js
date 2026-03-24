@@ -562,6 +562,8 @@ module.exports = (db) => {
         ingresosHoy,
         diasPromedioCobro,
         tasaConversion,
+        presupuestosAceptadosEsteMes,
+        pedidosCreados,
         deudasPorUrgencia,
         success: req.flash('success'),
         error: req.flash('error')

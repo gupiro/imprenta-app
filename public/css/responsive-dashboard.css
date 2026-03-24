@@ -1,0 +1,557 @@
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE DASHBOARD - Mobile First Design
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────
+   COBRANZA GRID (3 COLUMNS → 1 COLUMN MOBILE)
+   ───────────────────────────────────────────────────────────── */
+
+.grid-cobranza {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid-cobranza {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-cobranza {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.cobranza-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 1.25rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.cobranza-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ETAPAS GRID (5 COLUMNS → 1 COLUMN MOBILE)
+   ───────────────────────────────────────────────────────────── */
+
+.grid-etapas {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Mobile: 2 columns */
+@media (min-width: 480px) {
+  .grid-etapas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet: 3 columns */
+@media (min-width: 768px) {
+  .grid-etapas {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Desktop: 5 columns */
+@media (min-width: 1200px) {
+  .grid-etapas {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+.etapa-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.etapa-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TRUNCATE WITH TOOLTIP
+   ───────────────────────────────────────────────────────────── */
+
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.truncate-sm {
+  max-width: 150px;
+}
+
+.truncate-md {
+  max-width: 200px;
+}
+
+.truncate-lg {
+  max-width: 300px;
+}
+
+/* Mobile: more aggressive truncation */
+@media (max-width: 480px) {
+  .truncate-sm {
+    max-width: 100px;
+  }
+
+  .truncate-md {
+    max-width: 120px;
+  }
+
+  .truncate-lg {
+    max-width: 150px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   EMPTY STATES
+   ───────────────────────────────────────────────────────────── */
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.empty-state-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-description {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
+}
+
+.empty-state-cta {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: #10b981;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.empty-state-cta:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE LAYOUT - TWO COLUMN LAYOUT
+   ───────────────────────────────────────────────────────────── */
+
+.container-2col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 992px) {
+  .container-2col {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CARD STYLES - RESPONSIVE
+   ───────────────────────────────────────────────────────────── */
+
+.dashboard-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dashboard-card-icon {
+  font-size: 1.25rem;
+}
+
+.dashboard-card-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.dashboard-card-body {
+  padding: 1.5rem;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TABLE RESPONSIVE
+   ───────────────────────────────────────────────────────────── */
+
+.table-responsive-mobile {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .table-responsive-mobile table {
+    font-size: 0.85rem;
+  }
+
+  .table-responsive-mobile th,
+  .table-responsive-mobile td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .table-responsive-mobile thead {
+    display: none;
+  }
+
+  .table-responsive-mobile tbody tr {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .table-responsive-mobile tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+
+  .table-responsive-mobile tbody td:before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #64748b;
+    min-width: 100px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CTA BUTTONS - RESPONSIVE
+   ───────────────────────────────────────────────────────────── */
+
+.cta-button {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  text-decoration: none;
+  border-radius: 16px;
+  padding: 2rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  min-height: 120px;
+}
+
+.cta-button:hover {
+  transform: translateY(-4px);
+  text-decoration: none;
+  color: white;
+}
+
+.cta-button-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.cta-button-content h5 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: 'Georgia', serif;
+}
+
+.cta-button-content p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Mobile: stack vertically if needed */
+@media (max-width: 480px) {
+  .cta-button {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.5rem;
+    min-height: auto;
+    gap: 0.75rem;
+  }
+
+  .cta-button-icon {
+    font-size: 2rem;
+  }
+
+  .cta-button-content h5 {
+    font-size: 1.1rem;
+  }
+
+  .cta-button-content p {
+    font-size: 0.8rem;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TYPOGRAPHY SYSTEM
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* Font Families */
+  --ff-body: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  --ff-display: 'Georgia', 'Times New Roman', serif;
+
+  /* Font Sizes - Desktop */
+  --fs-h1: 2.5rem;
+  --fs-h2: 2rem;
+  --fs-h3: 1.5rem;
+  --fs-h4: 1.25rem;
+  --fs-h5: 1.1rem;
+  --fs-h6: 0.95rem;
+  --fs-body: 1rem;
+  --fs-body-sm: 0.9rem;
+  --fs-body-xs: 0.75rem;
+
+  /* Font Weights */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+
+  /* Line Heights */
+  --lh-tight: 1.2;
+  --lh-normal: 1.5;
+  --lh-loose: 1.75;
+
+  /* Colors */
+  --color-primary: #0f172a;
+  --color-secondary: #64748b;
+  --color-tertiary: #94a3b8;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+}
+
+/* Mobile typography adjustments */
+@media (max-width: 480px) {
+  :root {
+    --fs-h1: 1.875rem;
+    --fs-h2: 1.5rem;
+    --fs-h3: 1.25rem;
+    --fs-h4: 1.1rem;
+    --fs-h5: 1rem;
+    --fs-h6: 0.9rem;
+    --fs-body: 0.95rem;
+    --fs-body-sm: 0.85rem;
+  }
+
+  body {
+    font-size: var(--fs-body);
+    line-height: var(--lh-normal);
+  }
+}
+
+/* Tablet typography adjustments */
+@media (min-width: 481px) and (max-width: 768px) {
+  :root {
+    --fs-h1: 2rem;
+    --fs-h2: 1.75rem;
+    --fs-h3: 1.375rem;
+  }
+}
+
+/* Heading styles */
+h1, .h1 {
+  font-family: var(--ff-display);
+  font-size: var(--fs-h1);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+  color: var(--color-primary);
+}
+
+h2, .h2 {
+  font-family: var(--ff-display);
+  font-size: var(--fs-h2);
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+  color: var(--color-primary);
+}
+
+h3, .h3 {
+  font-family: var(--ff-body);
+  font-size: var(--fs-h3);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  color: var(--color-primary);
+}
+
+h4, .h4 {
+  font-family: var(--ff-body);
+  font-size: var(--fs-h4);
+  font-weight: var(--fw-bold);
+  color: var(--color-primary);
+}
+
+h5, .h5 {
+  font-family: var(--ff-body);
+  font-size: var(--fs-h5);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+}
+
+h6, .h6 {
+  font-family: var(--ff-body);
+  font-size: var(--fs-h6);
+  font-weight: var(--fw-semibold);
+  color: var(--color-secondary);
+}
+
+/* Body text styles */
+.text-display {
+  font-family: var(--ff-display);
+  font-size: 3rem;
+  font-weight: var(--fw-extrabold);
+  line-height: var(--lh-tight);
+}
+
+.text-kpi {
+  font-family: var(--ff-display);
+  font-size: 2.5rem;
+  font-weight: var(--fw-extrabold);
+  line-height: 1;
+}
+
+.text-metric {
+  font-family: var(--ff-display);
+  font-size: 1.875rem;
+  font-weight: var(--fw-bold);
+}
+
+.text-label {
+  font-family: var(--ff-body);
+  font-size: var(--fs-body-xs);
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   UTILITY CLASSES
+   ───────────────────────────────────────────────────────────── */
+
+.touch-target-min {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+.gap-responsive {
+  gap: 1rem;
+}
+
+@media (max-width: 480px) {
+  .gap-responsive {
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .gap-responsive {
+    gap: 1.5rem;
+  }
+}
+
+/* Responsive hiding */
+.hide-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hide-mobile {
+    display: block;
+  }
+}
+
+.hide-desktop {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .hide-desktop {
+    display: none;
+  }
+}
+
+/* Container responsive padding */
+@media (max-width: 480px) {
+  .container-fluid {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 481px) and (max-width: 768px) {
+  .container-fluid {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .container-fluid {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}

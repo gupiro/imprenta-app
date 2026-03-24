@@ -35,23 +35,23 @@
           const deudoresImpagos = deudores ? deudores.length : 0;
         %>
 
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 1.5rem;">
+        <div class="grid-cobranza">
           <!-- COBRANZA CLIENTES -->
-          <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1.25rem; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+          <div class="cobranza-card">
             <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; margin-bottom: 0.5rem;">⏳ Por Cobrar</div>
             <div style="font-size: 1.875rem; font-weight: 800; margin-bottom: 0.25rem;">$<%= ((deudores && deudores.reduce((s, d) => s + (d.monto_restante || 0), 0)) || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
             <div style="font-size: 0.85rem; color: #cbd5e1;"><%= deudoresImpagos %> clientes</div>
           </div>
 
           <!-- VENCIDAS -->
-          <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1.25rem; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+          <div class="cobranza-card">
             <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #fca5a5; margin-bottom: 0.5rem;">🔴 Vencidas</div>
             <div style="font-size: 1.875rem; font-weight: 800; margin-bottom: 0.25rem; color: #fca5a5;">$<%= totalVencidas.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
             <div style="font-size: 0.85rem; color: #cbd5e1;"><%= deudVencidas.length %> deudas</div>
           </div>
 
           <!-- PRÓXIMAS SEMANA -->
-          <div style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1.25rem; backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+          <div class="cobranza-card">
             <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #fed7aa; margin-bottom: 0.5rem;">📅 Próx 7 días</div>
             <div style="font-size: 1.875rem; font-weight: 800; margin-bottom: 0.25rem; color: #fed7aa;">$<%= totalProximas.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
             <div style="font-size: 0.85rem; color: #cbd5e1;"><%= deudProximas.length %> pagos</div>
@@ -71,10 +71,10 @@
     <div class="col-12">
       <h6 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 1.5rem;">🔄 Estado de Producción</h6>
 
-      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+      <div class="grid-etapas">
         <!-- ETAPA 1: PENDIENTES -->
         <a href="/pedidos/pendientes" style="text-decoration: none;">
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
+          <div class="etapa-card"
                onmouseover="this.style.borderColor='#7c2d12'; this.style.boxShadow='0 8px 20px rgba(124, 45, 18, 0.15)';"
                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.05)';">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
@@ -86,7 +86,7 @@
 
         <!-- ETAPA 2: EN PRODUCCIÓN -->
         <a href="/pedidos/en-produccion" style="text-decoration: none;">
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
+          <div class="etapa-card"
                onmouseover="this.style.borderColor='#92400e'; this.style.boxShadow='0 8px 20px rgba(146, 64, 14, 0.15)';"
                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.05)';">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚙️</div>
@@ -98,7 +98,7 @@
 
         <!-- ETAPA 3: LISTOS -->
         <a href="/pedidos/listos" style="text-decoration: none;">
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
+          <div class="etapa-card"
                onmouseover="this.style.borderColor='#15803d'; this.style.boxShadow='0 8px 20px rgba(21, 128, 61, 0.15)';"
                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.05)';">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
@@ -110,7 +110,7 @@
 
         <!-- ETAPA 4: ENTREGADOS -->
         <a href="/pedidos/entregados" style="text-decoration: none;">
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
+          <div class="etapa-card"
                onmouseover="this.style.borderColor='#0f766e'; this.style.boxShadow='0 8px 20px rgba(15, 118, 110, 0.15)';"
                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.05)';">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
@@ -122,7 +122,6 @@
 
         <!-- ETAPA 5: PRESUPUESTOS -->
         <a href="/presupuestos" style="text-decoration: none;">
-          <div style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);"
                onmouseover="this.style.borderColor='#1e3a8a'; this.style.boxShadow='0 8px 20px rgba(30, 58, 138, 0.15)';"
                onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.05)';">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
@@ -217,8 +216,8 @@
                  onmouseout="this.style.background='white';">
               <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 700; color: #1e3a8a; font-size: 0.95rem;">#<%= ped.id %></div>
-                <small style="color: #64748b; display: block; margin-top: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                  <%= (ped.cliente_nombre || 'Sin cliente').substring(0, 28) %>
+                <small class="truncate truncate-tooltip truncate-sm" style="color: #64748b; display: block; margin-top: 0.2rem;" title="<%= ped.cliente_nombre || 'Sin cliente' %>">
+                  <%= ped.cliente_nombre || 'Sin cliente' %>
                 </small>
               </div>
               <div style="text-align: right; margin-left: 1rem; white-space: nowrap;">
@@ -230,7 +229,12 @@
             </div>
             <% }); %>
           <% } else { %>
-            <div style="padding: 2rem; text-align: center; color: #94a3b8;">No hay pedidos</div>
+            <div class="empty-state">
+              <div class="empty-state-icon">📋</div>
+              <div class="empty-state-title">Sin Pedidos</div>
+              <div class="empty-state-description">No hay pedidos para mostrar. ¡Crea uno nuevo!</div>
+              <a href="/pedidos/nuevo" class="empty-state-cta">+ Crear Pedido</a>
+            </div>
           <% } %>
         </div>
       </div>
@@ -249,7 +253,9 @@
             <div style="padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: start;">
               <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 700; color: #0f172a; font-size: 0.9rem;">
-                  <%= (d.cliente_nombre || 'Cliente').substring(0, 22) %>
+                  <span class="truncate truncate-tooltip truncate-sm" title="<%= d.cliente_nombre || 'Cliente' %>">
+                    <%= d.cliente_nombre || 'Cliente' %>
+                  </span>
                 </div>
                 <small style="color: #64748b; display: block; margin-top: 0.2rem;">Pedido #<%= d.id %></small>
               </div>
@@ -259,7 +265,11 @@
             </div>
             <% }); %>
           <% } else { %>
-            <div style="padding: 1.5rem; text-align: center; color: #15803d; font-weight: 600;">✓ Sin deudas</div>
+            <div class="empty-state">
+              <div class="empty-state-icon">✓</div>
+              <div class="empty-state-title">Excelente</div>
+              <div class="empty-state-description">No hay deudas pendientes</div>
+            </div>
           <% } %>
         </div>
       </div>
@@ -275,12 +285,20 @@
             const stockBajoCount = stockBajo ? stockBajo.length : 0;
             if (stockBajoCount === 0) {
           %>
-            <div style="text-align: center; color: #15803d; font-weight: 600; padding: 1rem 0;">✓ Stock OK</div>
+            <div class="empty-state">
+              <div class="empty-state-icon">📦</div>
+              <div class="empty-state-title">Stock OK</div>
+              <div class="empty-state-description">Todos los productos están dentro de niveles normales</div>
+            </div>
           <% } else { %>
             <ul style="margin: 0; padding-left: 1.25rem; list-style: disc;">
               <% (stockBajo || []).slice(0, 4).forEach(item => { %>
               <li style="color: #475569; font-size: 0.9rem; margin-bottom: 0.5rem;">
-                <strong><%= (item.nombre || '').substring(0, 20) %></strong> • <%= item.cantidad %>/<%= item.stock_minimo %>
+                <strong>
+                  <span class="truncate truncate-tooltip truncate-sm" title="<%= item.nombre || '' %>">
+                    <%= item.nombre || '' %>
+                  </span>
+                </strong> • <%= item.cantidad %>/<%= item.stock_minimo %>
               </li>
               <% }); %>
             </ul>

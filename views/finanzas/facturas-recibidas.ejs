@@ -155,6 +155,11 @@
                   <a href="/finanzas/facturas-recibidas/<%= f.id %>/detalle" class="btn btn-sm btn-outline-primary" title="Ver detalle">
                     <i class="bi bi-eye"></i>
                   </a>
+                  <% if (f.estado !== 'pagada') { %>
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="abrirModalPago('<%= f.id %>', <%= (f.monto_neto || 0) + (f.monto_iva || 0) %>, <%= f.monto_pagado || 0 %>, '<%= (f.razon_social || '').replace(/'/g, "\\'") %>', '<%= (f.numero_comprobante || '').replace(/'/g, "\\'") %>')" title="Pagar">
+                      <i class="bi bi-currency-dollar"></i>
+                    </button>
+                  <% } %>
                   <button type="button" class="btn btn-sm btn-outline-danger" onclick="if(confirm('¿Eliminar esta factura?')) { fetch('/finanzas/facturas-recibidas/<%= f.id %>/eliminar', { method: 'POST', headers: { 'X-CSRF-Token': document.querySelector('[name=_csrf]')?.value || '' } }).then(() => location.reload()); }" title="Eliminar">
                     <i class="bi bi-trash"></i>
                   </button>
@@ -391,6 +396,84 @@
   </div>
 </div>
 
+<!-- MODAL: PAGAR FACTURA -->
+<div class="modal fade" id="modalPagarFactura" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-currency-dollar"></i> Registrar Pago</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formPagarFactura" onsubmit="submitPago(event)">
+        <div class="modal-body">
+          <!-- INFO DE FACTURA -->
+          <div class="mb-4 p-3 bg-light rounded">
+            <div class="row">
+              <div class="col-md-6">
+                <small class="text-muted d-block">Proveedor</small>
+                <strong id="modalProveedorNombre" class="d-block mb-3"></strong>
+              </div>
+              <div class="col-md-6">
+                <small class="text-muted d-block">Comprobante</small>
+                <strong id="modalComprobante" class="d-block mb-3"></strong>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-4">
+                <small class="text-muted">Total</small>
+                <div class="fs-5 text-primary fw-bold">$<span id="modalTotal">0.00</span></div>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted">Ya pagado</small>
+                <div class="fs-5 text-info">$<span id="modalPagado">0.00</span></div>
+              </div>
+              <div class="col-md-4">
+                <small class="text-muted">Pendiente</small>
+                <div class="fs-5 text-danger fw-bold">$<span id="modalPendiente">0.00</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- FORMULARIO DE PAGO -->
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a Pagar *</label>
+            <input type="number" id="montoPago" name="monto_pagado" class="form-control" step="0.01" min="0" required>
+            <small class="text-muted d-block mt-1">Máximo disponible: $<span id="maxMontoPago">0.00</span></small>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Método de Pago *</label>
+              <select id="metodosPago" name="metodo_pago" class="form-select" required>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">🏦 Transferencia</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="cheque">📝 Cheque</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Pago *</label>
+              <input type="date" id="fechaPago" name="fecha_pago" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (opcional)</label>
+            <textarea name="notas" id="notasPago" class="form-control" rows="2" placeholder="Ej: Transferencia a cuenta 123456789..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-check-circle"></i> Registrar Pago
+          </button>
+        </div>
+        <input type="hidden" id="facturaIdHidden" name="factura_id">
+      </form>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════════════════════════
 // AUTOCOMPLETE DE PROVEEDORES
@@ -590,6 +673,92 @@ async function guardarProveedorRapido() {
   } catch (err) {
     console.error('Error:', err);
     alert('Error de conexión');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// PAGO RÁPIDO DE FACTURAS DESDE LA LISTA
+// ════════════════════════════════════════════════════════════════
+
+function abrirModalPago(id, total, pagado, proveedor, numero) {
+  const pendiente = total - pagado;
+
+  document.getElementById('facturaIdHidden').value = id;
+  document.getElementById('modalProveedorNombre').textContent = proveedor;
+  document.getElementById('modalComprobante').textContent = numero;
+  document.getElementById('modalTotal').textContent = total.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('modalPagado').textContent = pagado.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('modalPendiente').textContent = pendiente.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('montoPago').value = pendiente.toFixed(2);
+  document.getElementById('montoPago').max = pendiente.toFixed(2);
+  document.getElementById('maxMontoPago').textContent = pendiente.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+  // Fecha por defecto: hoy
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fechaPago').value = today;
+
+  // Limpiar otros campos
+  document.getElementById('metodosPago').value = 'efectivo';
+  document.getElementById('notasPago').value = '';
+
+  // Abrir modal
+  const modal = new bootstrap.Modal(document.getElementById('modalPagarFactura'));
+  modal.show();
+}
+
+async function submitPago(event) {
+  event.preventDefault();
+
+  const facturaId = document.getElementById('facturaIdHidden').value;
+  const montoPago = parseFloat(document.getElementById('montoPago').value) || 0;
+  const metodo = document.getElementById('metodosPago').value;
+  const fecha = document.getElementById('fechaPago').value;
+  const notas = document.getElementById('notasPago').value;
+
+  if (!facturaId || montoPago <= 0) {
+    alert('❌ Datos inválidos. Verifica el monto a pagar.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`/finanzas/facturas-recibidas/${facturaId}/registrar-pago`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name=_csrf]')?.value || ''
+      },
+      body: JSON.stringify({
+        monto_pagado: montoPago,
+        metodo_pago: metodo,
+        fecha_pago: fecha,
+        notas: notas
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      // Cerrar modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalPagarFactura'));
+      modal.hide();
+
+      // Mostrar mensaje de éxito
+      const alertDiv = document.createElement('div');
+      alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+      alertDiv.innerHTML = `✅ Pago registrado: $${montoPago.toLocaleString('es-AR', {minimumFractionDigits: 2})} - Estado: ${data.nuevoEstado}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+
+      // Insertar alerta al inicio del contenedor
+      const container = document.querySelector('.container-fluid');
+      if (container) container.insertAdjacentElement('afterbegin', alertDiv);
+
+      // Recargar tabla en 1.5 segundos
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      alert('❌ Error: ' + (data.error || 'No se pudo registrar el pago'));
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('❌ Error de conexión al registrar pago');
   }
 }
 

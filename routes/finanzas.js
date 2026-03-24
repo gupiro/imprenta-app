@@ -213,5 +213,233 @@ module.exports = (db) => {
     return vencimientosFiscalesController.marcarPagado(req, res);
   });
 
+  // ========== TESORERÍA INTELIGENTE ==========
+
+  router.get('/tesoreria', checkPermission, async (req, res) => {
+    try {
+      const { calcularPrioridad } = require('../utils/pagosHelper');
+      const pagosHelper = require('../utils/pagosHelper');
+
+      // 1. SALDO REAL desde movimientos_caja
+      const balanceResult = await db.all(`
+        SELECT
+          SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) AS total_ingresos,
+          SUM(CASE WHEN tipo='egreso' THEN monto ELSE 0 END) AS total_egresos,
+          metodo_pago,
+          SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) AS ingresos_por_metodo,
+          SUM(CASE WHEN tipo='egreso' THEN monto ELSE 0 END) AS egresos_por_metodo
+        FROM movimientos_caja
+        GROUP BY metodo_pago
+      `, []);
+
+      let saldoReal = 0;
+      let desglosePorMetodo = { efectivo: 0, transferencia: 0, tarjeta: 0, qr: 0, cheque: 0 };
+
+      if (balanceResult && balanceResult.length > 0) {
+        balanceResult.forEach(row => {
+          const ingresos = row.ingresos_por_metodo || 0;
+          const egresos = row.egresos_por_metodo || 0;
+          desglosePorMetodo[row.metodo_pago || 'efectivo'] = ingresos - egresos;
+          saldoReal += ingresos - egresos;
+        });
+      }
+
+      // 2. OBLIGACIONES DE 5 FUENTES
+      let obligaciones = [];
+
+      // Fuente 1: facturas_recibidas
+      const facturas = await db.all(`
+        SELECT id, numero_comprobante, razon_social, monto_total, monto_pagado,
+               fecha_vencimiento_pago, estado
+        FROM facturas_recibidas
+        WHERE estado != 'pagada' AND activo = 1
+        ORDER BY fecha_vencimiento_pago ASC
+      `, []);
+
+      if (facturas && facturas.length > 0) {
+        facturas.forEach(f => {
+          const pendiente = (f.monto_total || 0) - (f.monto_pagado || 0);
+          if (pendiente > 0) {
+            const daysLeft = f.fecha_vencimiento_pago ?
+              Math.ceil((new Date(f.fecha_vencimiento_pago) - new Date()) / (1000 * 60 * 60 * 24)) :
+              999;
+            obligaciones.push({
+              id: f.id,
+              tipo: 'factura',
+              descripcion: `${f.razon_social} - ${f.numero_comprobante}`,
+              monto: pendiente,
+              fecha_vencimiento: f.fecha_vencimiento_pago || '',
+              dias_restantes: daysLeft,
+              prioridad: calcularPrioridad(daysLeft),
+              ruta_pago: `/finanzas/facturas-recibidas/${f.id}/detalle`
+            });
+          }
+        });
+      }
+
+      // Fuente 2: gastos_fijos pendientes
+      const FACTOR_MENSUAL = { semanal: 4.33, quincenal: 2.17, mensual: 1, bimestral: 0.5, trimestral: 1/3, semestral: 1/6, anual: 1/12 };
+      const gastosFijos = await db.all(`
+        SELECT id, nombre, monto, dia_vencimiento, frecuencia, activo
+        FROM gastos_fijos
+        WHERE activo = 1
+      `, []);
+
+      if (gastosFijos && gastosFijos.length > 0) {
+        const hoy = new Date();
+        const diaHoy = hoy.getDate();
+
+        gastosFijos.forEach(gf => {
+          const diaVencimiento = gf.dia_vencimiento || 1;
+          let proximoVencimiento = new Date(hoy.getFullYear(), hoy.getMonth(), diaVencimiento);
+
+          if (diaHoy > diaVencimiento) {
+            proximoVencimiento = new Date(hoy.getFullYear(), hoy.getMonth() + 1, diaVencimiento);
+          }
+
+          const daysLeft = Math.ceil((proximoVencimiento - hoy) / (1000 * 60 * 60 * 24));
+          const monto = (gf.monto || 0) * (FACTOR_MENSUAL[gf.frecuencia] || 1);
+
+          obligaciones.push({
+            id: gf.id,
+            tipo: 'gasto_fijo',
+            descripcion: gf.nombre,
+            monto: monto,
+            fecha_vencimiento: proximoVencimiento.toISOString().split('T')[0],
+            dias_restantes: daysLeft,
+            prioridad: calcularPrioridad(daysLeft),
+            ruta_pago: `/finanzas/gastos-fijos/${gf.id}/marcar-pagado`
+          });
+        });
+      }
+
+      // Fuente 3: vencimientos_fiscales
+      const vencimientos = await db.all(`
+        SELECT id, descripcion, monto_estimado, fecha_vencimiento, estado
+        FROM vencimientos_fiscales
+        WHERE estado != 'pagado'
+        ORDER BY fecha_vencimiento ASC
+      `, []);
+
+      if (vencimientos && vencimientos.length > 0) {
+        vencimientos.forEach(v => {
+          const daysLeft = Math.ceil((new Date(v.fecha_vencimiento) - new Date()) / (1000 * 60 * 60 * 24));
+          obligaciones.push({
+            id: v.id,
+            tipo: 'impuesto',
+            descripcion: v.descripcion,
+            monto: v.monto_estimado || 0,
+            fecha_vencimiento: v.fecha_vencimiento,
+            dias_restantes: daysLeft,
+            prioridad: calcularPrioridad(daysLeft),
+            ruta_pago: `/finanzas/vencimientos-fiscales/${v.id}/pagar`
+          });
+        });
+      }
+
+      // Fuente 4: compras_cuotas pendientes
+      const cuotas = await db.all(`
+        SELECT id, descripcion, monto_cuota, fecha_primera_cuota, cuotas_pagadas, cant_cuotas, activo
+        FROM compras_cuotas
+        WHERE activo = 1
+      `, []);
+
+      if (cuotas && cuotas.length > 0) {
+        cuotas.forEach(c => {
+          const cuotasPagadas = c.cuotas_pagadas || 0;
+          const cantCuotas = c.cant_cuotas || 1;
+
+          if (cuotasPagadas < cantCuotas) {
+            const daysADesdeInicio = Math.floor((new Date() - new Date(c.fecha_primera_cuota)) / (1000 * 60 * 60 * 24));
+            const daysPerCuota = 30; // asume cuotas mensuales
+            const proximaCuota = cuotasPagadas + 1;
+            const fechaProxima = new Date(c.fecha_primera_cuota);
+            fechaProxima.setDate(fechaProxima.getDate() + (daysPerCuota * (proximaCuota - 1)));
+
+            const daysLeft = Math.ceil((fechaProxima - new Date()) / (1000 * 60 * 60 * 24));
+
+            obligaciones.push({
+              id: c.id,
+              tipo: 'cuota',
+              descripcion: `${c.descripcion} (cuota ${proximaCuota}/${cantCuotas})`,
+              monto: c.monto_cuota || 0,
+              fecha_vencimiento: fechaProxima.toISOString().split('T')[0],
+              dias_restantes: daysLeft,
+              prioridad: calcularPrioridad(daysLeft),
+              ruta_pago: `/finanzas/compras-cuotas/${c.id}/registrar-cuota`
+            });
+          }
+        });
+      }
+
+      // Fuente 5: deudas_tarjetas
+      const tarjetas = await db.all(`
+        SELECT id, nombre_tarjeta, saldo_adeudado, monto_minimo, fecha_vencimiento, estado
+        FROM deudas_tarjetas
+        WHERE estado = 'activa'
+      `, []);
+
+      if (tarjetas && tarjetas.length > 0) {
+        tarjetas.forEach(t => {
+          const hoy = new Date();
+          const diaVencimiento = t.fecha_vencimiento || 1;
+          let proximoVencimiento = new Date(hoy.getFullYear(), hoy.getMonth(), diaVencimiento);
+
+          if (hoy.getDate() > diaVencimiento) {
+            proximoVencimiento = new Date(hoy.getFullYear(), hoy.getMonth() + 1, diaVencimiento);
+          }
+
+          const daysLeft = Math.ceil((proximoVencimiento - hoy) / (1000 * 60 * 60 * 24));
+
+          obligaciones.push({
+            id: t.id,
+            tipo: 'tarjeta',
+            descripcion: t.nombre_tarjeta,
+            monto: t.monto_minimo || t.saldo_adeudado || 0,
+            fecha_vencimiento: proximoVencimiento.toISOString().split('T')[0],
+            dias_restantes: daysLeft,
+            prioridad: calcularPrioridad(daysLeft),
+            ruta_pago: `/deudas/tarjetas/${t.id}/pagar`
+          });
+        });
+      }
+
+      // 3. Ordenar por urgencia y calcular proyecciones
+      obligaciones.sort((a, b) => a.dias_restantes - b.dias_restantes);
+
+      let totalProximos7 = 0, totalProximos30 = 0, totalMensual = 0;
+      obligaciones.forEach(o => {
+        if (o.dias_restantes <= 7) totalProximos7 += o.monto;
+        if (o.dias_restantes <= 30) totalProximos30 += o.monto;
+        if (o.dias_restantes <= 999) totalMensual += o.monto;
+
+        // Añadir "alcanza" flag
+        o.alcanza = saldoReal >= o.monto;
+        o.deficit = Math.max(0, o.monto - saldoReal);
+      });
+
+      const alcanceEnDias = totalMensual > 0 ? Math.round((saldoReal / totalMensual) * 30) : 999;
+      const mayorUrgencia = obligaciones.length > 0 ? obligaciones[0] : null;
+
+      res.render('finanzas/tesoreria', {
+        title: 'Tesorería Inteligente',
+        saldoReal,
+        desglosePorMetodo,
+        obligaciones,
+        totalProximos7,
+        totalProximos30,
+        totalMensual,
+        alcanceEnDias,
+        mayorUrgencia,
+        success: req.flash('success'),
+        error: req.flash('error')
+      });
+    } catch (err) {
+      console.error('Error en tesorería:', err);
+      req.flash('error', 'Error al cargar tesorería: ' + err.message);
+      res.redirect('/dashboard');
+    }
+  });
+
   return router;
 };

@@ -575,6 +575,13 @@
                 <i class="bi bi-receipt"></i> Gastos
               </a></li>
 
+              <!-- TESORERÍA E INTELIGENCIA FINANCIERA -->
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">💰 TESORERÍA</h6></li>
+              <li><a class="dropdown-item" href="/finanzas/tesoreria">
+                <i class="bi bi-piggy-bank"></i> Tesorería Inteligente
+              </a></li>
+
               <!-- MIS DEUDAS Y COMPROMISOS -->
               <li><hr class="dropdown-divider"></li>
               <li><h6 class="dropdown-header">📊 MIS DEUDAS Y COMPROMISOS</h6></li>
@@ -932,7 +939,6 @@ le]').setAttribute('title', data.tooltip);
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('input[name="_csrf"]')?.value || ''
         },
         body: JSON.stringify({
           monto,

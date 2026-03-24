@@ -1,0 +1,296 @@
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <h1 class="display-6 mb-1"><i class="bi bi-piggy-bank"></i> Tesorería Inteligente</h1>
+      <p class="text-muted mb-0">Control de liquidez y próximas obligaciones</p>
+    </div>
+    <div class="col-md-4 text-end">
+      <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+        <i class="bi bi-question-circle me-1"></i> ¿Cómo usar?
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- BLOQUE 1: SALDO REAL -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <%
+        let colorSaldo = 'success';
+        let badgeSaldo = '✅ Saludable';
+        if (alcanceEnDias < 15) {
+          colorSaldo = 'danger';
+          badgeSaldo = '❌ Crítico';
+        } else if (alcanceEnDias < 30) {
+          colorSaldo = 'warning';
+          badgeSaldo = '⚠️ Atención';
+        }
+      %>
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <small class="text-muted d-block mb-2">💰 SALDO REAL DISPONIBLE</small>
+              <div class="display-4 fw-bold" style="color: <%= colorSaldo === 'success' ? '#10b981' : colorSaldo === 'warning' ? '#f59e0b' : '#ef4444' %>;">
+                $<%= saldoReal.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+              </div>
+              <small class="text-muted">Calculado desde todos los movimientos registrados en Caja Diaria</small>
+            </div>
+            <div class="col-md-6">
+              <div class="text-end">
+                <span class="badge bg-<%= colorSaldo %> fs-6 mb-3"><%= badgeSaldo %></span>
+                <div class="mt-3">
+                  <small class="text-muted d-block">Tu saldo cubre</small>
+                  <div class="fs-5 fw-bold"><%= alcanceEnDias %> días</div>
+                  <small class="text-muted d-block">de obligaciones</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr class="my-3">
+          <div class="row">
+            <div class="col-4">
+              <small class="text-muted">💵 Efectivo</small>
+              <div class="fs-6 fw-bold">$<%= (desglosePorMetodo.efectivo || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+            </div>
+            <div class="col-4">
+              <small class="text-muted">🏦 Transferencia</small>
+              <div class="fs-6 fw-bold">$<%= (desglosePorMetodo.transferencia || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+            </div>
+            <div class="col-4">
+              <small class="text-muted">💳 Tarjeta</small>
+              <div class="fs-6 fw-bold">$<%= (desglosePorMetodo.tarjeta || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOQUE 2: RESUMEN EJECUTIVO (4 CARDS) -->
+  <div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">⏰ Próximos 7 días</p>
+          <h4 class="mb-0" style="color: #dc2626;">$<%= totalProximos7.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">📅 Próximos 30 días</p>
+          <h4 class="mb-0" style="color: #f59e0b;">$<%= totalProximos30.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">🚨 Mayor urgencia</p>
+          <small class="fw-bold"><%= mayorUrgencia ? mayorUrgencia.descripcion.substring(0, 30) + '...' : 'N/A' %></small>
+          <div class="small text-muted"><%= mayorUrgencia ? mayorUrgencia.dias_restantes + ' días' : '' %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">📊 Total obligaciones</p>
+          <h4 class="mb-0" style="color: #0891b2;">$<%= totalMensual.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOQUE 3: TIMELINE DE OBLIGACIONES -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📋 Próximas Obligaciones</h5>
+            <div class="btn-group btn-group-sm" role="group">
+              <input type="radio" class="btn-check" name="filtroObl" id="filtroTodos" value="todos" checked onchange="filtrarObligaciones()">
+              <label class="btn btn-outline-secondary" for="filtroTodos">Todos</label>
+              <input type="radio" class="btn-check" name="filtroObl" id="filtro7d" value="7" onchange="filtrarObligaciones()">
+              <label class="btn btn-outline-secondary" for="filtro7d">7 días</label>
+              <input type="radio" class="btn-check" name="filtroObl" id="filtro30d" value="30" onchange="filtrarObligaciones()">
+              <label class="btn btn-outline-secondary" for="filtro30d">30 días</label>
+            </div>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="tablaObligaciones">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 12%;">Urgencia</th>
+                <th style="width: 15%;">Tipo</th>
+                <th style="width: 30%;">Descripción</th>
+                <th style="width: 12%;">Monto</th>
+                <th style="width: 10%;">Vence</th>
+                <th style="width: 8%;">Días</th>
+                <th style="width: 13%;">¿Alcanza?</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% obligaciones.forEach((o, idx) => { %>
+                <tr class="obligacion-row" data-dias="<%= o.dias_restantes %>">
+                  <td>
+                    <%
+                      let badgeColor = 'secondary';
+                      let badgeText = 'OK';
+                      if (o.dias_restantes < 0) {
+                        badgeColor = 'danger'; badgeText = 'VENCIDO';
+                      } else if (o.dias_restantes <= 7) {
+                        badgeColor = 'danger'; badgeText = 'URGENTE';
+                      } else if (o.dias_restantes <= 15) {
+                        badgeColor = 'warning'; badgeText = 'PRÓXIMO';
+                      } else if (o.dias_restantes <= 30) {
+                        badgeColor = 'info'; badgeText = 'PLANIFICAR';
+                      }
+                    %>
+                    <span class="badge bg-<%= badgeColor %>"><%= badgeText %></span>
+                  </td>
+                  <td>
+                    <%
+                      let typeEmoji = '📄';
+                      if (o.tipo === 'gasto_fijo') typeEmoji = '🔄';
+                      else if (o.tipo === 'impuesto') typeEmoji = '🏛️';
+                      else if (o.tipo === 'cuota') typeEmoji = '📦';
+                      else if (o.tipo === 'tarjeta') typeEmoji = '💳';
+                    %>
+                    <small><%= typeEmoji %> <%= o.tipo.replace('_', ' ') %></small>
+                  </td>
+                  <td><small><strong><%= o.descripcion %></strong></small></td>
+                  <td><strong>$<%= o.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                  <td><small><%= o.fecha_vencimiento ? new Date(o.fecha_vencimiento).toLocaleDateString('es-AR') : 'N/A' %></small></td>
+                  <td><small><span class="badge bg-light text-dark"><%= o.dias_restantes %></span></small></td>
+                  <td>
+                    <% if (o.alcanza) { %>
+                      <span class="badge bg-success">✅ Sí</span>
+                    <% } else { %>
+                      <span class="badge bg-danger">❌ Faltan $<%= o.deficit.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <% if (obligaciones.length === 0) { %>
+          <div class="card-body text-center py-5">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">✅</div>
+            <h5>Sin obligaciones próximas</h5>
+            <p class="text-muted">Tu negocio está al día con todos los pagos.</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOQUE 4: ASISTENTE IA -->
+  <div class="row">
+    <div class="col-lg-8">
+      <!-- Espacio reservado para IA en versión futura -->
+    </div>
+    <div class="col-lg-4">
+      <div class="card border-3 border-primary shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="bi bi-robot"></i> Asistente Financiero</h5>
+        </div>
+        <div class="card-body">
+          <p class="small text-muted mb-3">Consulta a tu asistente IA para obtener recomendaciones personalizadas sobre cómo manejar tu liquidez.</p>
+          <button class="btn btn-primary w-100" id="btnConsultarIA" onclick="consultarIA()">
+            <i class="bi bi-stars me-2"></i>Pedir Consejo
+          </button>
+          <div id="respuestaIA" style="display: none; margin-top: 1.5rem; padding: 1rem; background-color: #f0f9ff; border-left: 4px solid #0284c7; border-radius: 4px;">
+            <small class="text-muted d-block mb-2">💬 Recomendación del Asistente:</small>
+            <div id="textoIA" class="small"></div>
+            <button class="btn btn-sm btn-outline-primary mt-2" onclick="consultarIA()">Actualizar consejo</button>
+          </div>
+          <div id="loadingIA" style="display: none; text-align: center; margin-top: 1rem;">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="small text-muted mt-2">Consultando asistente...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function filtrarObligaciones() {
+  const filtro = document.querySelector('input[name="filtroObl"]:checked').value;
+  const rows = document.querySelectorAll('.obligacion-row');
+
+  rows.forEach(row => {
+    const dias = parseInt(row.dataset.dias);
+    let mostrar = false;
+
+    if (filtro === 'todos') {
+      mostrar = true;
+    } else if (filtro === '7' && dias <= 7) {
+      mostrar = true;
+    } else if (filtro === '30' && dias <= 30) {
+      mostrar = true;
+    }
+
+    row.style.display = mostrar ? '' : 'none';
+  });
+}
+
+async function consultarIA() {
+  const btnConsultar = document.getElementById('btnConsultarIA');
+  const loading = document.getElementById('loadingIA');
+  const respuesta = document.getElementById('respuestaIA');
+  const textoIA = document.getElementById('textoIA');
+
+  btnConsultar.disabled = true;
+  loading.style.display = 'block';
+  respuesta.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/ia/consejo-tesoreria', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('[name=_csrf]')?.value || ''
+      }
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      textoIA.innerHTML = data.consejo.replace(/\n/g, '<br>');
+      respuesta.style.display = 'block';
+    } else {
+      textoIA.innerHTML = '❌ Error: ' + (data.error || 'No se pudo obtener consejo');
+      respuesta.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    textoIA.innerHTML = '❌ Error de conexión. Intenta más tarde.';
+    respuesta.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    btnConsultar.disabled = false;
+  }
+}
+</script>

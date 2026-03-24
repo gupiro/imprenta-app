@@ -926,5 +926,182 @@ Responde SOLO con el nombre de la categoría más apropiada, sin explicación ad
         }
     });
 
+    /**
+     * POST /api/ia/consejo-tesoreria
+     * Consejo personalizado sobre gestión de liquidez y próximas obligaciones
+     * Requiere: usuario autenticado, API key configurada
+     */
+    router.post('/consejo-tesoreria', async (req, res) => {
+        try {
+            if (!apiKeyConfigured) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'API key de Anthropic no configurada'
+                });
+            }
+
+            if (!req.session.user) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Acceso denegado'
+                });
+            }
+
+            // Calcular saldo y obligaciones (similar a la ruta de tesorería)
+            const { calcularPrioridad } = require('../utils/pagosHelper');
+
+            // Saldo real
+            const balanceResult = await db.all(`
+                SELECT
+                  SUM(CASE WHEN tipo='ingreso' THEN monto ELSE 0 END) AS total_ingresos,
+                  SUM(CASE WHEN tipo='egreso' THEN monto ELSE 0 END) AS total_egresos
+                FROM movimientos_caja
+            `, []);
+
+            let saldoReal = 0;
+            if (balanceResult && balanceResult[0]) {
+                const ingresos = balanceResult[0].total_ingresos || 0;
+                const egresos = balanceResult[0].total_egresos || 0;
+                saldoReal = ingresos - egresos;
+            }
+
+            // Obligaciones próximas 30 días
+            let obligaciones = [];
+
+            // Facturas recibidas
+            const facturas = await db.all(`
+                SELECT id, numero_comprobante, razon_social, monto_total, monto_pagado,
+                       fecha_vencimiento_pago
+                FROM facturas_recibidas
+                WHERE estado != 'pagada' AND activo = 1
+                ORDER BY fecha_vencimiento_pago ASC
+                LIMIT 5
+            `, []);
+
+            if (facturas && facturas.length > 0) {
+                facturas.forEach(f => {
+                    const pendiente = (f.monto_total || 0) - (f.monto_pagado || 0);
+                    const daysLeft = f.fecha_vencimiento_pago ?
+                      Math.ceil((new Date(f.fecha_vencimiento_pago) - new Date()) / (1000 * 60 * 60 * 24)) :
+                      999;
+                    if (daysLeft <= 30 && pendiente > 0) {
+                        obligaciones.push({
+                            tipo: 'Factura recibida',
+                            descripcion: `${f.razon_social} - ${f.numero_comprobante}`,
+                            monto: pendiente,
+                            dias: daysLeft
+                        });
+                    }
+                });
+            }
+
+            // Gastos fijos
+            const FACTOR_MENSUAL = { semanal: 4.33, quincenal: 2.17, mensual: 1, bimestral: 0.5, trimestral: 1/3, semestral: 1/6, anual: 1/12 };
+            const gastosFijos = await db.all(`
+                SELECT id, nombre, monto, dia_vencimiento, frecuencia
+                FROM gastos_fijos
+                WHERE activo = 1
+                LIMIT 5
+            `, []);
+
+            if (gastosFijos && gastosFijos.length > 0) {
+                const hoy = new Date();
+                gastosFijos.forEach(gf => {
+                    const diaVencimiento = gf.dia_vencimiento || 1;
+                    let proximoVencimiento = new Date(hoy.getFullYear(), hoy.getMonth(), diaVencimiento);
+                    if (hoy.getDate() > diaVencimiento) {
+                        proximoVencimiento = new Date(hoy.getFullYear(), hoy.getMonth() + 1, diaVencimiento);
+                    }
+                    const daysLeft = Math.ceil((proximoVencimiento - hoy) / (1000 * 60 * 60 * 24));
+                    const monto = (gf.monto || 0) * (FACTOR_MENSUAL[gf.frecuencia] || 1);
+
+                    if (daysLeft <= 30) {
+                        obligaciones.push({
+                            tipo: 'Gasto fijo',
+                            descripcion: gf.nombre,
+                            monto: monto,
+                            dias: daysLeft
+                        });
+                    }
+                });
+            }
+
+            // Vencimientos fiscales
+            const vencimientos = await db.all(`
+                SELECT descripcion, monto_estimado, fecha_vencimiento
+                FROM vencimientos_fiscales
+                WHERE estado != 'pagado'
+                LIMIT 5
+            `, []);
+
+            if (vencimientos && vencimientos.length > 0) {
+                vencimientos.forEach(v => {
+                    const daysLeft = Math.ceil((new Date(v.fecha_vencimiento) - new Date()) / (1000 * 60 * 60 * 24));
+                    if (daysLeft <= 30 && daysLeft >= 0) {
+                        obligaciones.push({
+                            tipo: 'Impuesto',
+                            descripcion: v.descripcion,
+                            monto: v.monto_estimado || 0,
+                            dias: daysLeft
+                        });
+                    }
+                });
+            }
+
+            // Ordenar por urgencia
+            obligaciones.sort((a, b) => a.dias - b.dias);
+            obligaciones = obligaciones.slice(0, 10);
+
+            // Construir prompt para Claude
+            let obligacionesTexto = obligaciones.map(o =>
+                `- ${o.tipo}: ${o.descripcion} ($${o.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})}) - vence en ${o.dias} días`
+            ).join('\n');
+
+            const prompt = `Sos el asesor financiero de confianza de Imprenta El Gráfico, una imprenta familiar en Orán, Salta.
+
+SITUACIÓN ACTUAL:
+- Saldo disponible: $${saldoReal.toLocaleString('es-AR', {minimumFractionDigits: 2})}
+- Próximas obligaciones (próximos 30 días):
+${obligacionesTexto || '(Sin obligaciones próximas)'}
+
+Tu tarea:
+1. Analiza si el saldo es suficiente para las obligaciones próximas
+2. Sugiere qué pagar primero y qué puede esperar
+3. Identifica si hay riesgo de quedarse sin liquidez
+4. Da 1-2 recomendaciones prácticas y concretas
+
+IMPORTANTE:
+- Responde en español, con un tono amigable y profesional
+- Máximo 150 palabras
+- Sé específico con montos y fechas
+- Evita tecnicismos innecesarios`;
+
+            const message = await client.messages.create({
+                model: 'claude-haiku-4-5-20251001',
+                max_tokens: 250,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            });
+
+            const consejo = message.content[0]?.text?.trim() || 'No se pudo generar consejo';
+
+            return res.json({
+                success: true,
+                consejo
+            });
+
+        } catch (err) {
+            console.error('Error en /api/ia/consejo-tesoreria:', err);
+            return res.status(500).json({
+                success: false,
+                error: err.message || 'Error al generar consejo'
+            });
+        }
+    });
+
     return router;
 };

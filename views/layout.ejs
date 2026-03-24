@@ -868,26 +868,13 @@ le]').setAttribute('title', data.tooltip);
     // Inicializar dark mode al cargar
     document.addEventListener('DOMContentLoaded', initDarkMode);
 
-    // Botón Gasto Rápido - Setup Directo
-    console.log('🔧 Inicializando Gasto Rápido...');
-
-    // Intenta inmediatamente
-    setTimeout(() => {
-      const btnGastoRapido = document.getElementById('btnGastoRapido');
-      console.log('Búsqueda 1 - Button encontrado?', !!btnGastoRapido);
-      if (btnGastoRapido) {
-        btnGastoRapido.onclick = function(e) {
-          e.preventDefault();
-          console.log('✅ Botón Gasto Rápido CLICKEADO (onclick)');
-          if (typeof window.abrirGastoRapido === 'function') {
-            window.abrirGastoRapido();
-          } else {
-            console.error('❌ abrirGastoRapido no existe');
-            alert('Error: La función de gasto rápido no cargó correctamente');
-          }
-        };
+    // Botón Gasto Rápido - Setup Ultra Simple
+    (function() {
+      const btn = document.getElementById('btnGastoRapido');
+      if (btn) {
+        btn.onclick = window.abrirGastoRapido;
       }
-    }, 100);
+    })();
 
     // ════════════════════════════════════════════════════════════════
     // SIDEBAR FLOTANTE

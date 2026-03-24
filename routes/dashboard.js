@@ -404,13 +404,105 @@ module.exports = (db) => {
 
       // 🔴 Pedidos LISTOS pero sin pagar (CRÍTICO)
       const pedidosListosImpagos = await db.all(`
-        SELECT p.id, p.cliente_id, c.name AS cliente_nombre, p.precio, p.monto_restante, p.precio as monto_total
+        SELECT p.id, p.cliente_id, c.name AS cliente_nombre, p.precio, p.monto_restante, p.precio as monto_total, p.fecha
         FROM pedidos p
         LEFT JOIN clients c ON p.client_id = c.id
         WHERE p.estado = 'LISTO' AND p.monto_restante > 0
         ORDER BY p.fecha ASC
       `) || [];
       const totalImpago = pedidosListosImpagos.reduce((s, p) => s + (p.monto_restante || 0), 0);
+
+      // ════════════════════════════════════════════════════════════════
+      // NUEVA MÉTRICA 1: CAJA HOY vs META DIARIA
+      // ════════════════════════════════════════════════════════════════
+      const diasDelMes = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+      const metaDiaria = ingresosMes / diasDelMes;
+      const porcentajeMeta = metaDiaria > 0 ? (ingresosHoy / metaDiaria) * 100 : 0;
+
+      // ════════════════════════════════════════════════════════════════
+      // NUEVA MÉTRICA 2: DÍAS PROMEDIO DE COBRO
+      // ════════════════════════════════════════════════════════════════
+      const pedidosEntregadosEsteMes = await db.all(`
+        SELECT p.id, p.fecha, CAST((julianday('now') - julianday(p.fecha)) AS INTEGER) as dias_cobrados
+        FROM pedidos p
+        WHERE p.estado = 'ENTREGADO'
+        AND strftime('%Y-%m', p.fecha) = strftime('%Y-%m', 'now')
+        LIMIT 50
+      `) || [];
+      const diasPromedioCobro = pedidosEntregadosEsteMes.length > 0
+        ? (pedidosEntregadosEsteMes.reduce((sum, p) => sum + (p.dias_cobrados || 0), 0) / pedidosEntregadosEsteMes.length).toFixed(1)
+        : 0;
+
+      // ════════════════════════════════════════════════════════════════
+      // NUEVA MÉTRICA 3: TASA DE CONVERSIÓN PRESUPUESTOS → PEDIDOS
+      // ════════════════════════════════════════════════════════════════
+      const presupuestosAceptadosEsteMes = (await db.get(`
+        SELECT COUNT(*) AS c FROM presupuestos
+        WHERE estado = 'ACEPTADO' AND strftime('%Y-%m', fecha_creacion) = strftime('%Y-%m', 'now')
+      `))?.c || 0;
+      const pedidosCreados = (await db.get(`
+        SELECT COUNT(*) AS c FROM pedidos
+        WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now')
+      `))?.c || 0;
+      const tasaConversion = presupuestosAceptadosEsteMes > 0
+        ? ((pedidosCreados / presupuestosAceptadosEsteMes) * 100).toFixed(0)
+        : 0;
+
+      // ════════════════════════════════════════════════════════════════
+      // DEUDAS SEPARADAS POR URGENCIA (HOY / PRÓXIMAS SEMANAS / LARGO PLAZO)
+      // ════════════════════════════════════════════════════════════════
+      const deudasVencidas = [];
+      const deudasUrgentes = [];
+      const deudasLargoPlazo = [];
+
+      // Tarjetas
+      const tarjetasAll = await db.all(`
+        SELECT 'tarjeta' as tipo, nombre_tarjeta as nombre, saldo_adeudado as monto,
+               fecha_vencimiento as dia_vencimiento, id
+        FROM deudas_tarjetas
+        WHERE estado = 'activa'
+      `) || [];
+      tarjetasAll.forEach(t => {
+        const diasHasta = t.dia_vencimiento - new Date().getDate();
+        const obj = { ...t, diasHasta, concepto: 'Tarjeta: ' + t.nombre };
+        if (diasHasta <= 0) deudasVencidas.push(obj);
+        else if (diasHasta <= 7) deudasUrgentes.push(obj);
+        else deudasLargoPlazo.push(obj);
+      });
+
+      // Cheques
+      const chequesAll = await db.all(`
+        SELECT 'cheque' as tipo, numero_cheque as nombre, monto,
+               CAST((julianday(fecha_vencimiento) - julianday('now')) AS INTEGER) as diasHasta, id
+        FROM deudas_cheques
+        WHERE estado = 'pendiente'
+      `) || [];
+      chequesAll.forEach(c => {
+        const obj = { ...c, concepto: 'Cheque: ' + c.nombre };
+        if (c.diasHasta <= 0) deudasVencidas.push(obj);
+        else if (c.diasHasta <= 7) deudasUrgentes.push(obj);
+        else deudasLargoPlazo.push(obj);
+      });
+
+      // Préstamos cuotas próximas
+      const prestamosAll = await db.all(`
+        SELECT 'prestamo' as tipo, descripcion as nombre, cuota_mensual as monto,
+               CAST((julianday(fecha_primer_vencimiento) - julianday('now')) AS INTEGER) as diasHasta, id
+        FROM deudas_prestamos
+        WHERE estado = 'activo' AND cuota_mensual > 0
+      `) || [];
+      prestamosAll.forEach(p => {
+        const obj = { ...p, concepto: 'Cuota: ' + p.nombre };
+        if (p.diasHasta <= 0) deudasVencidas.push(obj);
+        else if (p.diasHasta <= 7) deudasUrgentes.push(obj);
+        else deudasLargoPlazo.push(obj);
+      });
+
+      const deudasPorUrgencia = {
+        vencidas: deudasVencidas,
+        urgentes: deudasUrgentes,
+        largoPlazo: deudasLargoPlazo
+      };
 
       res.render('dashboard', {
         title: 'Dashboard Ejecutivo',
@@ -464,6 +556,13 @@ module.exports = (db) => {
         gastos,
         pedidosListosImpagos,
         totalImpago,
+        // Nuevas métricas
+        metaDiaria,
+        porcentajeMeta,
+        ingresosHoy,
+        diasPromedioCobro,
+        tasaConversion,
+        deudasPorUrgencia,
         success: req.flash('success'),
         error: req.flash('error')
       });

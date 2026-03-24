@@ -429,3 +429,158 @@ body {
     padding: 0.5rem;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   HERO METRIC - Dashboard Principal
+   ───────────────────────────────────────────────────────────────── */
+
+.hero-metric {
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  color: white;
+  margin-bottom: 1.5rem;
+}
+
+.hero-amount {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 0.25rem;
+}
+
+.hero-label {
+  font-size: 0.875rem;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+.hero-meta {
+  font-size: 0.9rem;
+  opacity: 0.75;
+  margin-top: 0.5rem;
+}
+
+.hero-progress {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  height: 8px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.hero-progress-bar {
+  background: white;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1s ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   KPI STRIP - 4 Columnas
+   ───────────────────────────────────────────────────────────────── */
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi-strip .kpi-item {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.kpi-strip .kpi-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-strip .kpi-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+
+.kpi-strip .kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.kpi-strip .kpi-change {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-top: 0.2rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   STATS BAR - 4 Contadores
+   ───────────────────────────────────────────────────────────────── */
+
+.stats-bar {
+  display: flex;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.stats-bar .stat-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.5rem;
+  border-right: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.stats-bar .stat-item:last-child {
+  border-right: none;
+}
+
+.stats-bar .stat-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stats-bar .stat-count.warning {
+  color: #f59e0b;
+}
+
+.stats-bar .stat-count.success {
+  color: #10b981;
+}
+
+.stats-bar .stat-count.muted {
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-bar {
+    flex-wrap: wrap;
+  }
+
+  .stats-bar .stat-item {
+    flex: 0 0 50%;
+  }
+
+  .hero-amount {
+    font-size: 2.25rem;
+  }
+}

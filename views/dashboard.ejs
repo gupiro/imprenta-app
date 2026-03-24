@@ -1,4 +1,4 @@
-<!-- views/dashboard-new.ejs - REDISEÑO MODERNO Y MINIMALISTA -->
+<!-- Dashboard Rediseñado - Estructura Minimalista y Operativa -->
 
 <div class="container-fluid py-5">
   <% if (user && user.rol === 'admin') { %>
@@ -17,22 +17,30 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       FRASE MOTIVACIONAL DE LA SEMANA
+       HERO METRIC - DINERO HOY
        ════════════════════════════════════════════════════════════════ -->
-  <% if (frase) { %>
-  <div class="alert alert-info mb-4" style="border-left: 4px solid #0ea5e9; background: #f0f9ff; color: #0c2d6b;">
-    <p style="margin: 0; font-style: italic; font-size: 0.95rem;">
-      💡 <%= frase %>
-    </p>
+  <%
+  const heroColor = porcentajeMeta >= 100
+    ? 'linear-gradient(135deg, #10b981, #059669)'
+    : porcentajeMeta >= 70
+    ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+    : 'linear-gradient(135deg, #ef4444, #dc2626)';
+  %>
+  <div class="hero-metric" style="background: <%= heroColor %>;">
+    <div class="hero-label">💰 Dinero Hoy</div>
+    <div class="hero-amount">$<%= ingresosHoy.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+    <div class="hero-progress">
+      <div class="hero-progress-bar" style="width: <%= Math.min(porcentajeMeta, 100) %>%;"></div>
+    </div>
+    <div class="hero-meta">Meta: $<%= metaDiaria.toLocaleString('es-AR', {maximumFractionDigits: 0}) %> — <strong><%= porcentajeMeta.toFixed(0) %>%</strong></div>
   </div>
-  <% } %>
 
   <!-- ════════════════════════════════════════════════════════════════
-       🔴 ALERTA CRÍTICA: PEDIDOS LISTOS PERO IMPAGOS (AL PRINCIPIO)
+       ALERTA: PEDIDOS LISTOS SIN COBRAR
        ════════════════════════════════════════════════════════════════ -->
   <% if (pedidosListosImpagos && pedidosListosImpagos.length > 0) { %>
   <div class="card-minimal mb-5" style="border-left: 4px solid #ef4444; background: #fff5f5;">
-    <div class="card-header" style="color: #ef4444; font-weight: bold;">
+    <div class="card-header" style="color: #ef4444; font-weight: bold; border-bottom: 1px solid #ffcccc;">
       🔴 ACCIÓN INMEDIATA: <%= pedidosListosImpagos.length %> Pedido(s) Listo(s) Sin Cobrar
     </div>
     <div class="table-responsive" style="margin: 0; padding: 1rem;">
@@ -51,417 +59,24 @@
           <% pedidosListosImpagos.forEach(ped => { %>
           <% const diasSinCobrar = Math.floor((new Date() - new Date(ped.fecha)) / (1000 * 60 * 60 * 24)); %>
           <tr style="border-bottom: 1px solid #ffcccc;">
-            <td>
-              <a href="/pedidos/detalle/<%= ped.id %>" style="font-weight: bold; color: #ef4444;">
-                #<%= ped.id %>
-              </a>
-            </td>
+            <td><a href="/pedidos/detalle/<%= ped.id %>" style="font-weight: bold; color: #ef4444;">#<%= ped.id %></a></td>
             <td><%= ped.cliente_nombre || '(sin cliente)' %></td>
             <td>$<%= (ped.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
-            <td style="font-weight: bold; color: #ef4444;">
-              $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
-            </td>
+            <td style="font-weight: bold; color: #ef4444;">$<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
             <td style="font-weight: bold;">
               <% if (diasSinCobrar > 10) { %>
-                <span style="color: #ef4444;">🔴 <%= diasSinCobrar %> días</span>
+                <span style="color: #ef4444;">🔴 <%= diasSinCobrar %> d</span>
               <% } else if (diasSinCobrar > 5) { %>
-                <span style="color: #f59e0b;">🟡 <%= diasSinCobrar %> días</span>
+                <span style="color: #f59e0b;">🟡 <%= diasSinCobrar %> d</span>
               <% } else { %>
-                <span style="color: #6b7280;"><%= diasSinCobrar %> días</span>
+                <span style="color: #6b7280;"><%= diasSinCobrar %> d</span>
               <% } %>
             </td>
             <td style="text-align: center;">
               <div class="btn-group btn-sm" role="group">
-                <a href="/pedidos/detalle/<%= ped.id %>" class="btn btn-sm btn-success" title="Cobrar">
-                  💰 Cobrar
-                </a>
-                <a href="https://wa.me/?text=Hola! Tu pedido #<%= ped.id %> está listo para retirar. Total a pagar: $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>"
-                   target="_blank" class="btn btn-sm btn-info" title="Enviar WhatsApp">
-                  📱
-                </a>
+                <a href="/pedidos/detalle/<%= ped.id %>" class="btn btn-sm btn-success" title="Cobrar">💰 Cobrar</a>
+                <a href="https://wa.me/?text=Hola! Tu pedido %23<%= ped.id %> está listo. Total: $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %>" target="_blank" class="btn btn-sm btn-info" title="WhatsApp">📱</a>
               </div>
-            </td>
-          </tr>
-          <% }); %>
-        </tbody>
-        <tfoot style="background: #ffcccc; font-weight: bold;">
-          <tr>
-            <td colspan="4" style="text-align: right;">TOTAL PENDIENTE:</td>
-            <td colspan="2" style="color: #ef4444; text-align: center;">$<%= totalImpago.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </div>
-  <% } %>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       KPI CARDS - 4 COLUMNAS
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="row mb-5 g-4">
-    <!-- INGRESOS -->
-    <div class="col-lg-3 col-md-6">
-      <div class="kpi-card">
-        <div class="kpi-icon">💰</div>
-        <div class="kpi-label">Ingresos este mes</div>
-        <div class="kpi-value" style="color: #10b981;">
-          $<%= ingresosMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-        </div>
-        <div class="kpi-change">
-          <% if (cambioIngresos >= 0) { %>
-            <span style="color: #10b981;">↑ <%= cambioIngresos.toFixed(0) %>%</span> vs mes anterior
-          <% } else { %>
-            <span style="color: #ef4444;">↓ <%= Math.abs(cambioIngresos).toFixed(0) %>%</span> vs mes anterior
-          <% } %>
-        </div>
-      </div>
-    </div>
-
-    <!-- GASTOS -->
-    <div class="col-lg-3 col-md-6">
-      <div class="kpi-card">
-        <div class="kpi-icon">📊</div>
-        <div class="kpi-label">Gastos este mes</div>
-        <div class="kpi-value" style="color: #ef4444;">
-          $<%= gastosTotalMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-        </div>
-        <div class="kpi-change">
-          Directos + Fijos + Cuotas
-        </div>
-      </div>
-    </div>
-
-    <!-- RESULTADO NETO -->
-    <div class="col-lg-3 col-md-6">
-      <div class="kpi-card">
-        <div class="kpi-icon">📈</div>
-        <div class="kpi-label">Resultado neto</div>
-        <div class="kpi-value" style="color: <%= saldoNeto >= 0 ? '#10b981' : '#ef4444' %>;">
-          <%= saldoNeto >= 0 ? '+' : '-' %>$<%= Math.abs(saldoNeto).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-        </div>
-        <div class="kpi-change">
-          <% const porcentaje = ingresosMes > 0 ? ((saldoNeto / ingresosMes) * 100).toFixed(1) : 0; %>
-          <%= porcentaje %>% de margen
-        </div>
-      </div>
-    </div>
-
-    <!-- DEUDA PENDIENTE -->
-    <div class="col-lg-3 col-md-6">
-      <div class="kpi-card">
-        <div class="kpi-icon">⚠️</div>
-        <div class="kpi-label">Deuda a clientes</div>
-        <div class="kpi-value" style="color: #f59e0b;">
-          $<%= deudaTotal.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-        </div>
-        <div class="kpi-change">
-          Monto pendiente de cobrar
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       MÉTRICAS OPERATIVAS (Caja Hoy + Conversión + Cobro)
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="row mb-5 g-4">
-    <!-- CAJA HOY vs META DIARIA -->
-    <div class="col-lg-4 col-md-6">
-      <div class="card-minimal">
-        <div style="margin-bottom: 1rem;">
-          <div style="font-size: 0.9rem; color: #6b7280; text-transform: uppercase; font-weight: 600;">📊 Caja Hoy</div>
-          <div style="font-size: 1.5rem; font-weight: bold; color: #3b82f6; margin-top: 0.5rem;">
-            <%= porcentajeMeta.toFixed(0) %>%
-          </div>
-          <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
-            $<%= ingresosHoy.toLocaleString('es-AR', {maximumFractionDigits: 0}) %> / $<%= metaDiaria.toFixed(0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TASA DE CONVERSIÓN PRESUPUESTOS → PEDIDOS -->
-    <div class="col-lg-4 col-md-6">
-      <div class="card-minimal">
-        <div style="margin-bottom: 1rem;">
-          <div style="font-size: 0.9rem; color: #6b7280; text-transform: uppercase; font-weight: 600;">📈 Conversión</div>
-          <div style="font-size: 1.5rem; font-weight: bold; color: #10b981; margin-top: 0.5rem;">
-            <%= tasaConversion %>%
-          </div>
-          <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
-            <% if (presupuestosAceptadosEsteMes > 0) { %>
-              <%= pedidosCreados %> pedidos de <%= presupuestosAceptadosEsteMes %> presupuestos
-            <% } else { %>
-              Sin presupuestos aceptados
-            <% } %>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- DÍAS PROMEDIO DE COBRO -->
-    <div class="col-lg-4 col-md-6">
-      <div class="card-minimal">
-        <div style="margin-bottom: 1rem;">
-          <div style="font-size: 0.9rem; color: #6b7280; text-transform: uppercase; font-weight: 600;">⏰ Cobro Promedio</div>
-          <div style="font-size: 1.5rem; font-weight: bold; margin-top: 0.5rem;">
-            <%= diasPromedioCobro %> <span style="font-size: 0.85rem; color: #6b7280;">días</span>
-          </div>
-          <div style="font-size: 0.85rem; color: #6b7280; margin-top: 0.5rem;">
-            Meta: 7 días
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       ACCIONES RÁPIDAS (simplificadas)
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="card-minimal mb-5">
-    <div class="card-header">Acciones Rápidas</div>
-    <div class="d-flex flex-wrap gap-2">
-      <a href="/pedidos/nuevo" class="btn-minimal btn-primary-minimal">
-        <i class="bi bi-plus-circle"></i> Nuevo Pedido
-      </a>
-      <a href="/presupuestos/nuevo" class="btn-minimal btn-primary-minimal">
-        <i class="bi bi-calculator"></i> Nuevo Presupuesto
-      </a>
-      <a href="/deudas" class="btn-minimal btn-warning-minimal">
-        <i class="bi bi-exclamation-triangle"></i> Gestionar Deudas
-      </a>
-      <a href="/gastos" class="btn-minimal btn-danger-minimal">
-        <i class="bi bi-receipt"></i> Registrar Gasto
-      </a>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       ESTADO OPERATIVO DEL DÍA (mini-widget)
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="card-minimal mb-5" style="background: #f8f9fa; padding: 1rem;">
-    <div style="display: flex; justify-content: space-around; align-items: center; gap: 2rem; text-align: center; flex-wrap: wrap;">
-      <div>
-        <div style="font-size: 1.5rem; font-weight: 700; color: #f59e0b;">
-          <%= pendientes || 0 %>
-        </div>
-        <small style="color: #6b7280;">Pendientes</small>
-      </div>
-      <div style="border-left: 1px solid #e5e7eb; padding-left: 2rem;">
-        <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;">
-          <%= en_produccion || 0 %>
-        </div>
-        <small style="color: #6b7280;">En producción</small>
-      </div>
-      <div style="border-left: 1px solid #e5e7eb; padding-left: 2rem;">
-        <div style="font-size: 1.5rem; font-weight: 700; color: #10b981;">
-          <%= listos || 0 %>
-        </div>
-        <small style="color: #6b7280;">Listos</small>
-      </div>
-      <div style="border-left: 1px solid #e5e7eb; padding-left: 2rem;">
-        <div style="font-size: 1.5rem; font-weight: 700; color: #6b7280;">
-          <%= entregados || 0 %>
-        </div>
-        <small style="color: #6b7280;">Entregados</small>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       ⚠️ STOCK CRÍTICO
-       ════════════════════════════════════════════════════════════════ -->
-  <% const stockEnCero = stockBajo.filter(s => s.cantidad === 0); %>
-  <% const stockCritico = stockBajo.filter(s => s.cantidad > 0 && s.cantidad <= s.stock_minimo); %>
-
-  <% if (stockEnCero.length > 0 || stockCritico.length > 0) { %>
-  <div class="card-minimal mb-5" style="border-left: 4px solid #dc3545; background: #fff5f5;">
-    <div class="card-header" style="color: #dc3545; font-weight: bold;">
-      ⚠️ STOCK CRÍTICO
-    </div>
-    <div style="padding: 1rem;">
-      <% if (stockEnCero.length > 0) { %>
-      <div class="mb-3">
-        <strong style="color: #dc3545;">🔴 EN CERO (No puedo vender):</strong>
-        <% stockEnCero.forEach(s => { %>
-        <div style="margin-top: 0.5rem; padding: 0.75rem; background: #ffebee; border-radius: 4px; border-left: 3px solid #dc3545;">
-          <strong><%= s.nombre %></strong>
-        </div>
-        <% }); %>
-      </div>
-      <% } %>
-
-      <% if (stockCritico.length > 0) { %>
-      <div>
-        <strong style="color: #f59e0b;">🟡 BAJO (próximo a terminar):</strong>
-        <% stockCritico.forEach(s => { %>
-        <div style="margin-top: 0.5rem; padding: 0.75rem; background: #fffbeb; border-radius: 4px; border-left: 3px solid #f59e0b;">
-          <%= s.nombre %> — <strong><%= s.cantidad %></strong> / <%= s.stock_minimo %> <%= s.unidad %>
-        </div>
-        <% }); %>
-      </div>
-      <% } %>
-    </div>
-  </div>
-  <% } %>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       DEUDAS Y GASTOS PENDIENTES
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="row mb-5 g-4">
-    <!-- DEUDAS DE LA EMPRESA (SEPARADAS POR URGENCIA) -->
-    <% if (countDeudas > 0) { %>
-    <div class="col-md-6">
-      <div class="card-minimal">
-        <div class="card-header">💳 Deudas de la Empresa</div>
-
-        <!-- VENCIDAS HOY -->
-        <% if (deudasPorUrgencia.vencidas.length > 0) { %>
-        <div style="margin-top: 1rem; padding: 0.75rem; background: #fff5f5; border-left: 3px solid #dc3545; border-radius: 4px;">
-          <div style="font-weight: bold; color: #dc3545; font-size: 0.9rem; margin-bottom: 0.5rem;">
-            🔴 VENCIDAS (Pagar HOY):
-          </div>
-          <% deudasPorUrgencia.vencidas.slice(0, 3).forEach(d => { %>
-          <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(220, 53, 69, 0.05); border-radius: 3px;">
-            <div style="font-size: 0.85rem; font-weight: 600;">
-              <%= d.concepto %>
-            </div>
-            <div style="font-size: 0.85rem; color: #dc3545; font-weight: bold;">
-              $<%= (d.monto || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-            </div>
-          </div>
-          <% }); %>
-        </div>
-        <% } %>
-
-        <!-- PRÓXIMAS SEMANAS -->
-        <% if (deudasPorUrgencia.urgentes.length > 0) { %>
-        <div style="margin-top: 1rem; padding: 0.75rem; background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 4px;">
-          <div style="font-weight: bold; color: #f59e0b; font-size: 0.9rem; margin-bottom: 0.5rem;">
-            🟡 PRÓXIMAS SEMANAS:
-          </div>
-          <% deudasPorUrgencia.urgentes.slice(0, 3).forEach(d => { %>
-          <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(245, 158, 11, 0.05); border-radius: 3px;">
-            <div style="font-size: 0.85rem; font-weight: 600;">
-              <%= d.concepto %> <span style="color: #999; font-size: 0.75rem;">(en <%= d.diasHasta %> días)</span>
-            </div>
-            <div style="font-size: 0.85rem; color: #f59e0b; font-weight: bold;">
-              $<%= (d.monto || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-            </div>
-          </div>
-          <% }); %>
-        </div>
-        <% } %>
-
-        <!-- LARGO PLAZO -->
-        <% if (deudasPorUrgencia.largoPlazo.length > 0) { %>
-        <div style="margin-top: 1rem; padding: 0.75rem; background: #f3f4f6; border-left: 3px solid #9ca3af; border-radius: 4px;">
-          <div style="font-weight: bold; color: #6b7280; font-size: 0.9rem; margin-bottom: 0.5rem;">
-            ⏳ LARGO PLAZO (> 2 semanas):
-          </div>
-          <div style="font-size: 0.85rem; color: #6b7280;">
-            <%= deudasPorUrgencia.largoPlazo.length %> deuda(s) por un total de
-            <strong>$<%= deudasPorUrgencia.largoPlazo.reduce((s, d) => s + (d.monto || 0), 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></strong>
-          </div>
-        </div>
-        <% } %>
-
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <small style="color: #6b7280;">Total adeudado</small>
-              <div style="font-size: 1.3rem; font-weight: 700; color: #dc3545;">
-                $<%= deudaEmpresa.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-              </div>
-            </div>
-            <a href="/deudas" class="btn btn-sm btn-outline-warning">
-              <i class="bi bi-arrow-right"></i> Gestionar
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- GASTOS PENDIENTES -->
-    <% if (gastos.pendientes.c > 0 || gastos.fijos.c > 0) { %>
-    <div class="col-md-6">
-      <div class="card-minimal">
-        <div class="card-header">💸 Gastos Pendientes</div>
-        <div class="row g-3 mt-3">
-          <% if (gastos.pendientes.c > 0) { %>
-          <div class="col-6">
-            <div style="text-align: center; padding: 1rem; background: #ffebee; border-radius: 8px;">
-              <div style="font-size: 1.5rem; font-weight: 700; color: #c62828;">
-                <%= gastos.pendientes.c %>
-              </div>
-              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Por Pagar</div>
-              <div style="color: #dc3545; font-weight: bold; font-size: 0.9rem;">
-                $<%= gastos.pendientes.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-              </div>
-            </div>
-          </div>
-          <% } %>
-
-          <% if (gastos.fijos.c > 0) { %>
-          <div class="col-6">
-            <div style="text-align: center; padding: 1rem; background: #f3e5f5; border-radius: 8px;">
-              <div style="font-size: 1.5rem; font-weight: 700; color: #6a1b9a;">
-                <%= gastos.fijos.c %>
-              </div>
-              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Gastos Fijos</div>
-              <div style="color: #9c27b0; font-weight: bold; font-size: 0.9rem;">
-                $<%= gastos.fijos.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-              </div>
-            </div>
-          </div>
-          <% } %>
-        </div>
-        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-              <small style="color: #6b7280;">Total pendiente</small>
-              <div style="font-size: 1.5rem; font-weight: 700; color: #9c27b0;">
-                $<%= (gastos.pendientes.total + gastos.fijos.total).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-              </div>
-            </div>
-            <a href="/gastos" class="btn btn-sm btn-outline-danger">
-              <i class="bi bi-arrow-right"></i> Ver gastos
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <% } %>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       PRÓXIMOS VENCIMIENTOS
-       ════════════════════════════════════════════════════════════════ -->
-  <% if (proximosVencimientos && proximosVencimientos.length > 0) { %>
-  <div class="card-minimal">
-    <div class="card-header">Próximos 5 Vencimientos</div>
-    <div class="table-responsive mt-3">
-      <table class="table-minimal">
-        <thead>
-          <tr>
-            <th>Concepto</th>
-            <th>Fecha</th>
-            <th>Monto</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% proximosVencimientos.forEach(v => { %>
-          <% const prioridad = v.prioridad || { clase: 'badge-default', label: 'Sin prioridad' }; %>
-          <tr>
-            <td><strong><%= v.concepto %></strong></td>
-            <td><%= new Date(v.fecha_str || v.fecha).toLocaleDateString('es-AR') %></td>
-            <td>$<%= v.monto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></td>
-            <td>
-              <span class="badge-minimal <%= prioridad.clase %>">
-                <%= prioridad.label %>
-              </span>
             </td>
           </tr>
           <% }); %>
@@ -471,32 +86,380 @@
   </div>
   <% } %>
 
+  <!-- ════════════════════════════════════════════════════════════════
+       KPI STRIP - 4 MÉTRICAS PRINCIPALES
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="kpi-strip">
+    <!-- INGRESOS ESTE MES -->
+    <div class="kpi-item">
+      <div class="kpi-label">Ingresos Mes</div>
+      <div class="kpi-value" style="color: #10b981;">
+        $<%= ingresosMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <% if (cambioIngresos >= 0) { %>
+        <div class="kpi-change" style="color: #10b981;">↑ <%= cambioIngresos.toFixed(0) %>% vs mes anterior</div>
+      <% } else { %>
+        <div class="kpi-change" style="color: #ef4444;">↓ <%= Math.abs(cambioIngresos).toFixed(0) %>% vs mes anterior</div>
+      <% } %>
+    </div>
+
+    <!-- GASTOS ESTE MES -->
+    <div class="kpi-item">
+      <div class="kpi-label">Gastos Mes</div>
+      <div class="kpi-value" style="color: #ef4444;">
+        $<%= gastosTotalMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <% if (cambioGastos >= 0) { %>
+        <div class="kpi-change" style="color: #ef4444;">↑ <%= cambioGastos.toFixed(0) %>% vs mes anterior</div>
+      <% } else { %>
+        <div class="kpi-change" style="color: #10b981;">↓ <%= Math.abs(cambioGastos).toFixed(0) %>% vs mes anterior</div>
+      <% } %>
+    </div>
+
+    <!-- SALDO NETO -->
+    <div class="kpi-item">
+      <div class="kpi-label">Saldo Neto</div>
+      <div class="kpi-value" style="color: <%= saldoNeto >= 0 ? '#10b981' : '#ef4444' %>;">
+        $<%= saldoNeto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-change">
+        <%= (((saldoNeto / ingresosMes) * 100) || 0).toFixed(0) %>% margen neto
+      </div>
+    </div>
+
+    <!-- PEDIDOS ACTIVOS -->
+    <div class="kpi-item">
+      <div class="kpi-label">Pedidos Activos</div>
+      <div class="kpi-value" style="color: #0ea5e9;">
+        <%= (pendientes + en_produccion + listos) %>
+      </div>
+      <div class="kpi-change">
+        <%= pendientes %> pend. + <%= en_produccion %> prod. + <%= listos %> listos
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       ESTADO OPERATIVO DEL DÍA
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-count">📋</span>
+      <div style="flex: 1;">
+        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">Pendientes</div>
+        <div class="stat-count" style="margin: 0;"><%= pendientes %></div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-count warning">⚙️</span>
+      <div style="flex: 1;">
+        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">En Producción</div>
+        <div class="stat-count warning" style="margin: 0;"><%= en_produccion %></div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-count success">✅</span>
+      <div style="flex: 1;">
+        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">Listos</div>
+        <div class="stat-count success" style="margin: 0;"><%= listos %></div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <span class="stat-count muted">📦</span>
+      <div style="flex: 1;">
+        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">Entregados</div>
+        <div class="stat-count muted" style="margin: 0;"><%= entregados %></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       DOS COLUMNAS: ÚLTIMOS PEDIDOS + STOCK/VENCIMIENTOS
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="row g-4 mb-5">
+    <!-- COLUMNA IZQUIERDA: ÚLTIMOS PEDIDOS -->
+    <div class="col-lg-7">
+      <div class="card-minimal">
+        <div class="card-header">
+          <i class="bi bi-list-ul"></i> Últimos 10 Pedidos
+        </div>
+        <% if (ultimosPedidos && ultimosPedidos.length > 0) { %>
+        <div class="table-responsive">
+          <table class="table-minimal">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Monto</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% ultimosPedidos.forEach(ped => { %>
+              <tr style="cursor: pointer;" onclick="location.href='/pedidos/detalle/<%= ped.id %>';">
+                <td><a href="/pedidos/detalle/<%= ped.id %>" style="color: #2563eb; font-weight: 600;">#<%= ped.id %></a></td>
+                <td><%= ped.cliente_nombre || '(sin nombre)' %></td>
+                <td>$<%= (ped.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+                <td>
+                  <%
+                    let badgeColor = 'secondary';
+                    if (ped.estado === 'ENTREGADO') badgeColor = 'success';
+                    if (ped.estado === 'LISTO') badgeColor = 'success';
+                    if (ped.estado === 'EN_PRODUCCION') badgeColor = 'warning';
+                  %>
+                  <span class="badge bg-<%= badgeColor %>"><%= ped.estado.replace('_', ' ') %></span>
+                </td>
+                <td style="font-size: 0.85rem; color: #9ca3af;">
+                  <%= new Date(ped.fecha).toLocaleDateString('es-AR') %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <% } else { %>
+        <div style="padding: 2rem; text-align: center; color: #9ca3af;">
+          No hay pedidos registrados
+        </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: STOCK CRÍTICO + PRÓXIMOS VENCIMIENTOS -->
+    <div class="col-lg-5">
+      <!-- STOCK CRÍTICO -->
+      <div class="card-minimal mb-4">
+        <div class="card-header">
+          <i class="bi bi-exclamation-triangle"></i> Stock Crítico
+        </div>
+        <%
+          let stockEnCero = [];
+          let stockCritico = [];
+          if (stockBajo && Array.isArray(stockBajo)) {
+            stockEnCero = stockBajo.filter(s => s.cantidad <= 0);
+            stockCritico = stockBajo.filter(s => s.cantidad > 0 && s.cantidad <= (s.stock_minimo || 5));
+          }
+        %>
+        <% if (stockEnCero.length > 0 || stockCritico.length > 0) { %>
+        <div style="padding: 1rem;">
+          <% if (stockEnCero.length > 0) { %>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">🔴 Sin Stock (<%= stockEnCero.length %>)</div>
+            <ul style="margin: 0; padding-left: 1.25rem; list-style: disc;">
+              <% stockEnCero.slice(0, 5).forEach(item => { %>
+              <li style="color: #6b7280; font-size: 0.875rem;">
+                <strong><%= item.nombre %></strong>
+              </li>
+              <% }); %>
+            </ul>
+          </div>
+          <% } %>
+          <% if (stockCritico.length > 0) { %>
+          <div>
+            <div style="font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem;">🟡 Bajo Stock (<%= stockCritico.length %>)</div>
+            <ul style="margin: 0; padding-left: 1.25rem; list-style: disc;">
+              <% stockCritico.slice(0, 5).forEach(item => { %>
+              <li style="color: #6b7280; font-size: 0.875rem;">
+                <strong><%= item.nombre %></strong> — <%= item.cantidad %> / <%= item.stock_minimo %>
+              </li>
+              <% }); %>
+            </ul>
+          </div>
+          <% } %>
+        </div>
+        <% } else { %>
+        <div style="padding: 1.5rem; text-align: center; color: #10b981; font-weight: 600;">
+          ✅ Todo en orden
+        </div>
+        <% } %>
+      </div>
+
+      <!-- PRÓXIMOS VENCIMIENTOS (5 DÍAS) -->
+      <div class="card-minimal">
+        <div class="card-header">
+          <i class="bi bi-calendar-event"></i> Próximos 7 Días
+        </div>
+        <% if (proximos7Dias && proximos7Dias.length > 0) { %>
+        <div style="max-height: 300px; overflow-y: auto;">
+          <% proximos7Dias.slice(0, 5).forEach(item => { %>
+          <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">
+            <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem;">
+              <div style="flex: 1;">
+                <div style="font-size: 0.85rem; font-weight: 600; color: #1f2937;">
+                  <%= item.concepto %>
+                </div>
+                <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
+                  <%= item.fecha_str %>
+                </div>
+              </div>
+              <div style="text-align: right; white-space: nowrap;">
+                <div style="font-weight: 600; color: #1f2937;">
+                  $<%= item.monto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+                </div>
+                <div style="font-size: 0.7rem; color: #9ca3af;">
+                  <% if (item.diasHasta <= 0) { %>
+                    <span style="color: #ef4444;">🔴 VENCIDO</span>
+                  <% } else if (item.diasHasta <= 3) { %>
+                    <span style="color: #f59e0b;">🟡 <%= item.diasHasta %> días</span>
+                  <% } else { %>
+                    <span>📅 <%= item.diasHasta %> días</span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </div>
+          <% }); %>
+        </div>
+        <% } else { %>
+        <div style="padding: 1.5rem; text-align: center; color: #10b981; font-weight: 600;">
+          ✅ Nada próximo
+        </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       2 CHARTS - INGRESOS + ESTADOS
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="row g-4 mb-5">
+    <!-- CHART INGRESOS ÚLTIMOS 7 DÍAS -->
+    <div class="col-lg-6">
+      <div class="card-minimal">
+        <div class="card-header">
+          <i class="bi bi-graph-up"></i> Ingresos Últimos 7 Días
+        </div>
+        <div style="padding: 1.5rem; position: relative; height: 300px;">
+          <canvas id="chartIngreso7dias" style="max-height: 250px;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART ESTADOS DE PEDIDOS -->
+    <div class="col-lg-6">
+      <div class="card-minimal">
+        <div class="card-header">
+          <i class="bi bi-pie-chart"></i> Estados de Pedidos
+        </div>
+        <div style="padding: 1.5rem; position: relative; height: 300px;">
+          <canvas id="chartEstados" style="max-height: 250px;"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       FALLBACK PARA NO-ADMIN
+       ════════════════════════════════════════════════════════════════ -->
   <% } else { %>
-  <!-- USUARIO NO ADMIN -->
-  <div class="alert-minimal alert-info-minimal">
-    <i class="bi bi-info-circle"></i>
-    <div>
-      <strong>Acceso limitado</strong><br>
-      El dashboard está disponible solo para administradores.
+  <div class="alert alert-info alert-minimal mt-5">
+    <div style="text-align: center; padding: 2rem;">
+      <i class="bi bi-info-circle" style="font-size: 2rem; color: #0284c7;"></i>
+      <p style="margin: 1rem 0 0 0; color: #0c2d6b;">
+        El dashboard está disponible solo para administradores.
+      </p>
     </div>
   </div>
   <% } %>
 </div>
 
-<!-- SCRIPT PARA CARGAR SEMÁFORO -->
+<!-- ════════════════════════════════════════════════════════════════
+     SCRIPTS - CHART.JS + SEMAFORO
+     ════════════════════════════════════════════════════════════════ -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    const res = await fetch('/api/semaforo');
-    const data = await res.json();
-    if (data.mostrar && document.getElementById('semaforo-dot')) {
-      document.getElementById('semaforo-dot').style.background =
-        data.color === 'success' ? '#10b981' :
-        data.color === 'warning' ? '#f59e0b' :
-        '#ef4444';
-    }
-  } catch (e) {
-    console.error('Error cargando semáforo:', e);
+  // ═══════════════════════════════════════════════════════════════════
+  // CHART 1: INGRESOS ÚLTIMOS 7 DÍAS
+  // ═══════════════════════════════════════════════════════════════════
+  const ctx1 = document.getElementById('chartIngreso7dias');
+  if (ctx1) {
+    new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: <%= graficoLabels %>,
+        datasets: [{
+          label: 'Ingresos',
+          data: <%= graficoDatos %>,
+          backgroundColor: [
+            '#10b981', '#10b981', '#10b981', '#10b981',
+            '#10b981', '#10b981', '#10b981'
+          ],
+          borderColor: '#059669',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return '$' + value.toLocaleString();
+              }
+            }
+          }
+        }
+      }
+    });
   }
-});
+
+  // ═══════════════════════════════════════════════════════════════════
+  // CHART 2: ESTADOS DE PEDIDOS
+  // ═══════════════════════════════════════════════════════════════════
+  const ctx2 = document.getElementById('chartEstados');
+  if (ctx2) {
+    new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: <%= estadoLabels %>,
+        datasets: [{
+          data: <%= estadoDatos %>,
+          backgroundColor: [
+            '#ef4444',      // PENDIENTE - rojo
+            '#f59e0b',      // EN_PRODUCCION - ámbar
+            '#10b981',      // LISTO - verde
+            '#9ca3af'       // ENTREGADO - gris
+          ],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 15,
+              font: { size: 12 }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // SEMAFORO - Cargar estado financiero
+  // ═══════════════════════════════════════════════════════════════════
+  fetch('/api/semaforo', { credentials: 'same-origin' })
+    .then(res => res.json())
+    .then(data => {
+      const dot = document.getElementById('semaforo-dot');
+      if (dot) {
+        dot.style.background = data.color === 'success' ? '#10b981' :
+                              data.color === 'warning' ? '#f59e0b' :
+                              '#ef4444';
+      }
+    })
+    .catch(err => console.error('Error semaforo:', err));
 </script>

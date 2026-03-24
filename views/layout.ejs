@@ -868,26 +868,26 @@ le]').setAttribute('title', data.tooltip);
     // Inicializar dark mode al cargar
     document.addEventListener('DOMContentLoaded', initDarkMode);
 
-    // Botón Gasto Rápido - Event Listener Directo
-    function setupGastoRapidoButton() {
+    // Botón Gasto Rápido - Setup Directo
+    console.log('🔧 Inicializando Gasto Rápido...');
+
+    // Intenta inmediatamente
+    setTimeout(() => {
       const btnGastoRapido = document.getElementById('btnGastoRapido');
+      console.log('Búsqueda 1 - Button encontrado?', !!btnGastoRapido);
       if (btnGastoRapido) {
-        btnGastoRapido.addEventListener('click', function(e) {
+        btnGastoRapido.onclick = function(e) {
           e.preventDefault();
-          e.stopPropagation();
-          console.log('✅ Botón Gasto Rápido clickeado');
+          console.log('✅ Botón Gasto Rápido CLICKEADO (onclick)');
           if (typeof window.abrirGastoRapido === 'function') {
             window.abrirGastoRapido();
           } else {
-            console.error('❌ Función abrirGastoRapido no encontrada');
+            console.error('❌ abrirGastoRapido no existe');
+            alert('Error: La función de gasto rápido no cargó correctamente');
           }
-        });
+        };
       }
-    }
-
-    // Intenta agregar listener inmediatamente y también en DOMContentLoaded
-    setupGastoRapidoButton();
-    document.addEventListener('DOMContentLoaded', setupGastoRapidoButton);
+    }, 100);
 
     // ════════════════════════════════════════════════════════════════
     // SIDEBAR FLOTANTE

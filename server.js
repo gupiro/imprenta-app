@@ -9,7 +9,7 @@ const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
 const rateLimit      = require('express-rate-limit');
-const csrf           = require('csurf');
+// const csrf           = require('csurf'); // TODO: Reactivar después de testing local
 
 // Swagger UI deshabilitado (archivo openapi.yaml removido)
 // const swaggerUi       = require('swagger-ui-express');
@@ -55,10 +55,10 @@ app.use(session({
 }));
 app.use(flash());
 
-// CSRF Protection - SOLUCIÓN FINAL ROBUSTA
-// Token en sesión, accesible mediante req.csrfToken()
-const csrfProtection = csrf();
-app.use(csrfProtection);
+// CSRF Protection - TEMPORALMENTE DESACTIVADO PARA TESTING LOCAL
+// TODO: Reactivar después de verificar que el resto de la app funciona
+// const csrfProtection = csrf();
+// app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════
 // VARIABLES GLOBALES PARA VISTAS
@@ -70,13 +70,8 @@ app.use((req, res, next) => {
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
 
-    // CSRF Token para vistas
-    try {
-      res.locals.csrfToken = req.csrfToken();
-    } catch (err) {
-      res.locals.csrfToken = '';
-      console.warn('CSRF token generation failed:', err.message);
-    }
+    // CSRF Token - placeholder mientras esté desactivado
+    res.locals.csrfToken = '';
 
     res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
     next();

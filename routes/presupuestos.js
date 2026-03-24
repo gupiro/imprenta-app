@@ -173,43 +173,44 @@ module.exports = (db) => {
   // ✅ Crear pedido desde presupuesto
   router.post('/:id/crear-pedido', checkPermission, async (req, res) => {
     const presupuestoId = req.params.id;
-    
+    const isAjax = req.xhr || req.headers.accept?.includes('application/json');
+
     try {
-      const presupuesto = await db.get('SELECT * FROM presupuestos WHERE id = ?', presupuestoId);
+      const presupuesto = await db.get('SELECT * FROM presupuestos WHERE id = ?', [presupuestoId]);
       if (!presupuesto) {
+        if (isAjax) return res.json({ ok: false, error: 'Presupuesto no encontrado' });
         req.flash('error', 'Presupuesto no encontrado');
         return res.redirect('/presupuestos');
       }
 
       if (presupuesto.usado) {
+        if (isAjax) return res.json({ ok: false, error: 'Este presupuesto ya fue convertido a pedido' });
         req.flash('error', 'Este presupuesto ya fue convertido a pedido');
         return res.redirect(`/presupuestos/${presupuestoId}`);
       }
 
-      const items = await db.all('SELECT * FROM presupuesto_items WHERE presupuesto_id = ?', presupuestoId);
-      
+      const items = await db.all('SELECT * FROM presupuesto_items WHERE presupuesto_id = ?', [presupuestoId]);
+
       // Crear pedido
       const fecha = new Date().toISOString().slice(0, 19).replace('T', ' ');
       let clientId = presupuesto.cliente_id;
-      
+
       // Si no hay cliente_id, crear uno temporal con los datos del presupuesto
       if (!clientId && presupuesto.nombre_cliente) {
-        const existente = await db.get('SELECT id FROM clients WHERE name = ?', presupuesto.nombre_cliente);
+        const existente = await db.get('SELECT id FROM clients WHERE name = ?', [presupuesto.nombre_cliente]);
         if (existente) {
           clientId = existente.id;
         } else {
           const result = await db.run(
             'INSERT INTO clients (name, phone, email, address) VALUES (?, ?, ?, ?)',
-            presupuesto.nombre_cliente,
-            presupuesto.telefono_cliente || '',
-            presupuesto.email_cliente || '',
-            ''
+            [presupuesto.nombre_cliente, presupuesto.telefono_cliente || '', presupuesto.email_cliente || '', '']
           );
           clientId = result.lastID;
         }
       }
 
       if (!clientId) {
+        if (isAjax) return res.json({ ok: false, error: 'No se pudo determinar el cliente' });
         req.flash('error', 'No se pudo determinar el cliente');
         return res.redirect(`/presupuestos/${presupuestoId}`);
       }
@@ -217,11 +218,7 @@ module.exports = (db) => {
       // Crear pedido
       const pedidoResult = await db.run(
         'INSERT INTO pedidos (client_id, precio, fecha, estado, presupuesto_id) VALUES (?, ?, ?, ?, ?)',
-        clientId,
-        presupuesto.precio_estimado,
-        fecha,
-        'PENDIENTE',
-        presupuestoId
+        [clientId, presupuesto.precio_estimado, fecha, 'PENDIENTE', presupuestoId]
       );
       const pedidoId = pedidoResult.lastID;
 
@@ -229,21 +226,24 @@ module.exports = (db) => {
       for (const item of items) {
         await db.run(
           'INSERT INTO productos (pedido_id, material, descuento, precio, descripcion) VALUES (?, ?, ?, ?, ?)',
-          pedidoId,
-          item.descripcion,
-          item.descuento_item || 0,
-          item.subtotal,
-          item.descripcion
+          [pedidoId, item.descripcion, item.descuento_item || 0, item.subtotal, item.descripcion]
         );
       }
 
       // Marcar presupuesto como convertido
-      await db.run('UPDATE presupuestos SET estado = "CONVERTIDO", usado = 1 WHERE id = ?', presupuestoId);
+      await db.run('UPDATE presupuestos SET estado = ?, usado = ? WHERE id = ?', ['CONVERTIDO', 1, presupuestoId]);
+
+      if (isAjax) {
+        return res.json({ ok: true, message: `Pedido #${pedidoId} creado exitosamente`, pedido_id: pedidoId });
+      }
 
       req.flash('success', `✅ Pedido #${pedidoId} creado desde presupuesto`);
       res.redirect(`/pedidos/detalle/${pedidoId}`);
     } catch (err) {
       console.error('Error al crear pedido desde presupuesto:', err);
+      if (isAjax) {
+        return res.json({ ok: false, error: err.message });
+      }
       req.flash('error', 'Error: ' + err.message);
       res.redirect(`/presupuestos/${presupuestoId}`);
     }

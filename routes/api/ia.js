@@ -5,6 +5,7 @@
 
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
+const Groq = require('groq-sdk');
 
 module.exports = (db) => {
     const router = express.Router();
@@ -14,8 +15,16 @@ module.exports = (db) => {
         apiKey: process.env.ANTHROPIC_API_KEY || ''
     });
 
-    // Verificar que la API key esté configurada
+    // Inicializar cliente de Groq
+    const groqClient = new Groq({
+        apiKey: process.env.GROQ_API_KEY || ''
+    });
+
+    // Verificar que la API key de Anthropic esté configurada
     const apiKeyConfigured = !!process.env.ANTHROPIC_API_KEY?.trim();
+
+    // Verificar que la API key de Groq esté configurada
+    const groqKeyConfigured = !!process.env.GROQ_API_KEY?.trim();
 
     // Categorías válidas de gastos (basadas en gastos.js)
     const CATEGORIAS_VALIDAS = [
@@ -933,10 +942,10 @@ Responde SOLO con el nombre de la categoría más apropiada, sin explicación ad
      */
     router.post('/consejo-tesoreria', async (req, res) => {
         try {
-            if (!apiKeyConfigured) {
+            if (!groqKeyConfigured) {
                 return res.status(400).json({
                     success: false,
-                    error: 'API key de Anthropic no configurada'
+                    error: 'API key de Groq no configurada. Por favor, configura GROQ_API_KEY en las variables de entorno.'
                 });
             }
 
@@ -1076,9 +1085,10 @@ IMPORTANTE:
 - Sé específico con montos y fechas
 - Evita tecnicismos innecesarios`;
 
-            const message = await client.messages.create({
-                model: 'claude-haiku-4-5-20251001',
+            const message = await groqClient.chat.completions.create({
+                model: 'mixtral-8x7b-32768',
                 max_tokens: 250,
+                temperature: 0.7,
                 messages: [
                     {
                         role: 'user',
@@ -1087,7 +1097,7 @@ IMPORTANTE:
                 ]
             });
 
-            const consejo = message.content[0]?.text?.trim() || 'No se pudo generar consejo';
+            const consejo = message.choices[0]?.message?.content?.trim() || 'No se pudo generar consejo';
 
             return res.json({
                 success: true,

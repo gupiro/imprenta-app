@@ -38,9 +38,9 @@
 </div>
 
 <!-- BOTONES DE ACCIÓN (sin imprimir) -->
-<div class="d-flex justify-content-between align-items-center mb-4 no-print">
-  <h4>Detalle del Presupuesto</h4>
-  <div class="d-flex gap-2">
+<div class="d-flex justify-content-between align-items-center mb-4 no-print flex-wrap gap-2">
+  <h4 class="mb-0">Detalle del Presupuesto</h4>
+  <div class="d-flex gap-2 flex-wrap">
     <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
       🖨️ Imprimir / PDF
     </button>
@@ -56,6 +56,11 @@
       <a href="https://wa.me/549<%= tel %>?text=<%= msg %>" target="_blank" class="btn btn-success btn-sm">
         📲 WhatsApp
       </a>
+    <% } %>
+    <% if (!presupuesto.usado) { %>
+      <button onclick="crearPedidoDesdePresupuesto(<%= presupuesto.id %>)" class="btn btn-primary btn-sm">
+        📦 Crear Pedido
+      </button>
     <% } %>
   </div>
 </div>
@@ -78,7 +83,6 @@
       </div>
       <div class="col-md-6 text-end">
         <form action="/presupuestos/<%= presupuesto.id %>/cambiar-estado" method="POST" class="mb-3">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <label class="form-label fw-bold">Estado:</label>
           <div class="d-flex gap-2">
             <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -193,14 +197,12 @@
       ✏️ Editar
     </a>
     <form action="/presupuestos/<%= presupuesto.id %>/crear-pedido" method="POST" class="d-inline">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button type="submit" class="btn btn-primary" onclick="return confirm('¿Crear pedido desde este presupuesto?');">
         ✅ Crear Pedido
       </button>
     </form>
   <% } %>
   <form action="/presupuestos/<%= presupuesto.id %>/eliminar" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este presupuesto?');">
-    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button type="submit" class="btn btn-outline-danger">🗑️ Eliminar</button>
   </form>
 </div>
@@ -360,6 +362,29 @@
       document.getElementById('estimacionError').textContent = error.message || 'Error al estimar ganancia';
       document.getElementById('estimacionError').style.display = 'block';
       document.getElementById('estimacionCargando').style.display = 'none';
+    }
+  }
+
+  // Crear pedido desde presupuesto
+  function crearPedidoDesdePresupuesto(presupuestoId) {
+    if (confirm('¿Crear pedido desde este presupuesto?\n\nSe copiarán todos los productos y precios.')) {
+      fetch(`/presupuestos/${presupuestoId}/crear-pedido`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          alert(`✅ Pedido #${data.pedido_id} creado exitosamente`);
+          location.href = `/pedidos/detalle/${data.pedido_id}`;
+        } else {
+          alert(`❌ Error: ${data.error}`);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert('❌ Error al crear el pedido');
+      });
     }
   }
 </script>

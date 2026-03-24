@@ -868,6 +868,18 @@ le]').setAttribute('title', data.tooltip);
     // Inicializar dark mode al cargar
     document.addEventListener('DOMContentLoaded', initDarkMode);
 
+    // Botón Gasto Rápido - Event Listener
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnGasto = document.querySelector('.btn-gasto-rapido');
+      if (btnGasto) {
+        btnGasto.addEventListener('click', (e) => {
+          e.preventDefault();
+          console.log('✅ Botón Gasto Rápido clickeado');
+          abrirGastoRapido();
+        });
+      }
+    });
+
     // ════════════════════════════════════════════════════════════════
     // SIDEBAR FLOTANTE
     // ════════════════════════════════════════════════════════════════

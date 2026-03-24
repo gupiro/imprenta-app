@@ -73,19 +73,30 @@
                       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                         <!-- WhatsApp -->
                         <% if (deudor.phone) { %>
-                          <button class="btn btn-sm btn-success" onclick="abrirWhatsApp('<%= deudor.phone.replace(/\D/g, '') %>', '<%= deudor.name %>', <%= deudor.deuda_total %>, <%= JSON.stringify(deudor.pedidos).replace(/'/g, "\\'") %>)" title="Enviar por WhatsApp">
+                          <button class="btn btn-sm btn-success btn-whatsapp"
+                                  data-cliente-id="<%= deudor.id %>"
+                                  data-phone="<%= deudor.phone.replace(/\D/g, '') %>"
+                                  data-nombre="<%= deudor.name %>"
+                                  data-deuda="<%= deudor.deuda_total %>"
+                                  data-pedidos='<%= JSON.stringify(deudor.pedidos) %>'
+                                  title="Enviar por WhatsApp">
                             <i class="bi bi-whatsapp"></i>
                           </button>
                         <% } %>
 
                         <!-- Pagar -->
-                        <button class="btn btn-sm btn-primary" onclick="abrirModalPago('<%= deudor.id %>', '<%= deudor.name %>', <%= deudor.deuda_total %>, '<%= JSON.stringify(deudor.pedidos).replace(/'/g, "\\'") %>')" title="Registrar pago">
+                        <button class="btn btn-sm btn-primary btn-pagar-deudor"
+                                data-cliente-id="<%= deudor.id %>"
+                                data-nombre="<%= deudor.name %>"
+                                data-deuda="<%= deudor.deuda_total %>"
+                                data-pedidos='<%= JSON.stringify(deudor.pedidos) %>'
+                                title="Registrar pago">
                           <i class="bi bi-cash-coin"></i> Pagar
                         </button>
 
-                        <!-- Ver Pedidos -->
-                        <a href="/pedidos/pendientes?cliente_id=<%= deudor.id %>" class="btn btn-sm btn-outline-secondary" title="Ver pedidos del cliente">
-                          <i class="bi bi-link-45deg"></i>
+                        <!-- Ver Detalles -->
+                        <a href="/pedidos?cliente_id=<%= deudor.id %>" class="btn btn-sm btn-outline-secondary" title="Ver todos los pedidos del cliente">
+                          <i class="bi bi-list"></i>
                         </a>
                       </div>
                     </td>
@@ -96,6 +107,27 @@
           </div>
         <% } %>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- BOTONES DE ORDENAMIENTO -->
+<div class="row mt-4 mb-3">
+  <div class="col-12">
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <span style="font-size: 0.85rem; font-weight: 700; color: #6b7280; align-self: center;">Ordenar por:</span>
+      <button class="btn btn-sm btn-outline-secondary btn-sort" data-sort="deuda-desc">
+        💰 Mayor Deuda
+      </button>
+      <button class="btn btn-sm btn-outline-secondary btn-sort" data-sort="deuda-asc">
+        💰 Menor Deuda
+      </button>
+      <button class="btn btn-sm btn-outline-secondary btn-sort" data-sort="fecha-desc">
+        📅 Más Reciente
+      </button>
+      <button class="btn btn-sm btn-outline-secondary btn-sort" data-sort="fecha-asc">
+        📅 Más Antiguo
+      </button>
     </div>
   </div>
 </div>
@@ -333,12 +365,13 @@
 
   // Enviar por WhatsApp
   window.abrirWhatsApp = function(telefono, nombre, deudaTotal, pedidosJSON) {
-    const pedidos = JSON.parse(pedidosJSON);
-    const listaPedidos = pedidos
-      .map(p => `• Pedido #${p.id} - ${p.detalle || '(sin detalle)'} → $${p.monto_restante.toLocaleString('es-AR', {minimumFractionDigits: 2})}`)
-      .join('\n');
+    try {
+      const pedidos = Array.isArray(pedidosJSON) ? pedidosJSON : JSON.parse(pedidosJSON);
+      const listaPedidos = pedidos
+        .map(p => `• Pedido #${p.id} - ${p.detalle || '(sin detalle)'} → $${p.monto_restante.toLocaleString('es-AR', {minimumFractionDigits: 2})}`)
+        .join('\n');
 
-    const mensaje = `Hola ${nombre}!
+      const mensaje = `Hola ${nombre}!
 
 Te escribimos desde *Imprenta El Gráfico* de Orán, Salta.
 
@@ -350,7 +383,84 @@ ${listaPedidos}
 Podés abonar en el local o por transferencia.
 ¡Gracias! 🙏`;
 
-    const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, '_blank');
+      const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+      window.open(url, '_blank');
+    } catch (err) {
+      console.error('Error abriendo WhatsApp:', err);
+      alert('Error al abrir WhatsApp');
+    }
   };
+
+  // EVENT LISTENERS para botones de WhatsApp y Pagar
+  document.addEventListener('DOMContentLoaded', () => {
+    // Botones WhatsApp
+    document.querySelectorAll('.btn-whatsapp').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const phone = this.dataset.phone;
+        const nombre = this.dataset.nombre;
+        const deuda = parseFloat(this.dataset.deuda);
+        const pedidos = JSON.parse(this.dataset.pedidos);
+        abrirWhatsApp(phone, nombre, deuda, pedidos);
+      });
+    });
+
+    // Botones Pagar
+    document.querySelectorAll('.btn-pagar-deudor').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const clienteId = this.dataset.clienteId;
+        const nombre = this.dataset.nombre;
+        const deuda = parseFloat(this.dataset.deuda);
+        const pedidos = JSON.parse(this.dataset.pedidos);
+        abrirModalPago(clienteId, nombre, deuda, pedidos);
+      });
+    });
+
+    // Botones de sorting
+    document.querySelectorAll('.btn-sort').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const sortType = this.dataset.sort;
+        ordenarTabla(sortType);
+
+        // Actualizar botones activos
+        document.querySelectorAll('.btn-sort').forEach(b => {
+          b.classList.remove('active', 'btn-secondary');
+          b.classList.add('btn-outline-secondary');
+        });
+        this.classList.remove('btn-outline-secondary');
+        this.classList.add('active', 'btn-secondary');
+      });
+    });
+  });
+
+  // FUNCIÓN DE ORDENAMIENTO
+  function ordenarTabla(sortType) {
+    const tbody = document.querySelector('table tbody');
+    if (!tbody) return;
+
+    const filas = Array.from(tbody.querySelectorAll('tr'));
+
+    filas.sort((a, b) => {
+      let aValue, bValue;
+
+      if (sortType === 'deuda-desc' || sortType === 'deuda-asc') {
+        // Ordenar por deuda (tercera td contiene el monto)
+        aValue = parseFloat(a.querySelectorAll('td')[2].textContent.replace(/[^0-9.-]/g, ''));
+        bValue = parseFloat(b.querySelectorAll('td')[2].textContent.replace(/[^0-9.-]/g, ''));
+        return sortType === 'deuda-desc' ? bValue - aValue : aValue - bValue;
+      } else if (sortType === 'fecha-desc' || sortType === 'fecha-asc') {
+        // Ordenar por último pedido (última columna visible tiene el link de pedidos)
+        // Usamos data attribute si lo agregamos, o el primer cliente visible
+        const deudorSpan = a.querySelector('div > div:first-child');
+        aValue = deudorSpan ? deudorSpan.textContent : '';
+        bValue = b.querySelector('div > div:first-child') ? b.querySelector('div > div:first-child').textContent : '';
+        return sortType === 'fecha-desc' ? bValue.localeCompare(aValue) : aValue.localeCompare(bValue);
+      }
+      return 0;
+    });
+
+    filas.forEach(fila => tbody.appendChild(fila));
+  }
 </script>

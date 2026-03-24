@@ -8,7 +8,7 @@ const flash          = require('connect-flash');
 const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
-const rateLimit      = require('express-rate-limit');
+// const rateLimit      = require('express-rate-limit'); // DESHABILITADO PARA TESTING
 // const csrf           = require('csurf'); // TODO: Reactivar después de testing local
 
 // Swagger UI deshabilitado (archivo openapi.yaml removido)
@@ -372,15 +372,14 @@ async function startServer() {
     // ────────────────────────────────────────────────────────────────────
 
     // Rate limiting: máximo 5 intentos de login por 15 minutos
-    const loginLimiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutos
-        max: 5,                    // 5 intentos máximo
-        message: 'Demasiados intentos de login. Intenta más tarde.',
-        standardHeaders: true,
-        legacyHeaders: false,
-    });
-
-    // TEMPORALMENTE DESHABILITADO PARA TESTING
+    // RATE LIMITER DESHABILITADO PARA TESTING LOCAL
+    // const loginLimiter = rateLimit({
+    //     windowMs: 15 * 60 * 1000, // 15 minutos
+    //     max: 5,                    // 5 intentos máximo
+    //     message: 'Demasiados intentos de login. Intenta más tarde.',
+    //     standardHeaders: true,
+    //     legacyHeaders: false,
+    // });
     // app.post('/auth/login', loginLimiter);
     app.use('/auth', authRouterConfigured);
 

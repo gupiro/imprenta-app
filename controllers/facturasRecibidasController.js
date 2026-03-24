@@ -23,16 +23,22 @@ module.exports = (db) => {
   return {
     listar: async (req, res) => {
       try {
-        const periodo = req.query.periodo || obtenerFechaLocal().periodo;
+        const periodo = req.query.periodo || ''; // Sin período por defecto (mostrar todas)
         const estado = req.query.estado || 'todos';
 
         let query = `
           SELECT f.*, p.nombre as proveedor_nombre, p.cuit as proveedor_cuit
           FROM facturas_recibidas f
           LEFT JOIN proveedores p ON f.proveedor_id = p.id
-          WHERE f.activo = 1 AND f.periodo LIKE ?
+          WHERE f.activo = 1
         `;
-        const params = [`${periodo}%`];
+        const params = [];
+
+        // Si se especifica un período, filtrar por ese período
+        if (periodo && periodo.trim()) {
+          query += ' AND f.periodo LIKE ?';
+          params.push(`${periodo}%`);
+        }
 
         if (estado !== 'todos') {
           query += ' AND f.estado = ?';

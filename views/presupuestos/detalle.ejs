@@ -78,6 +78,7 @@
       </div>
       <div class="col-md-6 text-end">
         <form action="/presupuestos/<%= presupuesto.id %>/cambiar-estado" method="POST" class="mb-3">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <label class="form-label fw-bold">Estado:</label>
           <div class="d-flex gap-2">
             <select name="estado" class="form-select form-select-sm" onchange="this.form.submit()">
@@ -192,12 +193,14 @@
       ✏️ Editar
     </a>
     <form action="/presupuestos/<%= presupuesto.id %>/crear-pedido" method="POST" class="d-inline">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button type="submit" class="btn btn-primary" onclick="return confirm('¿Crear pedido desde este presupuesto?');">
         ✅ Crear Pedido
       </button>
     </form>
   <% } %>
   <form action="/presupuestos/<%= presupuesto.id %>/eliminar" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este presupuesto?');">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <button type="submit" class="btn btn-outline-danger">🗑️ Eliminar</button>
   </form>
 </div>

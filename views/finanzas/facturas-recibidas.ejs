@@ -126,10 +126,29 @@
                 <td>$<%= (f.monto_iva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
                 <td><strong>$<%= ((f.monto_neto || 0) + (f.monto_iva || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
                 <td>
-                  <% if (f.estado === 'pagada') { %>
-                    <span class="badge bg-success">✓ Pagada</span>
-                  <% } else { %>
-                    <span class="badge bg-warning">⏳ Pendiente</span>
+                  <%
+                    const montoTotal = (f.monto_neto || 0) + (f.monto_iva || 0);
+                    const montoPagado = f.monto_pagado || 0;
+                    const porcentajePagado = montoTotal > 0 ? Math.round((montoPagado / montoTotal) * 100) : 0;
+                    let badgeColor = 'bg-danger';
+                    let badgeText = '❌ Pendiente';
+                    if (f.estado === 'pagada') {
+                      badgeColor = 'bg-success';
+                      badgeText = '✓ Pagada';
+                    } else if (f.estado === 'parcial') {
+                      badgeColor = 'bg-warning';
+                      badgeText = '⏳ Parcial';
+                    }
+                  %>
+                  <span class="badge <%= badgeColor %>"><%= badgeText %></span>
+                  <% if (f.estado === 'parcial') { %>
+                    <br>
+                    <div style="margin-top: 0.5rem;">
+                      <small class="text-muted">$<%= montoPagado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %> / $<%= montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></small>
+                      <div class="progress" style="height: 6px; margin-top: 0.25rem;">
+                        <div class="progress-bar bg-warning" style="width: <%= porcentajePagado %>%;"></div>
+                      </div>
+                    </div>
                   <% } %>
                 </td>
                 <td>
@@ -161,64 +180,127 @@
         <h5 class="modal-title"><i class="bi bi-file-earmark-plus"></i> Nueva Factura Recibida</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-      <form action="/finanzas/facturas-recibidas/crear" method="POST">
+      <form action="/finanzas/facturas-recibidas/crear" method="POST" id="formNuevaFactura">
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">Tipo de Comprobante *</label>
-            <select name="tipo_comprobante" class="form-select" required>
-              <option value="">-- Seleccionar --</option>
-              <option value="FC">Factura C</option>
-              <option value="FE">Factura E</option>
-              <option value="ND">Nota de Débito</option>
-              <option value="NC">Nota de Crédito</option>
-              <option value="OTRO">Otro</option>
-            </select>
+          <!-- SECCIÓN 1: PROVEEDOR CON AUTOCOMPLETE -->
+          <div class="mb-4 p-3 bg-light rounded">
+            <label class="form-label fw-bold">🏢 Proveedor (Buscar o crear)</label>
+            <div class="input-group mb-2">
+              <input type="text" id="buscarProveedor" class="form-control" placeholder="Escribí nombre o CUIT...">
+              <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalNuevoProveedor" title="Agregar nuevo proveedor">
+                <i class="bi bi-plus"></i>
+              </button>
+            </div>
+            <div id="dropdownProveedores" class="dropdown-menu w-100" style="display: none; position: static; max-height: 200px; overflow-y: auto;">
+              <!-- Se llenan con JS -->
+            </div>
+            <input type="hidden" name="proveedor_id" id="proveedorIdHidden">
+            <small class="text-muted d-block mt-2">Seleccionar de la lista auto-llena CUIT, Razón Social e IVA</small>
           </div>
 
+          <!-- SECCIÓN 2: DATOS DEL COMPROBANTE -->
           <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Tipo de Comprobante *</label>
+              <select name="tipo_comprobante" id="tipoComprobante" class="form-select" required>
+                <option value="">-- Seleccionar --</option>
+                <optgroup label="Facturas">
+                  <option value="Factura A">Factura A (RI a RI)</option>
+                  <option value="Factura B">Factura B (a Consumidor Final)</option>
+                  <option value="Factura C">Factura C (Monotributista)</option>
+                </optgroup>
+                <optgroup label="Notas">
+                  <option value="Nota de Crédito A">Nota de Crédito A</option>
+                  <option value="Nota de Crédito B">Nota de Crédito B</option>
+                  <option value="Nota de Crédito C">Nota de Crédito C</option>
+                  <option value="Nota de Débito A">Nota de Débito A</option>
+                  <option value="Nota de Débito B">Nota de Débito B</option>
+                  <option value="Nota de Débito C">Nota de Débito C</option>
+                </optgroup>
+                <optgroup label="Otros">
+                  <option value="Recibo X">Recibo X</option>
+                  <option value="Ticket">Ticket</option>
+                </optgroup>
+              </select>
+            </div>
             <div class="col-md-6 mb-3">
               <label class="form-label fw-bold">Número de Comprobante *</label>
               <input type="text" name="numero_comprobante" class="form-control" placeholder="Ej: 0001-00012345" required>
             </div>
+          </div>
+
+          <div class="row">
             <div class="col-md-6 mb-3">
               <label class="form-label fw-bold">Fecha de Emisión *</label>
               <input type="date" name="fecha_emision" class="form-control" required>
             </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Vencimiento de Pago</label>
+              <input type="date" name="fecha_vencimiento_pago" class="form-control">
+            </div>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label fw-bold">Proveedor/Razón Social *</label>
-            <input type="text" name="razon_social" class="form-control" placeholder="Ej: Distribuidora ABC S.A." required>
-          </div>
-
+          <!-- SECCIÓN 3: DATOS DEL PROVEEDOR (llena desde select) -->
           <div class="row">
             <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">CUIT/CUIL Proveedor *</label>
+              <input type="text" name="cuit_proveedor" id="cuitProveedorInput" class="form-control" placeholder="Ej: 23-12345678-9" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Razón Social *</label>
+              <input type="text" name="razon_social" id="razonSocialInput" class="form-control" placeholder="Ej: Distribuidora ABC S.A." required>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 4: MONTOS -->
+          <div class="row">
+            <div class="col-md-4 mb-3">
               <label class="form-label fw-bold">Monto Neto (sin IVA) *</label>
-              <input type="number" name="monto_neto" class="form-control" step="0.01" required>
+              <input type="number" id="montoNeto" name="monto_neto" class="form-control" step="0.01" required onchange="calcularIVA()">
             </div>
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
               <label class="form-label fw-bold">Alícuota IVA (%)</label>
-              <input type="number" name="alicuota_iva" class="form-control" step="0.01" value="21">
+              <input type="number" id="alicuotaIva" name="alicuota_iva" class="form-control" step="0.01" value="21" onchange="calcularIVA()">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label class="form-label fw-bold">Monto IVA (auto)</label>
+              <input type="number" name="monto_iva" id="montoIvaInput" class="form-control" step="0.01" readonly style="background-color: #f0f0f0;">
             </div>
           </div>
 
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">Monto IVA</label>
-              <input type="number" name="monto_iva" class="form-control" step="0.01" placeholder="Auto-calcula si dejas vacío">
+          <!-- SECCIÓN 5: PAGO AL CREAR -->
+          <div class="mb-3 p-3 bg-info bg-opacity-10 rounded border border-info border-opacity-25">
+            <div class="form-check mb-2">
+              <input class="form-check-input" type="checkbox" id="registrarPagoCheckbox" onchange="togglePago()">
+              <label class="form-check-label fw-bold" for="registrarPagoCheckbox">
+                💸 Registrar pago al crear (parcial o total)
+              </label>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">Estado</label>
-              <select name="estado" class="form-select">
-                <option value="pendiente">⏳ Pendiente de Pago</option>
-                <option value="pagada">✓ Pagada</option>
-              </select>
+            <div id="seccionPago" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #0dcaf0;">
+              <small class="d-block mb-2 text-muted">Total a pagar: <strong id="totalFacturaLabel">$0.00</strong></small>
+              <div class="row">
+                <div class="col-md-6 mb-2">
+                  <label class="form-label small fw-bold">Monto a pagar ($)</label>
+                  <input type="number" name="pago_inicial" id="pagoInicial" class="form-control form-control-sm" step="0.01" min="0">
+                </div>
+                <div class="col-md-6 mb-2">
+                  <label class="form-label small fw-bold">Método de pago</label>
+                  <select name="metodo_pago_inicial" class="form-select form-select-sm">
+                    <option value="efectivo">💵 Efectivo</option>
+                    <option value="transferencia">🏦 Transferencia</option>
+                    <option value="tarjeta">💳 Tarjeta</option>
+                    <option value="cheque">📝 Cheque</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
+          <!-- SECCIÓN 6: NOTAS/OBSERVACIONES -->
           <div class="mb-3">
-            <label class="form-label fw-bold">Notas (opcional)</label>
-            <textarea name="notas" class="form-control" rows="2" placeholder="Ej: Factura de mercaderías de marcas..."></textarea>
+            <label class="form-label fw-bold">Observaciones/CAE (opcional)</label>
+            <textarea name="notas" id="notasInput" class="form-control" rows="2" placeholder="Ej: CAE 12345678901234, o cualquier anotación adicional..."></textarea>
+            <small class="text-muted">Para comprobantes electrónicos, podés guardar el CAE aquí</small>
           </div>
         </div>
         <div class="modal-footer">
@@ -232,11 +314,213 @@
   </div>
 </div>
 
+<!-- MODAL: NUEVO PROVEEDOR RÁPIDO -->
+<div class="modal fade" id="modalNuevoProveedor" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nuevo Proveedor</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formNuevoProveedor">
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Nombre/Razón Social *</label>
+            <input type="text" id="provNombre" class="form-control form-control-sm" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">CUIT/CUIL *</label>
+            <input type="text" id="provCuit" class="form-control form-control-sm" placeholder="Ej: 23-12345678-9" required>
+          </div>
+          <div class="mb-2">
+            <label class="form-label small fw-bold">Email</label>
+            <input type="email" id="provEmail" class="form-control form-control-sm">
+          </div>
+          <div class="mb-0">
+            <label class="form-label small fw-bold">Teléfono</label>
+            <input type="tel" id="provTelefono" class="form-control form-control-sm">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-sm btn-success" onclick="guardarProveedorRapido()">Crear y usar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// AUTOCOMPLETE DE PROVEEDORES
+// ════════════════════════════════════════════════════════════════
+
+const proveedoresData = <%-JSON.stringify(proveedores || [])%>;
+
+document.getElementById('buscarProveedor').addEventListener('input', function(e) {
+  const query = e.target.value.toLowerCase().trim();
+  const dropdown = document.getElementById('dropdownProveedores');
+
+  if (query.length < 1) {
+    dropdown.style.display = 'none';
+    return;
+  }
+
+  const filtrados = proveedoresData.filter(p =>
+    (p.nombre && p.nombre.toLowerCase().includes(query)) ||
+    (p.cuit && p.cuit.includes(query))
+  );
+
+  if (filtrados.length === 0) {
+    dropdown.innerHTML = '<div class="p-2 text-muted small">No encontrado. Usa el botón + para crear.</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  dropdown.innerHTML = filtrados.map(p => `
+    <button type="button" class="dropdown-item p-2 text-start" onclick="seleccionarProveedor(${p.id}, '${p.nombre}', '${p.cuit}', ${p.alicuota_iva_default || 21})">
+      <strong>${p.nombre}</strong><br>
+      <small class="text-muted">CUIT: ${p.cuit || 'N/A'}</small>
+    </button>
+  `).join('');
+
+  dropdown.style.display = 'block';
+});
+
+function seleccionarProveedor(id, nombre, cuit, alicuota) {
+  document.getElementById('proveedorIdHidden').value = id;
+  document.getElementById('razonSocialInput').value = nombre;
+  document.getElementById('cuitProveedorInput').value = cuit;
+  document.getElementById('alicuotaIva').value = alicuota;
+  document.getElementById('buscarProveedor').value = nombre;
+  document.getElementById('dropdownProveedores').style.display = 'none';
+  calcularIVA();
+}
+
+// ════════════════════════════════════════════════════════════════
+// CÁLCULO DE IVA
+// ════════════════════════════════════════════════════════════════
+
+function calcularIVA() {
+  const neto = parseFloat(document.getElementById('montoNeto').value) || 0;
+  const alicuota = parseFloat(document.getElementById('alicuotaIva').value) || 21;
+  const iva = neto * (alicuota / 100);
+  const total = neto + iva;
+
+  document.getElementById('montoIvaInput').value = iva.toFixed(2);
+  document.getElementById('totalFacturaLabel').textContent = '$' + total.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+  // Actualizar máximo de pago
+  const pagoInput = document.getElementById('pagoInicial');
+  if (pagoInput) pagoInput.max = total.toFixed(2);
+}
+
+// ════════════════════════════════════════════════════════════════
+// TOGGLE SECCIÓN DE PAGO
+// ════════════════════════════════════════════════════════════════
+
+function togglePago() {
+  const checkbox = document.getElementById('registrarPagoCheckbox');
+  const seccion = document.getElementById('seccionPago');
+
+  if (checkbox.checked) {
+    seccion.style.display = 'block';
+  } else {
+    seccion.style.display = 'none';
+    document.getElementById('pagoInicial').value = '';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// CREAR PROVEEDOR RÁPIDO
+// ════════════════════════════════════════════════════════════════
+
+async function guardarProveedorRapido() {
+  const nombre = document.getElementById('provNombre').value.trim();
+  const cuit = document.getElementById('provCuit').value.trim();
+  const email = document.getElementById('provEmail').value.trim();
+  const telefono = document.getElementById('provTelefono').value.trim();
+
+  if (!nombre || !cuit) {
+    alert('Nombre y CUIT son obligatorios');
+    return;
+  }
+
+  try {
+    const res = await fetch('/proveedores', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        nombre, cuit, email, telefono,
+        '_csrf': document.querySelector('[name=_csrf]')?.value || ''
+      })
+    });
+
+    if (res.ok) {
+      // Recargar la página para obtener el nuevo proveedor
+      location.reload();
+    } else {
+      alert('Error al crear proveedor');
+    }
+  } catch (err) {
+    console.error('Error:', err);
+    alert('Error de conexión');
+  }
+}
+
+// Validar total de factura al enviar
+document.getElementById('formNuevaFactura').addEventListener('submit', function(e) {
+  const neto = parseFloat(document.getElementById('montoNeto').value) || 0;
+  const iva = parseFloat(document.getElementById('montoIvaInput').value) || 0;
+  const total = neto + iva;
+
+  if (total <= 0) {
+    e.preventDefault();
+    alert('El total de la factura debe ser mayor a 0');
+    return;
+  }
+
+  // Validar pago inicial
+  if (document.getElementById('registrarPagoCheckbox').checked) {
+    const pago = parseFloat(document.getElementById('pagoInicial').value) || 0;
+    if (pago < 0 || pago > total) {
+      e.preventDefault();
+      alert('El pago debe estar entre 0 y $' + total.toFixed(2));
+      return;
+    }
+  }
+});
+</script>
+
 <style>
   .truncate-text {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  #dropdownProveedores {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 0.375rem 0.375rem;
+    background: white;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1050;
+  }
+
+  .dropdown-item {
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .dropdown-item:hover {
+    background-color: #f8f9fa;
   }
 
   @media (max-width: 768px) {

@@ -88,7 +88,7 @@ module.exports = (db) => {
 
     crear: async (req, res) => {
       try {
-        const { tipo_comprobante, numero_comprobante, fecha_emision, proveedor_id, razon_social, concepto, monto_neto, alicuota_iva, monto_iva, estado, fecha_pago, tiene_documento, notas } = req.body;
+        const { tipo_comprobante, numero_comprobante, fecha_emision, proveedor_id, razon_social, concepto, monto_neto, alicuota_iva, monto_iva, estado, fecha_pago, tiene_documento, notas, pago_inicial, metodo_pago_inicial } = req.body;
 
         // Validaciones obligatorias simplificadas
         if (!tipo_comprobante || !numero_comprobante || !razon_social || !monto_neto) {
@@ -109,14 +109,48 @@ module.exports = (db) => {
         const fechaPagoFinal = estadoFinal === 'pagada' ? (fecha_pago || obtenerFechaLocal().fecha) : null;
         const tieneDocNum = tiene_documento ? 1 : 0;
 
-        await db.run(
+        const result = await db.run(
           `INSERT INTO facturas_recibidas
            (tipo_comprobante, numero_comprobante, fecha_emision, proveedor_id, razon_social, descripcion, monto_neto, alicuota_iva, monto_iva, monto_total, monto_pagado, estado, fecha_pago, notas, periodo, tiene_documento)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
           [tipo_comprobante, numero_comprobante, fecha_emision || obtenerFechaLocal().fecha, proveedor_id || null, razon_social, concepto || '', montoNetoNum, alicuotaNum, montoIvaNum, montoTotal, montoPagadoFinal, estadoFinal, fechaPagoFinal || '', notas || '', periodo, tieneDocNum]
         );
 
-        req.flash('success', `✅ Factura ${numero_comprobante} registrada correctamente — $${montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}`);
+        const facturaId = result.lastID;
+        const pagoInicialNum = parseFloat(pago_inicial) || 0;
+
+        // Si hay pago inicial, registrar como pago
+        if (pagoInicialNum > 0) {
+          const fechaPago = obtenerFechaLocal().fecha;
+          const { timestamp } = obtenerFechaLocal();
+
+          // Registrar en tabla pagos_facturas
+          await db.run(
+            `INSERT INTO pagos_facturas (factura_id, monto_pagado, fecha_pago, metodo_pago, notas)
+             VALUES (?, ?, ?, ?, ?)`,
+            [facturaId, pagoInicialNum, fechaPago, metodo_pago_inicial || 'manual', '']
+          );
+
+          // Registrar en Caja Diaria (egreso)
+          await db.run(
+            `INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            ['egreso', `Pago Factura ${numero_comprobante} - ${razon_social}`, 'compras', pagoInicialNum, metodo_pago_inicial || 'manual', timestamp, turnoByHora(timestamp)]
+          );
+
+          // Actualizar estado y monto_pagado en factura
+          let nuevoEstado = 'parcial';
+          if (pagoInicialNum >= montoTotal) {
+            nuevoEstado = 'pagada';
+          }
+
+          await db.run(
+            `UPDATE facturas_recibidas SET monto_pagado = ?, estado = ? WHERE id = ?`,
+            [pagoInicialNum, nuevoEstado, facturaId]
+          );
+        }
+
+        req.flash('success', `✅ Factura ${numero_comprobante} registrada correctamente — $${montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}${pagoInicialNum > 0 ? ` (Pago inicial: $${pagoInicialNum.toLocaleString('es-AR', {minimumFractionDigits: 2})})` : ''}`);
         res.redirect(`/finanzas/facturas-recibidas?periodo=${periodo}`);
       } catch (err) {
         console.error('Error al crear factura:', err);

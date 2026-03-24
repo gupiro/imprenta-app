@@ -132,16 +132,7 @@ module.exports = (db) => {
 
             await db.run(
                 "INSERT INTO gastos (fecha, categoria, descripcion, monto, estado_pago, proveedor_id, tipo, usuario_id, metodo_pago, tiene_factura) VALUES (?,?,?,?,?,?,?,?,?,?)",
-                fecha,
-                categoria,
-                descripcion.trim(),
-                montoNum,
-                estado_pago || 'pendiente',
-                proveedor_id || null,
-                tipo || 'negocio',
-                req.session.user?.id || null,
-                metodo_pago || 'efectivo',
-                tiene_factura === '1' ? 1 : 0
+                [fecha, categoria, descripcion.trim(), montoNum, estado_pago || 'pendiente', proveedor_id || null, tipo || 'negocio', req.session.user?.id || null, metodo_pago || 'efectivo', tiene_factura === '1' ? 1 : 0]
             );
             const tipoLabel = tipo === 'negocio' ? 'de Negocio' : 'Personal';
             req.flash('success', `✅ Gasto ${tipoLabel} de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado exitosamente`);
@@ -188,16 +179,7 @@ module.exports = (db) => {
 
             await db.run(
                 "UPDATE gastos SET fecha = ?, categoria = ?, descripcion = ?, monto = ?, estado_pago = ?, proveedor_id = ?, tipo = ?, metodo_pago = ?, tiene_factura = ? WHERE id = ?",
-                fecha,
-                categoria,
-                descripcion.trim(),
-                montoNum,
-                estado_pago || 'pendiente',
-                proveedor_id || null,
-                tipo || 'negocio',
-                metodo_pago || 'efectivo',
-                tiene_factura === '1' ? 1 : 0,
-                id
+                [fecha, categoria, descripcion.trim(), montoNum, estado_pago || 'pendiente', proveedor_id || null, tipo || 'negocio', metodo_pago || 'efectivo', tiene_factura === '1' ? 1 : 0, id]
             );
             req.flash('success', `✅ Gasto actualizado correctamente`);
         } catch (err) {
@@ -213,14 +195,14 @@ module.exports = (db) => {
             const id = parseInt(req.params.id);
 
             // Obtener datos del gasto
-            const gasto = await db.get("SELECT * FROM gastos WHERE id = ?", id);
+            const gasto = await db.get("SELECT * FROM gastos WHERE id = ?", [id]);
             if (!gasto) {
                 req.flash('error', 'Gasto no encontrado');
                 return res.redirect('/gastos');
             }
 
             // Actualizar estado_pago a 'pagado'
-            await db.run("UPDATE gastos SET estado_pago = 'pagado' WHERE id = ?", id);
+            await db.run("UPDATE gastos SET estado_pago = 'pagado' WHERE id = ?", [id]);
 
             // Registrar el egreso en movimientos_caja
             const fechaLocal = obtenerFechaLocal();

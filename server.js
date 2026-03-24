@@ -9,7 +9,7 @@ const path           = require('path');
 const fs             = require('fs');
 const expressLayouts = require('express-ejs-layouts');
 const rateLimit      = require('express-rate-limit');
-// const csrf           = require('csurf'); // DESACTIVADO TEMPORALMENTE
+const csrf           = require('csurf');
 
 // Swagger UI deshabilitado (archivo openapi.yaml removido)
 // const swaggerUi       = require('swagger-ui-express');
@@ -55,9 +55,9 @@ app.use(session({
 }));
 app.use(flash());
 
-// CSRF Protection middleware (DESACTIVADO TEMPORALMENTE)
-// const csrfProtection = csrf({ cookie: false });
-// app.use(csrfProtection);
+// CSRF Protection middleware
+const csrfProtection = csrf({ cookie: false });
+app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════
 // VARIABLES GLOBALES PARA VISTAS
@@ -68,7 +68,7 @@ app.use((req, res, next) => {
     res.locals.success     = req.flash('success') || [];
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
-    res.locals.csrfToken   = 'disabled'; // CSRF temporalmente desactivado
+    res.locals.csrfToken   = req.csrfToken ? req.csrfToken() : '';
     res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
     next();
 });

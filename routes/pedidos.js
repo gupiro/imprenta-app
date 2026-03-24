@@ -5,29 +5,7 @@ const upload = require('../config/multer');
 const checkPermission = require('../middleware/permissions');
 const path = require('path');
 const pdf = require('html-pdf');
-
-// Función auxiliar para obtener fecha y hora en zona horaria local (no UTC)
-function obtenerFechaLocal() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const mes = String(now.getMonth() + 1).padStart(2, '0');
-  const dia = String(now.getDate()).padStart(2, '0');
-  const horas = String(now.getHours()).padStart(2, '0');
-  const minutos = String(now.getMinutes()).padStart(2, '0');
-  const segundos = String(now.getSeconds()).padStart(2, '0');
-
-  return {
-    fecha: `${year}-${mes}-${dia}`,
-    timestamp: `${year}-${mes}-${dia} ${horas}:${minutos}:${segundos}`
-  };
-}
-
-// Función para determinar turno por hora (mañana: <14:00, tarde: >=14:00)
-function turnoByHora() {
-  const now = new Date();
-  const hora = now.getHours();
-  return hora < 14 ? 'mañana' : 'tarde';
-}
+const { obtenerFechaLocal, turnoByHora } = require('../utils/dateHelper');
 
 module.exports = (db) => {
   const router = express.Router();
@@ -98,10 +76,30 @@ module.exports = (db) => {
 
     const pedidos = await db.all(query, params);
 
-    // Cargar productos para cada pedido
-    for (let p of pedidos) {
-      const prods = await db.all('SELECT * FROM productos WHERE pedido_id = ?', p.id);
-      p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
+    // ✅ OPTIMIZADO: Cargar todos los productos en 1 query (no N queries)
+    if (pedidos.length > 0) {
+      const pedidoIds = pedidos.map(p => p.id);
+      const todosProds = await db.all(
+        `SELECT * FROM productos WHERE pedido_id IN (${pedidoIds.map(() => '?').join(',')})`,
+        pedidoIds
+      );
+
+      // Agrupar productos por pedido_id
+      const prodsByPedido = {};
+      todosProds.forEach(prod => {
+        if (!prodsByPedido[prod.pedido_id]) {
+          prodsByPedido[prod.pedido_id] = [];
+        }
+        prodsByPedido[prod.pedido_id].push(prod);
+      });
+
+      // Asignar productos a cada pedido
+      pedidos.forEach(p => {
+        const prods = prodsByPedido[p.id] || [];
+        p.productos = prods.map(x => ({ ...x, imagenes: JSON.parse(x.imagenes || '[]') }));
+      });
+    } else {
+      pedidos.forEach(p => { p.productos = []; });
     }
 
     return pedidos;

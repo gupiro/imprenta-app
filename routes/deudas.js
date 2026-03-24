@@ -308,42 +308,45 @@ module.exports = (db) => {
             await db.run(
                 `INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, usuario_id, fecha, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                'egreso',
-                'Pago Tarjeta de Crédito',
-                'Deuda',
-                montoNum,
-                metodoCapitalizado,
-                req.session?.userId || null,
-                fecha || new Date().toISOString().slice(0, 10),
-                notas?.trim() || null
+                [
+                    'egreso',
+                    'Pago Tarjeta de Crédito',
+                    'Deuda',
+                    montoNum,
+                    metodoCapitalizado,
+                    req.session.user?.id || null,
+                    fecha || new Date().toISOString().slice(0, 10),
+                    notas?.trim() || null
+                ]
             );
 
             // Registrar pago en deudas_pagos
             await db.run(
                 `INSERT INTO deudas_pagos (tipo_deuda, deuda_id, monto, fecha, metodo_pago, usuario_id, caja_id, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                'tarjeta',
-                id,
-                montoNum,
-                fecha || new Date().toISOString().slice(0, 10),
-                metodoCapitalizado,
-                req.session?.userId || null,
-                null, // Se actualiza después si es necesario
-                notas?.trim() || null
+                [
+                    'tarjeta',
+                    id,
+                    montoNum,
+                    fecha || new Date().toISOString().slice(0, 10),
+                    metodoCapitalizado,
+                    req.session.user?.id || null,
+                    null, // Se actualiza después si es necesario
+                    notas?.trim() || null
+                ]
             );
 
             // Actualizar saldo
             const nuevoSaldo = Math.max(0, tarjeta.saldo_adeudado - montoNum);
             await db.run(
                 'UPDATE deudas_tarjetas SET saldo_adeudado = ? WHERE id = ?',
-                nuevoSaldo,
-                id
+                [nuevoSaldo, id]
             );
 
             // Registrar en gastos para que impacte el balance financiero
             await db.run(
                 'INSERT INTO gastos (fecha, categoria, descripcion, monto, estado_pago, tipo, metodo_pago, usuario_id) VALUES (?,?,?,?,?,?,?,?)',
-                [fecha || new Date().toISOString().slice(0, 10), 'Tarjeta de Crédito', `Pago Tarjeta ${tarjeta.nombre_tarjeta}`, montoNum, 'pagado', tarjeta.tipo || 'negocio', metodoCapitalizado, req.session?.userId || null]
+                [fecha || new Date().toISOString().slice(0, 10), 'Tarjeta de Crédito', `Pago Tarjeta ${tarjeta.nombre_tarjeta}`, montoNum, 'pagado', tarjeta.tipo || 'negocio', metodoCapitalizado, req.session.user?.id || null]
             );
 
             req.flash('success', `✅ Pago de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado`);
@@ -415,14 +418,7 @@ module.exports = (db) => {
             await db.run(
                 `INSERT INTO deudas_cheques (numero_cheque, banco, beneficiario, monto, fecha_emision, fecha_vencimiento, proveedor_id, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                numero_cheque.trim(),
-                banco.trim(),
-                beneficiario.trim(),
-                montoNum,
-                fecha_emision,
-                fecha_vencimiento,
-                proveedor_id || null,
-                notas?.trim() || null
+                [numero_cheque.trim(), banco.trim(), beneficiario.trim(), montoNum, fecha_emision, fecha_vencimiento, proveedor_id || null, notas?.trim() || null]
             );
             req.flash('success', `✅ Cheque #${numero_cheque} creado`);
         } catch (err) {
@@ -444,16 +440,7 @@ module.exports = (db) => {
                  SET numero_cheque = ?, banco = ?, beneficiario = ?, monto = ?,
                      fecha_emision = ?, fecha_vencimiento = ?, estado = ?, proveedor_id = ?, notas = ?
                  WHERE id = ?`,
-                numero_cheque?.trim(),
-                banco?.trim(),
-                beneficiario?.trim(),
-                montoNum,
-                fecha_emision,
-                fecha_vencimiento,
-                estado || 'pendiente',
-                proveedor_id || null,
-                notas?.trim() || null,
-                id
+                [numero_cheque?.trim(), banco?.trim(), beneficiario?.trim(), montoNum, fecha_emision, fecha_vencimiento, estado || 'pendiente', proveedor_id || null, notas?.trim() || null, id]
             );
             req.flash('success', '✅ Cheque actualizado');
         } catch (err) {
@@ -466,7 +453,7 @@ module.exports = (db) => {
     router.post('/cheques/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_cheques WHERE id = ?', id);
+            await db.run('DELETE FROM deudas_cheques WHERE id = ?', [id]);
             req.flash('success', '✅ Cheque eliminado');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -489,31 +476,18 @@ module.exports = (db) => {
             await db.run(
                 `INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, usuario_id, fecha, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                'egreso',
-                'Cheque Cobrado',
-                'Deuda',
-                cheque.monto,
-                metodo_pago || null,
-                req.session?.userId || null,
-                fecha || new Date().toISOString().slice(0, 10),
-                notas?.trim() || null
+                ['egreso', 'Cheque Cobrado', 'Deuda', cheque.monto, metodo_pago || null, req.session.user?.id || null, fecha || new Date().toISOString().slice(0, 10), notas?.trim() || null]
             );
 
             // Registrar pago
             await db.run(
                 `INSERT INTO deudas_pagos (tipo_deuda, deuda_id, monto, fecha, metodo_pago, usuario_id, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                'cheque',
-                id,
-                cheque.monto,
-                fecha || new Date().toISOString().slice(0, 10),
-                metodo_pago || null,
-                req.session?.userId || null,
-                notas?.trim() || null
+                ['cheque', id, cheque.monto, fecha || new Date().toISOString().slice(0, 10), metodo_pago || null, req.session.user?.id || null, notas?.trim() || null]
             );
 
             // Marcar cheque como cobrado
-            await db.run('UPDATE deudas_cheques SET estado = ? WHERE id = ?', 'cobrado', id);
+            await db.run('UPDATE deudas_cheques SET estado = ? WHERE id = ?', ['cobrado', id]);
 
             // Registrar en gastos para que impacte el balance financiero
             await db.run(
@@ -575,16 +549,7 @@ module.exports = (db) => {
                  (descripcion, entidad, monto_original, monto_pendiente, cuota_mensual, fecha_primer_vencimiento,
                   dia_vencimiento_mensual, cuotas_totales, tasa_interes, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                descripcion.trim(),
-                entidad.trim(),
-                montoOrig,
-                montoPend,
-                cuotaMen,
-                fecha_primer_vencimiento || null,
-                parseInt(dia_vencimiento_mensual) || null,
-                cuotas,
-                tasa,
-                notas?.trim() || null
+                [descripcion.trim(), entidad.trim(), montoOrig, montoPend, cuotaMen, fecha_primer_vencimiento || null, parseInt(dia_vencimiento_mensual) || null, cuotas, tasa, notas?.trim() || null]
             );
             req.flash('success', `✅ Préstamo de $${montoOrig.toLocaleString('es-AR', {minimumFractionDigits: 2})} creado`);
         } catch (err) {
@@ -611,19 +576,7 @@ module.exports = (db) => {
                      fecha_primer_vencimiento = ?, dia_vencimiento_mensual = ?, cuotas_totales = ?,
                      cuotas_pagadas = ?, tasa_interes = ?, estado = ?, notas = ?
                  WHERE id = ?`,
-                descripcion?.trim(),
-                entidad?.trim(),
-                montoOrig,
-                montoPend,
-                cuotaMen,
-                fecha_primer_vencimiento || null,
-                parseInt(dia_vencimiento_mensual) || null,
-                parseInt(cuotas_totales) || 0,
-                parseInt(cuotas_pagadas) || 0,
-                tasa,
-                estado || 'activo',
-                notas?.trim() || null,
-                id
+                [descripcion?.trim(), entidad?.trim(), montoOrig, montoPend, cuotaMen, fecha_primer_vencimiento || null, parseInt(dia_vencimiento_mensual) || null, parseInt(cuotas_totales) || 0, parseInt(cuotas_pagadas) || 0, tasa, estado || 'activo', notas?.trim() || null, id]
             );
             req.flash('success', '✅ Préstamo actualizado');
         } catch (err) {
@@ -636,7 +589,7 @@ module.exports = (db) => {
     router.post('/prestamos/:id/eliminar', checkPermission, async (req, res) => {
         try {
             const id = parseInt(req.params.id);
-            await db.run('DELETE FROM deudas_prestamos WHERE id = ?', id);
+            await db.run('DELETE FROM deudas_prestamos WHERE id = ?', [id]);
             req.flash('success', '✅ Préstamo eliminado');
         } catch (err) {
             req.flash('error', 'Error: ' + err.message);
@@ -665,27 +618,14 @@ module.exports = (db) => {
             await db.run(
                 `INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, usuario_id, fecha, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                'egreso',
-                'Pago Préstamo',
-                'Deuda',
-                montoNum,
-                metodo_pago || null,
-                req.session?.userId || null,
-                fecha || new Date().toISOString().slice(0, 10),
-                notas?.trim() || null
+                ['egreso', 'Pago Préstamo', 'Deuda', montoNum, metodo_pago || null, req.session.user?.id || null, fecha || new Date().toISOString().slice(0, 10), notas?.trim() || null]
             );
 
             // Registrar pago
             await db.run(
                 `INSERT INTO deudas_pagos (tipo_deuda, deuda_id, monto, fecha, metodo_pago, usuario_id, notas)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                'prestamo',
-                id,
-                montoNum,
-                fecha || new Date().toISOString().slice(0, 10),
-                metodo_pago || null,
-                req.session?.userId || null,
-                notas?.trim() || null
+                ['prestamo', id, montoNum, fecha || new Date().toISOString().slice(0, 10), metodo_pago || null, req.session.user?.id || null, notas?.trim() || null]
             );
 
             // Actualizar saldo y cuotas
@@ -694,14 +634,12 @@ module.exports = (db) => {
 
             await db.run(
                 'UPDATE deudas_prestamos SET monto_pendiente = ?, cuotas_pagadas = ? WHERE id = ?',
-                nuevoSaldo,
-                nuevosCuotaPagadas,
-                id
+                [nuevoSaldo, nuevosCuotaPagadas, id]
             );
 
             // Si está pagado, cambiar estado
             if (nuevoSaldo <= 0) {
-                await db.run('UPDATE deudas_prestamos SET estado = ? WHERE id = ?', 'cancelado', id);
+                await db.run('UPDATE deudas_prestamos SET estado = ? WHERE id = ?', ['cancelado', id]);
             }
 
             // Registrar en gastos para que impacte el balance financiero

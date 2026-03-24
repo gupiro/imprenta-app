@@ -505,7 +505,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'CSRF-Token': document.querySelector('input[name="_csrf"]')?.value || ''
+          'X-CSRF-Token': document.querySelector('input[name="_csrf"]')?.value || ''
         },
         body: JSON.stringify({ pedido_id: <%= pedido.id %> })
       });
@@ -630,7 +630,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'CSRF-Token': document.querySelector('input[name="_csrf"]').value
+            'X-CSRF-Token': document.querySelector('input[name="_csrf"]')?.value || ''
           },
           body: JSON.stringify({
             monto_a_pagar: monto,

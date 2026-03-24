@@ -119,12 +119,12 @@ module.exports = (db) => {
         title: 'Nuevo Pedido',
         clientes,
         materiales,
-        csrfToken: req.csrfToken(),
+        csrfToken: req.csrfToken ? req.csrfToken() : '', // CSRF puede estar desactivado
         success: req.flash('success'),
         error: req.flash('error')
       });
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error al cargar nuevo pedido:', err);
       res.status(500).send('Error al cargar');
     }
   });

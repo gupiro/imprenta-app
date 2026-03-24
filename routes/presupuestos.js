@@ -40,7 +40,7 @@ module.exports = (db) => {
         items: items || [],
         productos,
         clientes,
-        csrfToken: req.csrfToken(),
+        csrfToken: req.csrfToken ? req.csrfToken() : '',
         error: req.flash('error'),
         success: req.flash('success')
       });

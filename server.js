@@ -283,6 +283,8 @@ async function startServer() {
             const fecha = req.query.fecha || obtenerFechaLocal().fecha;
             const turno = req.query.turno || ''; // 'mañana', 'tarde', o vacío para ambos
 
+            console.log('📥 Exportando Caja:', { fecha, turno });
+
             let query = `
                 SELECT tipo, concepto, monto, metodo_pago, turno, fecha, categoria
                 FROM movimientos_caja
@@ -300,7 +302,26 @@ async function startServer() {
             }
 
             query += ' ORDER BY fecha DESC';
+
             const movimientos = await dbInstance.all(query, params) || [];
+            console.log(`📊 Encontrados ${movimientos.length} movimientos`);
+
+            if (movimientos.length === 0) {
+                // Si no encuentra con esa query, intentar más simple
+                console.log('⚠️ No hay movimientos, intentando query alternativa...');
+                const movimientosAlt = await dbInstance.all(
+                    `SELECT tipo, concepto, monto, metodo_pago, turno, fecha, categoria
+                     FROM movimientos_caja
+                     WHERE SUBSTR(fecha, 1, 10) = ?
+                     ${turno ? 'AND turno = ?' : ''}
+                     ORDER BY fecha DESC`,
+                    turno ? [fecha, turno] : [fecha]
+                ) || [];
+                console.log(`📊 Consulta alternativa: ${movimientosAlt.length} movimientos`);
+                if (movimientosAlt.length > 0) {
+                    movimientos.push(...movimientosAlt);
+                }
+            }
 
             // Calcular totales
             let totalIngresos = 0, totalEgresos = 0;

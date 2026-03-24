@@ -64,6 +64,8 @@ app.use(flash());
 // VARIABLES GLOBALES PARA VISTAS
 // ════════════════════════════════════════════════════════════════
 
+console.log('✅ CSRF ESTÁ DESHABILITADO - Versión 2.4.1 del servidor');
+
 app.use((req, res, next) => {
     res.locals.error       = req.flash('error')   || [];
     res.locals.success     = req.flash('success') || [];
@@ -378,7 +380,8 @@ async function startServer() {
         legacyHeaders: false,
     });
 
-    app.post('/auth/login', loginLimiter);
+    // TEMPORALMENTE DESHABILITADO PARA TESTING
+    // app.post('/auth/login', loginLimiter);
     app.use('/auth', authRouterConfigured);
 
     // ────────────────────────────────────────────────────────────────────

@@ -618,7 +618,6 @@ function eliminar(id, nombre) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = `/finanzas/gastos-fijos/${id}/eliminar`;
-    form.innerHTML = '<input type="hidden" name="_csrf" value="<%= csrfToken %>">';
     document.body.appendChild(form);
     form.submit();
   }

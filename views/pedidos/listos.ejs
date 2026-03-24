@@ -177,7 +177,6 @@
                 </div>
               </div>
               <form action="/pedidos/<%= p.id %>/cambiar-estado" method="POST" class="mb-2">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <select name="estado" class="form-select form-select-sm estado-select" data-estado="LISTO"
                         onchange="confirmarCambioEstado(this, <%= p.id %>, <%= p.precio || 0 %>, <%= p.monto_entregado || 0 %>)">
                   <option value="PENDIENTE">📋 Pendiente</option>

@@ -72,7 +72,6 @@
     <div class="card-body">
       <h6 class="text-muted mb-3">🔄 CAMBIAR ESTADO</h6>
       <form id="formCambiarEstado" action="/pedidos/<%= pedido.id %>/cambiar-estado" method="POST" class="d-flex gap-2 align-items-end">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="flex-grow-1">
           <select id="selectEstado" name="estado" class="form-select form-select-lg" required>
             <option value="">-- Seleccionar estado --</option>
@@ -242,7 +241,6 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-deuda">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="alert alert-success mb-3">
             <strong>✅ Pedido LISTO para retirar</strong><br>
@@ -306,7 +304,6 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-deuda">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="alert alert-info mb-3">
             <strong>Deuda a cobrar:</strong> $<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
@@ -363,7 +360,6 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No, volver</button>
         <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-pedido" class="d-inline">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <button type="submit" class="btn btn-danger btn-lg">
             <i class="bi bi-check"></i> Sí, Cancelar
           </button>
@@ -505,7 +501,6 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': document.querySelector('input[name="_csrf"]')?.value || ''
         },
         body: JSON.stringify({ pedido_id: <%= pedido.id %> })
       });
@@ -630,7 +625,6 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-Token': document.querySelector('input[name="_csrf"]')?.value || ''
           },
           body: JSON.stringify({
             monto_a_pagar: monto,

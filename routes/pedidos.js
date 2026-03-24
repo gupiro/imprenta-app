@@ -119,7 +119,7 @@ module.exports = (db) => {
         title: 'Nuevo Pedido',
         clientes,
         materiales,
-        csrfToken: 'disabled',
+        csrfToken: req.csrfToken(),
         success: req.flash('success'),
         error: req.flash('error')
       });

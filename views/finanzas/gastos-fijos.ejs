@@ -249,7 +249,7 @@
                       <button class="btn btn-outline-success" onclick="marcarPagado(<%= gf.id %>, '<%= gf.nombre %>')" title="Pago completo">
                         <i class="bi bi-check-circle"></i> Completo
                       </button>
-                      <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditarGastoFijo" onclick="abrirEditar(<%= gf.id %>, '<%= gf.nombre %>', '<%= gf.categoria %>', '<%= gf.frecuencia %>', <%= gf.monto %>, <%= gf.dia_vencimiento %>, '<%= gf.notas || '' %>', '<%= gf.metodo_pago_default || 'transferencia' %>')" title="Editar">
+                      <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditarGastoFijo" onclick="abrirEditar(<%= gf.id %>, '<%= gf.nombre %>', '<%= gf.categoria %>', '<%= gf.frecuencia %>', <%= gf.monto %>, <%= gf.dia_vencimiento %>, '<%= gf.notas || '' %>')" title="Editar">
                         <i class="bi bi-pencil"></i>
                       </button>
                       <button class="btn btn-outline-danger" onclick="eliminar(<%= gf.id %>, '<%= gf.nombre %>')" title="Eliminar">
@@ -347,22 +347,9 @@
             </div>
           </div>
 
-          <div class="row">
-            <div class="col-md-6 mb-4">
-              <label class="form-label fw-bold">Método de Pago</label>
-              <select name="metodo_pago_default" class="form-select form-select-lg">
-                <option value="transferencia">🏦 Transferencia</option>
-                <option value="efectivo">💵 Efectivo</option>
-                <option value="tarjeta">💳 Tarjeta</option>
-                <option value="cheque">📄 Cheque</option>
-              </select>
-              <small class="text-muted d-block mt-2">¿Cómo se suele pagar este gasto?</small>
-            </div>
-
-            <div class="col-md-6 mb-4">
-              <label class="form-label fw-bold">Notas (Opcional)</label>
-              <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
-            </div>
+          <div class="mb-4">
+            <label class="form-label fw-bold">Notas (Opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Detalles adicionales..."></textarea>
           </div>
         </div>
 
@@ -469,26 +456,16 @@
           </div>
 
           <div class="row">
-            <div class="col-md-4 mb-4">
+            <div class="col-md-6 mb-4">
               <label class="form-label fw-bold">Monto ($) *</label>
               <input type="number" id="editMonto" name="monto" class="form-control form-control-lg"
                      step="0.01" min="0" required>
             </div>
 
-            <div class="col-md-4 mb-4">
+            <div class="col-md-6 mb-4">
               <label class="form-label fw-bold">Día Vencimiento (1-31) *</label>
               <input type="number" id="editDiaVencimiento" name="dia_vencimiento" class="form-control form-control-lg"
                      min="1" max="31" required>
-            </div>
-
-            <div class="col-md-4 mb-4">
-              <label class="form-label fw-bold">Método de Pago</label>
-              <select id="editMetodo" name="metodo_pago_default" class="form-select form-select-lg">
-                <option value="transferencia">🏦 Transferencia</option>
-                <option value="efectivo">💵 Efectivo</option>
-                <option value="tarjeta">💳 Tarjeta</option>
-                <option value="cheque">📄 Cheque</option>
-              </select>
             </div>
           </div>
 
@@ -563,14 +540,13 @@ function sugerencia(nombre, categoria, frecuencia) {
 }
 
 // Función para abrir modal de editar
-function abrirEditar(id, nombre, categoria, frecuencia, monto, dia, notas, metodo) {
+function abrirEditar(id, nombre, categoria, frecuencia, monto, dia, notas) {
   document.getElementById('editNombre').value = nombre;
   document.getElementById('editCategoria').value = categoria;
   document.getElementById('editFrecuencia').value = frecuencia;
   document.getElementById('editMonto').value = monto;
   document.getElementById('editDiaVencimiento').value = dia;
   document.getElementById('editNotas').value = notas;
-  document.getElementById('editMetodo').value = metodo || 'transferencia';
   document.getElementById('formEditarGasto').action = `/finanzas/gastos-fijos/${id}/editar`;
 }
 

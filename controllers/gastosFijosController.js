@@ -108,7 +108,7 @@ module.exports = (db) => {
 
     crear: async (req, res) => {
       try {
-        const { nombre, categoria, frecuencia, monto, dia_vencimiento, notas, metodo_pago_default } = req.body;
+        const { nombre, categoria, frecuencia, monto, dia_vencimiento, notas } = req.body;
 
         // Validaciones detalladas
         if (!nombre || nombre.trim().length === 0) {
@@ -138,9 +138,9 @@ module.exports = (db) => {
         }
 
         await db.run(
-          `INSERT INTO gastos_fijos (nombre, categoria, frecuencia, monto, dia_vencimiento, notas, metodo_pago_default)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [nombre.trim(), categoria, frecuencia, parseFloat(monto), diaVencNum, notas || null, metodo_pago_default || 'transferencia']
+          `INSERT INTO gastos_fijos (nombre, categoria, frecuencia, monto, dia_vencimiento, notas)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [nombre.trim(), categoria, frecuencia, parseFloat(monto), diaVencNum, notas || null]
         );
 
         req.flash('success', `✅ Gasto fijo "${nombre}" creado exitosamente`);
@@ -155,7 +155,7 @@ module.exports = (db) => {
     editar: async (req, res) => {
       try {
         const { id } = req.params;
-        const { nombre, categoria, frecuencia, monto, dia_vencimiento, notas, metodo_pago_default } = req.body;
+        const { nombre, categoria, frecuencia, monto, dia_vencimiento, notas } = req.body;
 
         // Mismas validaciones que crear
         if (!nombre || nombre.trim().length === 0) {
@@ -186,9 +186,9 @@ module.exports = (db) => {
 
         await db.run(
           `UPDATE gastos_fijos
-           SET nombre = ?, categoria = ?, frecuencia = ?, monto = ?, dia_vencimiento = ?, notas = ?, metodo_pago_default = ?
+           SET nombre = ?, categoria = ?, frecuencia = ?, monto = ?, dia_vencimiento = ?, notas = ?
            WHERE id = ?`,
-          [nombre.trim(), categoria, frecuencia, parseFloat(monto), diaVencNum, notas || null, metodo_pago_default || 'transferencia', id]
+          [nombre.trim(), categoria, frecuencia, parseFloat(monto), diaVencNum, notas || null, id]
         );
 
         req.flash('success', `✅ Gasto fijo actualizado correctamente`);

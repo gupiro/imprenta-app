@@ -906,14 +906,32 @@ le]').setAttribute('title', data.tooltip);
     // ════════════════════════════════════════════════════════════════
     // GASTO RÁPIDO - BOTÓN FLOTANTE
     // ════════════════════════════════════════════════════════════════
-    function abrirGastoRapido() {
-      const modal = new bootstrap.Modal(document.getElementById('modalGastoRapido'));
-      modal.show();
-      // Limpiar formulario
-      document.getElementById('formGastoRapido').reset();
-      document.getElementById('btnEnviarGasto').disabled = false;
-      document.getElementById('btnEnviarGasto').innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Gasto';
-    }
+    window.abrirGastoRapido = function() {
+      console.log('🔴 Abriendo Gasto Rápido...');
+      try {
+        const modalEl = document.getElementById('modalGastoRapido');
+        if (!modalEl) {
+          console.error('❌ Modal no encontrado');
+          alert('Error: Modal no cargó correctamente');
+          return;
+        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        // Limpiar formulario
+        const form = document.getElementById('formGastoRapido');
+        const btnEnviar = document.getElementById('btnEnviarGasto');
+        if (form) form.reset();
+        if (btnEnviar) {
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Gasto';
+        }
+        console.log('✅ Modal abierto');
+      } catch (err) {
+        console.error('❌ Error abriendo modal:', err);
+        alert('Error: ' + err.message);
+      }
+    };
 
     function registrarGastoRapido() {
       const btnEnviar = document.getElementById('btnEnviarGasto');

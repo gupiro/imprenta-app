@@ -45,19 +45,19 @@ app.locals.basedir = app.get('views');
 app.use(session({
     secret: process.env.SESSION_SECRET || 'default_unsafe_secret_change_env',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
         secure: process.env.NODE_ENV === 'production',
         httpOnly: true,
         sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 // 24 horas
+        maxAge: 1000 * 60 * 60 * 24
     }
 }));
 app.use(flash());
 
-// CSRF Protection middleware
-// Using cookie: true para mejor compatibilidad con proxy reverso de Render
-const csrfProtection = csrf({ cookie: true });
+// CSRF Protection - SOLUCIÓN FINAL ROBUSTA
+// Token en sesión, accesible mediante req.csrfToken()
+const csrfProtection = csrf();
 app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════
@@ -69,7 +69,15 @@ app.use((req, res, next) => {
     res.locals.success     = req.flash('success') || [];
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
-    res.locals.csrfToken   = req.csrfToken ? req.csrfToken() : '';
+
+    // CSRF Token para vistas
+    try {
+      res.locals.csrfToken = req.csrfToken();
+    } catch (err) {
+      res.locals.csrfToken = '';
+      console.warn('CSRF token generation failed:', err.message);
+    }
+
     res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
     next();
 });

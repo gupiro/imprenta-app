@@ -1,23 +1,10 @@
-<!-- Dashboard Rediseñado - Estructura Minimalista y Operativa -->
+<!-- Dashboard Ejecutivo - Estructura Profesional de Control de Negocio -->
 
-<div class="container-fluid py-5">
+<div class="container-fluid py-4">
   <% if (user && user.rol === 'admin') { %>
 
   <!-- ════════════════════════════════════════════════════════════════
-       ENCABEZADO
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="page-header">
-    <div>
-      <h1 class="page-title">Dashboard</h1>
-      <p class="page-subtitle">Gestión operativa en tiempo real</p>
-    </div>
-    <div>
-      <span id="semaforo-dot" class="semaforo-dot" style="background:#6c757d; width:16px; height:16px; border-radius:50%; display:inline-block;"></span>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       HERO METRIC - DINERO HOY
+       HERO METRIC - DINERO HOY (Métrica Clave)
        ════════════════════════════════════════════════════════════════ -->
   <%
   const heroColor = porcentajeMeta >= 100
@@ -27,7 +14,7 @@
     : 'linear-gradient(135deg, #ef4444, #dc2626)';
   %>
   <div class="hero-metric" style="background: <%= heroColor %>;">
-    <div class="hero-label">💰 Dinero Hoy</div>
+    <div class="hero-label">💰 HOY</div>
     <div class="hero-amount">$<%= ingresosHoy.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
     <div class="hero-progress">
       <div class="hero-progress-bar" style="width: <%= Math.min(porcentajeMeta, 100) %>%;"></div>
@@ -36,47 +23,92 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       ALERTA: PEDIDOS LISTOS SIN COBRAR
+       CAPA 1 - URGENCIAS (3 BLOQUES CRÍTICOS)
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="row g-3 mb-5">
+    <!-- BLOQUE 1: COBRANZA URGENTE (Rojo) -->
+    <div class="col-lg-4">
+      <div class="card-urgencia card-urgencia-rojo">
+        <div class="urgencia-badge">🔴 COBRAR AHORA</div>
+        <div class="urgencia-amount">$<%= totalImpago.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+        <div class="urgencia-subtitle"><%= pedidosListosImpagos.length %> pedidos listos sin pagar</div>
+        <% if (pedidosListosImpagos.length > 0) { %>
+          <a href="#cobranza-tabla" class="urgencia-action">Ver detalles →</a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- BLOQUE 2: DEUDAS VENCIDAS (Rojo oscuro) -->
+    <div class="col-lg-4">
+      <div class="card-urgencia card-urgencia-vencido">
+        <div class="urgencia-badge">🔴 VENCIDAS</div>
+        <div class="urgencia-amount">$<%= deudasPorUrgencia.vencidas.reduce((sum, d) => sum + (d.monto || 0), 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+        <div class="urgencia-subtitle"><%= deudasPorUrgencia.vencidas.length %> deudas vencidas</div>
+        <% if (deudasPorUrgencia.vencidas.length > 0) { %>
+          <a href="/deudas" class="urgencia-action">Gestionar →</a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- BLOQUE 3: PRÓXIMOS 7 DÍAS (Naranja) -->
+    <div class="col-lg-4">
+      <div class="card-urgencia card-urgencia-naranja">
+        <div class="urgencia-badge">🟡 PRÓXIMOS 7 DÍAS</div>
+        <div class="urgencia-amount">$<%= totalProximos7Dias.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+        <div class="urgencia-subtitle"><%= proximos7Dias.length %> vencimientos programados</div>
+        <% if (proximos7Dias.length > 0) { %>
+          <a href="/deudas" class="urgencia-action">Planificar →</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       TABLA DETALLADA DE COBRANZA (Si hay pedidos sin cobrar)
        ════════════════════════════════════════════════════════════════ -->
   <% if (pedidosListosImpagos && pedidosListosImpagos.length > 0) { %>
-  <div class="card-minimal mb-5" style="border-left: 4px solid #ef4444; background: #fff5f5;">
-    <div class="card-header" style="color: #ef4444; font-weight: bold; border-bottom: 1px solid #ffcccc;">
-      🔴 ACCIÓN INMEDIATA: <%= pedidosListosImpagos.length %> Pedido(s) Listo(s) Sin Cobrar
+  <div class="card-minimal mb-5" id="cobranza-tabla">
+    <div class="card-header" style="color: #ef4444; font-weight: 700; border-bottom: 2px solid #ffcccc;">
+      📋 Detalles: <%= pedidosListosImpagos.length %> Pedido(s) para Cobrar Hoy
     </div>
     <div class="table-responsive" style="margin: 0; padding: 1rem;">
-      <table class="table table-sm mb-0" style="margin: 0;">
-        <thead style="background: #ffebee;">
+      <table class="table-minimal">
+        <thead style="background: #fff5f5;">
           <tr>
-            <th>Pedido</th>
-            <th>Cliente</th>
-            <th>Monto</th>
-            <th>Deuda</th>
-            <th>Días</th>
-            <th style="text-align: center;">Acciones</th>
+            <th style="width: 8%;">Pedido</th>
+            <th style="width: 25%;">Cliente</th>
+            <th style="width: 12%;">Monto</th>
+            <th style="width: 12%;">Deuda</th>
+            <th style="width: 10%;">Días</th>
+            <th style="width: 33%; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
           <% pedidosListosImpagos.forEach(ped => { %>
           <% const diasSinCobrar = Math.floor((new Date() - new Date(ped.fecha)) / (1000 * 60 * 60 * 24)); %>
           <tr style="border-bottom: 1px solid #ffcccc;">
-            <td><a href="/pedidos/detalle/<%= ped.id %>" style="font-weight: bold; color: #ef4444;">#<%= ped.id %></a></td>
-            <td><%= ped.cliente_nombre || '(sin cliente)' %></td>
-            <td>$<%= (ped.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
-            <td style="font-weight: bold; color: #ef4444;">$<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
-            <td style="font-weight: bold;">
+            <td style="font-weight: 700; color: #ef4444;">
+              <a href="/pedidos/detalle/<%= ped.id %>">#<%= ped.id %></a>
+            </td>
+            <td style="font-weight: 500;">
+              <%= (ped.cliente_nombre || '(sin cliente)').substring(0, 30) %>
+            </td>
+            <td>$<%= (ped.precio || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></td>
+            <td style="font-weight: 700; color: #ef4444;">
+              $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+            </td>
+            <td style="font-weight: 600;">
               <% if (diasSinCobrar > 10) { %>
-                <span style="color: #ef4444;">🔴 <%= diasSinCobrar %> d</span>
+                <span style="color: #ef4444;">🔴 <%= diasSinCobrar %>d</span>
               <% } else if (diasSinCobrar > 5) { %>
-                <span style="color: #f59e0b;">🟡 <%= diasSinCobrar %> d</span>
+                <span style="color: #f59e0b;">🟡 <%= diasSinCobrar %>d</span>
               <% } else { %>
-                <span style="color: #6b7280;"><%= diasSinCobrar %> d</span>
+                <span style="color: #6b7280;"><%= diasSinCobrar %>d</span>
               <% } %>
             </td>
             <td style="text-align: center;">
-              <div class="btn-group btn-sm" role="group">
-                <a href="/pedidos/detalle/<%= ped.id %>" class="btn btn-sm btn-success" title="Cobrar">💰 Cobrar</a>
-                <a href="https://wa.me/?text=Hola! Tu pedido %23<%= ped.id %> está listo. Total: $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %>" target="_blank" class="btn btn-sm btn-info" title="WhatsApp">📱</a>
-              </div>
+              <a href="/pedidos/detalle/<%= ped.id %>" class="btn btn-sm btn-success" title="Cobrar" style="margin-right: 4px;">💰 Cobrar</a>
+              <a href="https://wa.me/?text=Hola! Tu pedido %23<%= ped.id %> está listo para retirar. Total: $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>" target="_blank" class="btn btn-sm btn-info" title="WhatsApp">📱</a>
             </td>
           </tr>
           <% }); %>
@@ -87,97 +119,44 @@
   <% } %>
 
   <!-- ════════════════════════════════════════════════════════════════
-       KPI STRIP - 4 MÉTRICAS PRINCIPALES
+       CAPA 2 - OPERACIÓN (Estados + Últimos Pedidos + Stock)
        ════════════════════════════════════════════════════════════════ -->
-  <div class="kpi-strip">
-    <!-- INGRESOS ESTE MES -->
-    <div class="kpi-item">
-      <div class="kpi-label">Ingresos Mes</div>
-      <div class="kpi-value" style="color: #10b981;">
-        $<%= ingresosMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-      </div>
-      <% if (cambioIngresos >= 0) { %>
-        <div class="kpi-change" style="color: #10b981;">↑ <%= cambioIngresos.toFixed(0) %>% vs mes anterior</div>
-      <% } else { %>
-        <div class="kpi-change" style="color: #ef4444;">↓ <%= Math.abs(cambioIngresos).toFixed(0) %>% vs mes anterior</div>
-      <% } %>
-    </div>
 
-    <!-- GASTOS ESTE MES -->
-    <div class="kpi-item">
-      <div class="kpi-label">Gastos Mes</div>
-      <div class="kpi-value" style="color: #ef4444;">
-        $<%= gastosTotalMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-      </div>
-      <% if (cambioGastos >= 0) { %>
-        <div class="kpi-change" style="color: #ef4444;">↑ <%= cambioGastos.toFixed(0) %>% vs mes anterior</div>
-      <% } else { %>
-        <div class="kpi-change" style="color: #10b981;">↓ <%= Math.abs(cambioGastos).toFixed(0) %>% vs mes anterior</div>
-      <% } %>
-    </div>
-
-    <!-- SALDO NETO -->
-    <div class="kpi-item">
-      <div class="kpi-label">Saldo Neto</div>
-      <div class="kpi-value" style="color: <%= saldoNeto >= 0 ? '#10b981' : '#ef4444' %>;">
-        $<%= saldoNeto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-      </div>
-      <div class="kpi-change">
-        <%= (((saldoNeto / ingresosMes) * 100) || 0).toFixed(0) %>% margen neto
+  <!-- MINI STATS BAR -->
+  <div class="stats-bar mb-5">
+    <div class="stat-item">
+      <div class="stat-count">📋</div>
+      <div style="flex: 1;">
+        <div class="stat-label">Pendientes</div>
+        <div class="stat-value"><%= pendientes %></div>
       </div>
     </div>
-
-    <!-- PEDIDOS ACTIVOS -->
-    <div class="kpi-item">
-      <div class="kpi-label">Pedidos Activos</div>
-      <div class="kpi-value" style="color: #0ea5e9;">
-        <%= (pendientes + en_produccion + listos) %>
+    <div class="stat-item">
+      <div class="stat-count warning">⚙️</div>
+      <div style="flex: 1;">
+        <div class="stat-label">En Producción</div>
+        <div class="stat-value warning"><%= en_produccion %></div>
       </div>
-      <div class="kpi-change">
-        <%= pendientes %> pend. + <%= en_produccion %> prod. + <%= listos %> listos
+    </div>
+    <div class="stat-item">
+      <div class="stat-count success">✅</div>
+      <div style="flex: 1;">
+        <div class="stat-label">Listos</div>
+        <div class="stat-value success"><%= listos %></div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-count muted">📦</div>
+      <div style="flex: 1;">
+        <div class="stat-label">Entregados</div>
+        <div class="stat-value muted"><%= entregados %></div>
       </div>
     </div>
   </div>
 
-  <!-- ════════════════════════════════════════════════════════════════
-       ESTADO OPERATIVO DEL DÍA
-       ════════════════════════════════════════════════════════════════ -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <span class="stat-count">📋</span>
-      <div style="flex: 1;">
-        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">Pendientes</div>
-        <div class="stat-count" style="margin: 0;"><%= pendientes %></div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <span class="stat-count warning">⚙️</span>
-      <div style="flex: 1;">
-        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">En Producción</div>
-        <div class="stat-count warning" style="margin: 0;"><%= en_produccion %></div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <span class="stat-count success">✅</span>
-      <div style="flex: 1;">
-        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">Listos</div>
-        <div class="stat-count success" style="margin: 0;"><%= listos %></div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <span class="stat-count muted">📦</span>
-      <div style="flex: 1;">
-        <div style="font-size: 0.75rem; color: #9ca3af; text-transform: uppercase;">Entregados</div>
-        <div class="stat-count muted" style="margin: 0;"><%= entregados %></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ════════════════════════════════════════════════════════════════
-       DOS COLUMNAS: ÚLTIMOS PEDIDOS + STOCK/VENCIMIENTOS
-       ════════════════════════════════════════════════════════════════ -->
+  <!-- ÚLTIMOS PEDIDOS + STOCK (2 COLUMNAS) -->
   <div class="row g-4 mb-5">
-    <!-- COLUMNA IZQUIERDA: ÚLTIMOS PEDIDOS -->
+    <!-- ÚLTIMOS PEDIDOS (COL 7) -->
     <div class="col-lg-7">
       <div class="card-minimal">
         <div class="card-header">
@@ -188,30 +167,42 @@
           <table class="table-minimal">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Monto</th>
-                <th>Estado</th>
-                <th>Fecha</th>
+                <th style="width: 8%;">ID</th>
+                <th style="width: 30%;">Cliente</th>
+                <th style="width: 15%;">Monto</th>
+                <th style="width: 18%;">Estado</th>
+                <th style="width: 14%;">Fecha</th>
+                <th style="width: 15%;">Acción</th>
               </tr>
             </thead>
             <tbody>
               <% ultimosPedidos.forEach(ped => { %>
-              <tr style="cursor: pointer;" onclick="location.href='/pedidos/detalle/<%= ped.id %>';">
-                <td><a href="/pedidos/detalle/<%= ped.id %>" style="color: #2563eb; font-weight: 600;">#<%= ped.id %></a></td>
-                <td><%= ped.cliente_nombre || '(sin nombre)' %></td>
-                <td>$<%= (ped.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 0}) %></td>
+              <tr style="cursor: pointer;">
+                <td style="font-weight: 700; color: #2563eb;">
+                  <a href="/pedidos/detalle/<%= ped.id %>">#<%= ped.id %></a>
+                </td>
+                <td style="font-weight: 500;">
+                  <%= (ped.cliente_nombre || '(sin nombre)').substring(0, 25) %>
+                </td>
+                <td style="font-weight: 600;">
+                  $<%= (ped.precio || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+                </td>
                 <td>
                   <%
                     let badgeColor = 'secondary';
-                    if (ped.estado === 'ENTREGADO') badgeColor = 'success';
-                    if (ped.estado === 'LISTO') badgeColor = 'success';
-                    if (ped.estado === 'EN_PRODUCCION') badgeColor = 'warning';
+                    let badgeText = ped.estado.replace('_', ' ');
+                    if (ped.estado === 'ENTREGADO') { badgeColor = 'success'; badgeText = '✓ Entregado'; }
+                    if (ped.estado === 'LISTO') { badgeColor = 'success'; badgeText = '✓ Listo'; }
+                    if (ped.estado === 'EN_PRODUCCION') { badgeColor = 'warning'; badgeText = '⚙️ En Prod'; }
+                    if (ped.estado === 'PENDIENTE') { badgeColor = 'danger'; badgeText = '📋 Pendiente'; }
                   %>
-                  <span class="badge bg-<%= badgeColor %>"><%= ped.estado.replace('_', ' ') %></span>
+                  <span class="badge bg-<%= badgeColor %>" style="font-weight: 600;"><%= badgeText %></span>
                 </td>
                 <td style="font-size: 0.85rem; color: #9ca3af;">
-                  <%= new Date(ped.fecha).toLocaleDateString('es-AR') %>
+                  <%= new Date(ped.fecha).toLocaleDateString('es-AR', {month: 'short', day: 'numeric'}) %>
+                </td>
+                <td style="text-align: center;">
+                  <a href="/pedidos/detalle/<%= ped.id %>" class="btn btn-sm btn-outline-primary" title="Ver">Ver</a>
                 </td>
               </tr>
               <% }); %>
@@ -226,7 +217,7 @@
       </div>
     </div>
 
-    <!-- COLUMNA DERECHA: STOCK CRÍTICO + PRÓXIMOS VENCIMIENTOS -->
+    <!-- STOCK CRÍTICO + DEUDORES TOP (COL 5) -->
     <div class="col-lg-5">
       <!-- STOCK CRÍTICO -->
       <div class="card-minimal mb-4">
@@ -244,12 +235,14 @@
         <% if (stockEnCero.length > 0 || stockCritico.length > 0) { %>
         <div style="padding: 1rem;">
           <% if (stockEnCero.length > 0) { %>
-          <div style="margin-bottom: 1rem;">
-            <div style="font-weight: 600; color: #ef4444; margin-bottom: 0.5rem;">🔴 Sin Stock (<%= stockEnCero.length %>)</div>
-            <ul style="margin: 0; padding-left: 1.25rem; list-style: disc;">
-              <% stockEnCero.slice(0, 5).forEach(item => { %>
-              <li style="color: #6b7280; font-size: 0.875rem;">
-                <strong><%= item.nombre %></strong>
+          <div style="margin-bottom: 1.25rem;">
+            <div style="font-weight: 700; color: #ef4444; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.75rem;">
+              🔴 SIN STOCK (<%= stockEnCero.length %>)
+            </div>
+            <ul style="margin: 0; padding-left: 1rem; list-style: disc;">
+              <% stockEnCero.slice(0, 4).forEach(item => { %>
+              <li style="color: #1f2937; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.4rem;">
+                <%= item.nombre.substring(0, 28) %>
               </li>
               <% }); %>
             </ul>
@@ -257,11 +250,13 @@
           <% } %>
           <% if (stockCritico.length > 0) { %>
           <div>
-            <div style="font-weight: 600; color: #f59e0b; margin-bottom: 0.5rem;">🟡 Bajo Stock (<%= stockCritico.length %>)</div>
-            <ul style="margin: 0; padding-left: 1.25rem; list-style: disc;">
-              <% stockCritico.slice(0, 5).forEach(item => { %>
-              <li style="color: #6b7280; font-size: 0.875rem;">
-                <strong><%= item.nombre %></strong> — <%= item.cantidad %> / <%= item.stock_minimo %>
+            <div style="font-weight: 700; color: #f59e0b; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 0.75rem;">
+              🟡 BAJO STOCK (<%= stockCritico.length %>)
+            </div>
+            <ul style="margin: 0; padding-left: 1rem; list-style: disc;">
+              <% stockCritico.slice(0, 4).forEach(item => { %>
+              <li style="color: #1f2937; font-weight: 500; font-size: 0.9rem; margin-bottom: 0.4rem;">
+                <strong><%= item.nombre.substring(0, 20) %></strong> • <%= item.cantidad %>/<%= item.stock_minimo %>
               </li>
               <% }); %>
             </ul>
@@ -269,43 +264,35 @@
           <% } %>
         </div>
         <% } else { %>
-        <div style="padding: 1.5rem; text-align: center; color: #10b981; font-weight: 600;">
-          ✅ Todo en orden
+        <div style="padding: 1.5rem; text-align: center;">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
+          <div style="color: #10b981; font-weight: 600; font-size: 0.95rem;">
+            Stock en buen nivel
+          </div>
         </div>
         <% } %>
       </div>
 
-      <!-- PRÓXIMOS VENCIMIENTOS (5 DÍAS) -->
+      <!-- TOP 5 DEUDORES -->
       <div class="card-minimal">
         <div class="card-header">
-          <i class="bi bi-calendar-event"></i> Próximos 7 Días
+          <i class="bi bi-person-exclamation"></i> Top 5 Deudores
         </div>
-        <% if (proximos7Dias && proximos7Dias.length > 0) { %>
-        <div style="max-height: 300px; overflow-y: auto;">
-          <% proximos7Dias.slice(0, 5).forEach(item => { %>
-          <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb;">
-            <div style="display: flex; justify-content: space-between; align-items: start; gap: 0.5rem;">
-              <div style="flex: 1;">
-                <div style="font-size: 0.85rem; font-weight: 600; color: #1f2937;">
-                  <%= item.concepto %>
-                </div>
-                <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.25rem;">
-                  <%= item.fecha_str %>
-                </div>
+        <% if (deudores && deudores.length > 0) { %>
+        <div style="max-height: 280px; overflow-y: auto;">
+          <% deudores.slice(0, 5).forEach((deu, idx) => { %>
+          <div style="padding: 0.85rem 1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+              <div style="font-weight: 700; color: #1f2937; font-size: 0.95rem;">
+                <%= (deu.cliente_nombre || 'Cliente').substring(0, 22) %>
               </div>
-              <div style="text-align: right; white-space: nowrap;">
-                <div style="font-weight: 600; color: #1f2937;">
-                  $<%= item.monto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-                </div>
-                <div style="font-size: 0.7rem; color: #9ca3af;">
-                  <% if (item.diasHasta <= 0) { %>
-                    <span style="color: #ef4444;">🔴 VENCIDO</span>
-                  <% } else if (item.diasHasta <= 3) { %>
-                    <span style="color: #f59e0b;">🟡 <%= item.diasHasta %> días</span>
-                  <% } else { %>
-                    <span>📅 <%= item.diasHasta %> días</span>
-                  <% } %>
-                </div>
+              <div style="font-size: 0.8rem; color: #9ca3af; margin-top: 0.2rem;">
+                <%= deu.dias_deuda || 0 %> días sin pagar
+              </div>
+            </div>
+            <div style="text-align: right; white-space: nowrap; margin-left: 0.5rem;">
+              <div style="font-weight: 700; color: #ef4444;">
+                $<%= (deu.monto_restante || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
               </div>
             </div>
           </div>
@@ -313,7 +300,7 @@
         </div>
         <% } else { %>
         <div style="padding: 1.5rem; text-align: center; color: #10b981; font-weight: 600;">
-          ✅ Nada próximo
+          ✓ Sin deudores
         </div>
         <% } %>
       </div>
@@ -321,43 +308,116 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       2 CHARTS - INGRESOS + ESTADOS
+       CAPA 3 - KPIs FINANCIEROS (6 Métricas)
        ════════════════════════════════════════════════════════════════ -->
-  <div class="row g-4 mb-5">
-    <!-- CHART INGRESOS ÚLTIMOS 7 DÍAS -->
-    <div class="col-lg-6">
-      <div class="card-minimal">
-        <div class="card-header">
-          <i class="bi bi-graph-up"></i> Ingresos Últimos 7 Días
-        </div>
-        <div style="padding: 1.5rem; position: relative; height: 300px;">
-          <canvas id="chartIngreso7dias" style="max-height: 250px;"></canvas>
-        </div>
+  <div class="kpi-grid mb-5">
+    <!-- INGRESOS MES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Ingresos Mes</div>
+      <div class="kpi-exec-value" style="color: #10b981;">
+        $<%= ingresosMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <% if (cambioIngresos >= 0) { %>
+        <div class="kpi-exec-change" style="color: #10b981;">↑ <%= cambioIngresos.toFixed(0) %>% vs anterior</div>
+      <% } else { %>
+        <div class="kpi-exec-change" style="color: #ef4444;">↓ <%= Math.abs(cambioIngresos).toFixed(0) %>% vs anterior</div>
+      <% } %>
+    </div>
+
+    <!-- GASTOS MES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Gastos Mes</div>
+      <div class="kpi-exec-value" style="color: #ef4444;">
+        $<%= gastosTotalMes.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <% if (cambioGastos >= 0) { %>
+        <div class="kpi-exec-change" style="color: #ef4444;">↑ <%= cambioGastos.toFixed(0) %>% vs anterior</div>
+      <% } else { %>
+        <div class="kpi-exec-change" style="color: #10b981;">↓ <%= Math.abs(cambioGastos).toFixed(0) %>% vs anterior</div>
+      <% } %>
+    </div>
+
+    <!-- SALDO NETO -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Saldo Neto</div>
+      <div class="kpi-exec-value" style="color: <%= saldoNeto >= 0 ? '#10b981' : '#ef4444' %>;">
+        $<%= saldoNeto.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-exec-change">
+        Resultado del mes
       </div>
     </div>
 
-    <!-- CHART ESTADOS DE PEDIDOS -->
-    <div class="col-lg-6">
-      <div class="card-minimal">
-        <div class="card-header">
-          <i class="bi bi-pie-chart"></i> Estados de Pedidos
-        </div>
-        <div style="padding: 1.5rem; position: relative; height: 300px;">
-          <canvas id="chartEstados" style="max-height: 250px;"></canvas>
-        </div>
+    <!-- MARGEN NETO % -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Margen Neto</div>
+      <div class="kpi-exec-value" style="color: <%= (saldoNeto / ingresosMes * 100) >= 40 ? '#10b981' : '#f59e0b' %>;">
+        <%= ((saldoNeto / ingresosMes) * 100 || 0).toFixed(1) %>%
+      </div>
+      <div class="kpi-exec-change">
+        Meta: 40%
+      </div>
+    </div>
+
+    <!-- DEUDA CLIENTES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Deuda Clientes</div>
+      <div class="kpi-exec-value" style="color: #f59e0b;">
+        $<%= deudaTotal.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-exec-change">
+        <%= deudores ? deudores.length : 0 %> clientes con deuda
+      </div>
+    </div>
+
+    <!-- COBRO PROMEDIO -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Cobro Promedio</div>
+      <div class="kpi-exec-value" style="color: #0ea5e9;">
+        <%= diasPromedioCobro || 'N/A' %> días
+      </div>
+      <div class="kpi-exec-change">
+        Meta: 3 días
       </div>
     </div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       FALLBACK PARA NO-ADMIN
+       CHARTS - 3 Visualizaciones Clave
        ════════════════════════════════════════════════════════════════ -->
+  <div class="row g-4 mb-5">
+    <!-- CHART 1: INGRESOS ÚLTIMOS 7 DÍAS -->
+    <div class="col-lg-6">
+      <div class="card-minimal">
+        <div class="card-header">
+          <i class="bi bi-graph-up"></i> Ingresos Últimos 7 Días
+        </div>
+        <div style="padding: 1.5rem; position: relative; height: 280px;">
+          <canvas id="chartIngreso7d"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART 2: ESTADOS DE PEDIDOS -->
+    <div class="col-lg-6">
+      <div class="card-minimal">
+        <div class="card-header">
+          <i class="bi bi-pie-chart"></i> Estados de Pedidos
+        </div>
+        <div style="padding: 1.5rem; position: relative; height: 280px;">
+          <canvas id="chartEstados"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FALLBACK PARA NO-ADMIN -->
   <% } else { %>
   <div class="alert alert-info alert-minimal mt-5">
     <div style="text-align: center; padding: 2rem;">
       <i class="bi bi-info-circle" style="font-size: 2rem; color: #0284c7;"></i>
-      <p style="margin: 1rem 0 0 0; color: #0c2d6b;">
-        El dashboard está disponible solo para administradores.
+      <p style="margin: 1rem 0 0 0; color: #0c2d6b; font-weight: 500;">
+        El dashboard ejecutivo está disponible solo para administradores.
       </p>
     </div>
   </div>
@@ -373,7 +433,7 @@
   // ═══════════════════════════════════════════════════════════════════
   // CHART 1: INGRESOS ÚLTIMOS 7 DÍAS
   // ═══════════════════════════════════════════════════════════════════
-  const ctx1 = document.getElementById('chartIngreso7dias');
+  const ctx1 = document.getElementById('chartIngreso7d');
   if (ctx1) {
     new Chart(ctx1, {
       type: 'bar',
@@ -382,13 +442,10 @@
         datasets: [{
           label: 'Ingresos',
           data: <%= graficoDatos %>,
-          backgroundColor: [
-            '#10b981', '#10b981', '#10b981', '#10b981',
-            '#10b981', '#10b981', '#10b981'
-          ],
+          backgroundColor: '#10b981',
           borderColor: '#059669',
           borderWidth: 1,
-          borderRadius: 4
+          borderRadius: 6
         }]
       },
       options: {
@@ -400,9 +457,10 @@
         scales: {
           y: {
             beginAtZero: true,
+            grid: { drawBorder: false },
             ticks: {
               callback: function(value) {
-                return '$' + value.toLocaleString();
+                return '$' + (value / 1000).toFixed(0) + 'k';
               }
             }
           }
@@ -423,10 +481,10 @@
         datasets: [{
           data: <%= estadoDatos %>,
           backgroundColor: [
-            '#ef4444',      // PENDIENTE - rojo
-            '#f59e0b',      // EN_PRODUCCION - ámbar
-            '#10b981',      // LISTO - verde
-            '#9ca3af'       // ENTREGADO - gris
+            '#ef4444',      // PENDIENTE
+            '#f59e0b',      // EN_PRODUCCION
+            '#10b981',      // LISTO
+            '#9ca3af'       // ENTREGADO
           ],
           borderColor: '#ffffff',
           borderWidth: 2
@@ -439,8 +497,8 @@
           legend: {
             position: 'bottom',
             labels: {
-              padding: 15,
-              font: { size: 12 }
+              padding: 12,
+              font: { size: 11, weight: '600' }
             }
           }
         }
@@ -449,13 +507,13 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════
-  // SEMAFORO - Cargar estado financiero
+  // SEMAFORO - Estado financiero
   // ═══════════════════════════════════════════════════════════════════
   fetch('/api/semaforo', { credentials: 'same-origin' })
     .then(res => res.json())
     .then(data => {
       const dot = document.getElementById('semaforo-dot');
-      if (dot) {
+      if (dot && data.color) {
         dot.style.background = data.color === 'success' ? '#10b981' :
                               data.color === 'warning' ? '#f59e0b' :
                               '#ef4444';

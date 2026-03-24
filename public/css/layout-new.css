@@ -584,3 +584,153 @@ body {
     font-size: 2.25rem;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   COMPONENTES EJECUTIVOS - Dashboard Profesional
+   ───────────────────────────────────────────────────────────────── */
+
+/* CARDS DE URGENCIA */
+.card-urgencia {
+  background: white;
+  border-radius: 10px;
+  padding: 1.75rem;
+  border: 1px solid #e5e7eb;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.card-urgencia::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+
+.card-urgencia-rojo {
+  border-left: 5px solid #ef4444;
+}
+
+.card-urgencia-rojo::before {
+  background: #ef4444;
+}
+
+.card-urgencia-vencido {
+  border-left: 5px solid #991b1b;
+}
+
+.card-urgencia-vencido::before {
+  background: #991b1b;
+}
+
+.card-urgencia-naranja {
+  border-left: 5px solid #f59e0b;
+}
+
+.card-urgencia-naranja::before {
+  background: #f59e0b;
+}
+
+.urgencia-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.urgencia-amount {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.urgencia-subtitle {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.urgencia-action {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  margin-top: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.urgencia-action:hover {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+/* KPI GRID - 6 MÉTRICAS EN 2 FILAS */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.kpi-card-exec {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.kpi-card-exec:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  border-color: #d1d5db;
+}
+
+.kpi-exec-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.6rem;
+}
+
+.kpi-exec-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.4rem;
+}
+
+.kpi-exec-change {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+@media (max-width: 1024px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-urgencia {
+    padding: 1.5rem;
+  }
+
+  .urgencia-amount {
+    font-size: 1.875rem;
+  }
+}

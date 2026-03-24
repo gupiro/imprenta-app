@@ -6,33 +6,21 @@
   <title><%= typeof title !== 'undefined' ? title : 'Imprenta El Gráfico' %></title>
 
   <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#2563eb" />
+  <meta name="theme-color" content="#2c3e50" />
 
-  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
-  <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
-  <!-- Custom Styles -->
   <link rel="stylesheet" href="/css/modern-minimal.css" />
   <link rel="stylesheet" href="/css/layout-new.css" />
   <link rel="stylesheet" href="/css/sidebar-flotante.css" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
 
   <style>
     :root {
-      --sidebar-width: 280px;
-      --sidebar-width-mobile: 70px;
-      --navbar-height: 60px;
-      --color-primary: #2563eb;
-      --color-success: #10b981;
-      --color-danger: #ef4444;
-      --color-warning: #f59e0b;
-      --color-info: #0ea5e9;
-      --bg-primary: #f8fafc;
-      --bg-secondary: #ffffff;
-      --text-primary: #1f2937;
-      --text-secondary: #6b7280;
-      --border-color: #e5e7eb;
+      --primary-color: #2c3e50;
+      --secondary-color: #e74c3c;
+      --accent-color: #3498db;
+      --light-bg: #ecf0f1;
     }
 
     * {
@@ -42,419 +30,337 @@
     }
 
     html, body {
-      height: 100%;
-      background-color: var(--bg-primary);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      color: var(--text-primary);
+      background-color: #f5f6fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      scroll-behavior: auto;
     }
 
     body {
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       NAVBAR PROFESIONAL
+       ═══════════════════════════════════════════════════════════════ */
+    
+    .navbar {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 0.75rem 0;
+      border-bottom: 3px solid #495057;
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white !important;
+      margin-right: 3rem !important;
+    }
+
+    .navbar-brand img {
+      height: 45px;
+      filter: brightness(1.1);
+    }
+
+    .navbar-brand-text {
       display: flex;
       flex-direction: column;
+      line-height: 1.1;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       NAVBAR SUPERIOR
-       ════════════════════════════════════════════════════════════════ */
-
-    .navbar-top {
-      background: linear-gradient(135deg, var(--color-primary) 0%, #1e40af 100%);
-      height: var(--navbar-height);
-      display: flex;
-      align-items: center;
-      padding: 0 1.5rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .navbar-brand-section {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      flex: 1;
-    }
-
-    .navbar-toggle-btn {
-      background: #0ea5e9;
-      border: none;
-      color: white;
-      font-size: 1.2rem;
-      cursor: pointer;
-      padding: 0.5rem 0.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      transition: all 0.2s ease;
-      margin-right: 12px;
-    }
-
-    .navbar-toggle-btn:hover {
-      background: #0284c7;
-      transform: scale(1.05);
-    }
-
-    .navbar-brand-section h1 {
-      margin: 0;
-      font-size: 1.25rem;
+    .navbar-brand-text .main {
+      font-size: 1.3rem;
       font-weight: 700;
-      color: white;
-      letter-spacing: -0.5px;
     }
 
-    .navbar-brand-section p {
-      margin: 0;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .navbar-user {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      color: white;
-      margin-left: auto;
-    }
-
-    .navbar-user-info {
-      text-align: right;
-      font-size: 0.875rem;
-    }
-
-    .navbar-user-info .name {
-      font-weight: 600;
-    }
-
-    .navbar-user-info .role {
-      font-size: 0.75rem;
+    .navbar-brand-text .sub {
+      font-size: 0.7rem;
       opacity: 0.9;
+      letter-spacing: 1px;
     }
 
-    .navbar-user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
+    /* Menú Items */
+    .navbar-nav .nav-item {
+      margin: 0 0.25rem;
+    }
+
+    .navbar-nav .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+      font-size: 0.95rem;
+      padding: 0.75rem 1rem !important;
+      border-radius: 0.4rem;
+      transition: all 0.3s ease;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 1rem;
-    }
-
-    .navbar-actions {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-
-    .navbar-actions button {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: white;
-      cursor: pointer;
-      padding: 0.5rem 0.75rem;
-      border-radius: 6px;
-      font-size: 1rem;
-      transition: background 0.2s;
-    }
-
-    .navbar-actions button:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    /* ════════════════════════════════════════════════════════════════
-       CONTENEDOR PRINCIPAL (SIDEBAR + CONTENT)
-       ════════════════════════════════════════════════════════════════ */
-
-    .main-container {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* ════════════════════════════════════════════════════════════════
-       SIDEBAR
-       ════════════════════════════════════════════════════════════════ */
-
-    .sidebar {
-      width: var(--sidebar-width);
-      background: var(--bg-secondary);
-      border-right: 1px solid var(--border-color);
-      overflow-y: auto;
-      padding: 1.5rem 0;
-      box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-      transition: transform 0.3s ease, width 0.3s ease;
+      gap: 0.5rem;
       position: relative;
-      z-index: 99;
     }
 
-    .sidebar.collapsed {
-      width: var(--sidebar-width-mobile);
-      padding: 1rem 0;
+    .navbar-nav .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff !important;
+      transform: translateY(-2px);
     }
 
-    .sidebar-section {
-      padding: 0 1rem 1.5rem 1rem;
+    .navbar-nav .nav-link.active {
+      background-color: var(--secondary-color);
+      color: #fff !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
     }
 
-    .sidebar-section:first-child {
-      padding-top: 0;
+    /* Dropdown Menú */
+    .dropdown-menu {
+      border: none;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      padding: 0.5rem 0;
+      border-radius: 0.5rem;
+      min-width: 220px;
     }
 
-    .sidebar.collapsed .sidebar-section {
-      padding: 0 0.5rem 1rem 0.5rem;
-    }
-
-    .sidebar-label {
-      font-size: 0.75rem;
+    .dropdown-header {
+      font-size: 0.85rem;
       font-weight: 700;
       text-transform: uppercase;
-      color: var(--text-secondary);
+      color: var(--primary-color);
+      padding: 0.75rem 1rem;
       letter-spacing: 0.5px;
-      margin-bottom: 0.75rem;
-      padding: 0 0.5rem;
+      background-color: var(--light-bg);
     }
 
-    .sidebar.collapsed .sidebar-label {
-      display: none;
+    .dropdown-item {
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      color: #2c3e50;
     }
 
-    .sidebar-menu {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+    .dropdown-item:hover {
+      background-color: var(--light-bg);
+      color: var(--secondary-color);
+      padding-left: 1.25rem;
     }
 
-    .sidebar-menu-item {
-      position: relative;
+    .dropdown-item i {
+      margin-right: 0.75rem;
+      width: 20px;
+      text-align: center;
+      color: var(--accent-color);
     }
 
-    .sidebar-menu-link {
+    .dropdown-divider {
+      margin: 0.25rem 0;
+      opacity: 0.5;
+    }
+
+    /* Badge de Notificaciones */
+    .badge-notification {
+      position: absolute;
+      top: -5px;
+      right: -8px;
+      background-color: #e74c3c;
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    /* User Profile Dropdown */
+    .user-profile {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 0.75rem 0.75rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      border-radius: 6px;
-      transition: all 0.2s;
-      font-size: 0.9rem;
-      font-weight: 500;
-      white-space: nowrap;
+      margin-left: auto;
     }
 
-    .sidebar.collapsed .sidebar-menu-link span {
-      display: none;
-    }
-
-    .sidebar.collapsed .sidebar-menu-link {
-      justify-content: center;
-      gap: 0;
-    }
-
-    .sidebar-menu-link:hover {
-      background: var(--bg-primary);
-      color: var(--color-primary);
-    }
-
-    .sidebar-menu-link.active {
-      background: rgba(37, 99, 235, 0.1);
-      color: var(--color-primary);
-      font-weight: 600;
-    }
-
-    .sidebar-menu-link.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: var(--color-primary);
-      border-radius: 0 3px 3px 0;
-    }
-
-    .sidebar-menu-link i {
-      font-size: 1.1rem;
-      flex-shrink: 0;
-    }
-
-    /* Submenu */
-    .sidebar-submenu {
-      list-style: none;
-      padding-left: 1.5rem;
-      margin-top: 0.25rem;
-      display: none;
-      flex-direction: column;
-      gap: 0.1rem;
-    }
-
-    .sidebar-submenu.show {
-      display: flex;
-    }
-
-    .sidebar.collapsed .sidebar-submenu {
-      display: none !important;
-    }
-
-    .sidebar-submenu-link {
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+      border-radius: 50%;
       display: flex;
       align-items: center;
-      padding: 0.5rem 0.75rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      transition: all 0.2s;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
     }
 
-    .sidebar-submenu-link:hover {
-      color: var(--color-primary);
-      background: var(--bg-primary);
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.3;
+      color: white;
     }
 
-    .sidebar-submenu-link.active {
-      color: var(--color-primary);
+    .user-info .username {
       font-weight: 600;
+      font-size: 0.9    /* Mi Rutina - Ícono pequeño */
+    .navbar-nav .nav-link[href="/guia"] {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.8) !important;
+      transition: all 0.2s ease;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       CONTENIDO PRINCIPAL
-       ════════════════════════════════════════════════════════════════ */
-
-    .main-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 2rem;
-      background: var(--bg-primary);
+    .navbar-nav .nav-link[href="/guia"]:hover {
+      color: #fff !important;
+      transform: scale(1.15);
     }
 
-    .page-header {
-      margin-bottom: 2rem;
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.3;
+      color: white;
     }
 
-    .page-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 0.5rem 0;
+    .user-info .username {
+      font-weight: 600;
+      font-size: 0.95rem;
     }
 
-    .page-subtitle {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      margin: 0;
+    .user-info .role {
+      font-size: 0.75rem;
+      opacity: 0.85;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       ALERTAS
-       ════════════════════════════════════════════════════════════════ */
+    /* Responsive */
+    @media (max-width: 992px) {
+      .navbar-brand-text .sub {
+        display: none;
+      }
 
-    .alert-container {
-      margin-bottom: 1.5rem;
+      .user-info {
+        display: none;
+      }
+
+      .navbar-collapse {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       SEMÁFORO FINANCIERO
+       ═══════════════════════════════════════════════════════════════ */
+    .semaforo-dot {
+      width: 11px; height: 11px; border-radius: 50%;
+      display: inline-block; transition: background-color 0.5s;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.25);
+    }
+    .semaforo-dot.success  { background: #28a745; box-shadow: 0 0 6px rgba(40,167,69,0.7); }
+    .semaforo-dot.warning { background: #ffc107; box-shadow: 0 0 6px rgba(255,193,7,0.7); }
+    .semaforo-dot.danger   { background: #dc3545; box-shadow: 0 0 6px rgba(220,53,69,0.7); }
+
+    /* ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════════════ */
+
+    main.container {
+      max-width: 1400px;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+      overflow: visible;
+    }
+
+    /* Prevenir scroll en páginas específicas */
+    main.container > div {
+      overflow: hidden;
     }
 
     .alert {
-      padding: 1rem 1.25rem;
-      border-radius: 8px;
-      border-left: 4px solid;
-      margin-bottom: 0.75rem;
-      animation: slideIn 0.3s ease;
+      border: none;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    /* ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ */
+
+    footer {
+      background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%);
+      color: rgba(255, 255, 255, 0.8);
+      padding: 1rem 0;
+      margin-top: 0.5rem;
+      border-top: 3px solid var(--secondary-color);
+      text-align: center;
+      font-size: 0.9rem;
     }
 
-    .alert-success {
-      background: #ecfdf5;
-      border-color: var(--color-success);
-      color: #065f46;
+    footer a {
+      color: var(--accent-color);
+      text-decoration: none;
+      transition: color 0.3s;
     }
 
-    .alert-danger {
-      background: #fef2f2;
-      border-color: var(--color-danger);
-      color: #7f1d1d;
+    footer a:hover {
+      color: white;
     }
 
-    .alert-warning {
-      background: #fffbeb;
-      border-color: var(--color-warning);
-      color: #92400e;
+    /* ═══════════════════════════════════════════════════════════════
+       TARJETAS CLICABLES CON HOVER EFFECT
+       ═══════════════════════════════════════════════════════════════ */
+
+    .card {
+      transition: all 0.3s ease;
     }
 
-    .alert-info {
-      background: #f0f9ff;
-      border-color: var(--color-info);
-      color: #0c2d6b;
+    a > .card,
+    a .card {
+      cursor: pointer;
     }
 
-    /* ════════════════════════════════════════════════════════════════
-       RESPONSIVE
-       ════════════════════════════════════════════════════════════════ */
-
-    @media (max-width: 768px) {
-      :root {
-        --sidebar-width: 70px;
-      }
-
-      .navbar-toggle-btn {
-        display: block;
-      }
-
-      .sidebar {
-        position: fixed;
-        left: -280px;
-        width: 280px;
-        height: 100vh;
-        top: var(--navbar-height);
-        bottom: 0;
-        z-index: 98;
-        transition: left 0.3s ease;
-        box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .sidebar.open {
-        left: 0;
-      }
-
-      .main-content {
-        padding: 1.5rem;
-      }
-
-      .page-title {
-        font-size: 1.5rem;
-      }
-
-      .navbar-user-info {
-        display: none;
-      }
+    a:hover > .card,
+    a:hover .card {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
     }
 
-    @media (max-width: 576px) {
-      .navbar-top {
-        padding: 0 1rem;
-      }
+    /* ═══════════════════════════════════════════════════════════════
+       BADGES DE COLOR PARA ESTADOS
+       ═══════════════════════════════════════════════════════════════ */
 
-      .main-content {
-        padding: 1rem;
-      }
+    .estado-select {
+      font-weight: 600;
+      border: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
 
-      .page-title {
-        font-size: 1.25rem;
-      }
+    /* PENDIENTE - Rojo claro */
+    .estado-select[data-estado="PENDIENTE"] {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #f5c6cb;
+    }
+
+    /* EN_PRODUCCION - Amarillo claro */
+    .estado-select[data-estado="EN_PRODUCCION"] {
+      background-color: #fff3cd;
+      color: #856404;
+      border-color: #ffeaa7;
+    }
+
+    /* LISTO - Verde claro */
+    .estado-select[data-estado="LISTO"] {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #c3e6cb;
+    }
+
+    /* ENTREGADO - Gris claro */
+    .estado-select[data-estado="ENTREGADO"] {
+      background-color: #e2e3e5;
+      color: #383d41;
+      border-color: #d6d8db;
     }
 
     /* ═════════════════════════════════════════════════════════════════
@@ -566,65 +472,37 @@
 </head>
 
 <body>
-  <!-- ════════════════════════════════════════════════════════════════
-       NAVBAR SUPERIOR
-       ════════════════════════════════════════════════════════════════ -->
 
-  <nav class="navbar-top">
-    <div class="navbar-brand-section">
-      <button class="navbar-toggle-btn" id="sidebar-toggle" title="Abrir menú">
-        <i class="bi bi-list"></i>
-      </button>
-      <a href="/" style="background: #10b981; color: white; padding: 0.5rem 0.75rem; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-right: 12px; transition: all 0.2s ease; font-weight: 500;" title="Ir a Inicio" onmouseover="this.style.background='#059669'; this.style.transform='scale(1.05)'" onmouseout="this.style.background='#10b981'; this.style.transform='scale(1)'">
-        <i class="bi bi-house-fill"></i>
-        <span style="font-size: 0.9rem;">HOME</span>
+  <!-- ═══════════════════════════════════════════════════════════════
+       NAVBAR PROFESIONAL
+       ═══════════════════════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg">
+    <div class="container-fluid px-3 px-lg-4">
+      
+      <!-- LOGO + NOMBRE EMPRESA -->
+      <a class="navbar-brand" href="/">
+        <img src="/images/logo.png" alt="Logo El Gráfico">
+        <div class="navbar-brand-text">
+          <div class="main">Imprenta El Gráfico</div>
+          <div class="sub">GESTIÓN DE NEGOCIOS</div>
+        </div>
       </a>
-      <div>
-        <h1>📊 Imprenta El Gráfico</h1>
-        <p>Gestión Integrada</p>
-      </div>
-    </div>
 
-    <div class="navbar-user">
-      <div class="navbar-user-info">
-        <div class="name"><%= user?.email || 'Usuario' %></div>
-        <div class="role"><%= (user?.rol || 'Sin rol').charAt(0).toUpperCase() + (user?.rol || '').slice(1).toLowerCase() %></div>
-      </div>
-      <div class="navbar-user-avatar">
-        <%= (user?.email?.charAt(0) || 'U').toUpperCase() %>
-      </div>
-      <div class="navbar-actions">
-        <button id="darkModeToggle" title="Cambiar tema" onclick="toggleDarkMode()">
-          <i class="bi bi-moon-fill" id="darkModeIcon"></i>
-        </button>
-        <button title="Soporte" onclick="alert('Ayuda: 3878 22-4908')">
-          <i class="bi bi-question-circle"></i>
-        </button>
-        <a href="/auth/logout" style="text-decoration: none; color: white; display: flex; align-items: center; padding: 0.5rem 0.75rem; border-radius: 6px; background: rgba(255,255,255,0.2);" title="Cerrar sesión">
-          <i class="bi bi-box-arrow-right"></i>
-        </a>
-      </div>
-    </div>
-  </nav>
+      <!-- BOTÓN HAMBURGUESA (MOBILE) -->
+      <button class="navbar-toggler text-white border-0" type="button"
+              data-bs-toggle="collapse" data-bs-target="#navbarNav"
+              aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-4"></i>
+      </button>
 
-  <!-- ════════════════════════════════════════════════════════════════
-       CONTENEDOR PRINCIPAL
-       ════════════════════════════════════════════════════════════════ -->
-
-  <!-- Overlay para cerrar sidebar -->
-  <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-  <div class="main-container">
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <button id="sidebar-close" class="sidebar-close-btn" title="Cerrar menú">✕</button>
-      <div class="sidebar-section">
-        <div class="sidebar-label">Principal</div>
-        <ul class="sidebar-menu">
-          <li class="sidebar-menu-item">
-            <a href="/" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'home') ? 'active' : '' %>">
-              <i class="bi bi-house-fill"></i>
-              <span>Inicio</span>
+      <!-- MENÚ PRINCIPAL -->
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto me-4">
+          
+          <!-- INICIO -->
+          <li class="nav-item">
+            <a class="nav-link <%= activePage === 'home' ? 'active' : '' %>" href="/">
+              <i class="bi bi-house-fill"></i> Inicio
             </a>
           </li>
           <li class="sidebar-menu-item">
@@ -633,202 +511,317 @@
               <span>Dashboard</span>
             </a>
           </li>
-        </ul>
-      </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-label">📋 Operativo Diario</div>
-        <ul class="sidebar-menu">
-          <li class="sidebar-menu-item">
-            <a href="/caja-diaria" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'caja-diaria') ? 'active' : '' %>">
-              <i class="bi bi-cash-coin"></i>
-              <span>Caja Diaria</span>
+          <!-- ▼ VENTAS -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="ventasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-cart-fill"></i> Ventas
             </a>
+            <ul class="dropdown-menu" aria-labelledby="ventasDropdown">
+              <li><h6 class="dropdown-header">📋 GESTIÓN DE VENTAS</h6></li>
+              <li><a class="dropdown-item" href="/pedidos/pendientes">
+                <i class="bi bi-clock-history"></i> Pedidos Pendientes
+              </a></li>
+              <li><a class="dropdown-item" href="/presupuestos/nuevo">
+                <i class="bi bi-calculator"></i> Nuevo Presupuesto
+              </a></li>
+              <li><a class="dropdown-item" href="/presupuestos">
+                <i class="bi bi-file-earmark"></i> Presupuestos
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/clientes">
+                <i class="bi bi-people-fill"></i> Clientes
+              </a></li>
+            </ul>
           </li>
-          <li class="sidebar-menu-item">
-            <a href="/pedidos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'pedidos') ? 'active' : '' %>">
-              <i class="bi bi-kanban-fill"></i>
-              <span>Producción</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/pedidos/vista-rapida" class="sidebar-menu-link <%= currentPath === '/pedidos/vista-rapida' ? 'active' : '' %>">
-              <i class="bi bi-lightning-fill"></i>
-              <span>Vista Rápida</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/clientes" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'clientes') ? 'active' : '' %>">
-              <i class="bi bi-people-fill"></i>
-              <span>Clientes</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/presupuestos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'presupuestos') ? 'active' : '' %>">
-              <i class="bi bi-calculator"></i>
-              <span>Presupuestos</span>
-            </a>
-          </li>
-        </ul>
-      </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-label">💳 Finanzas</div>
-        <ul class="sidebar-menu">
-          <li class="sidebar-menu-item">
-            <a href="/gastos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'gastos') ? 'active' : '' %>">
-              <i class="bi bi-receipt"></i>
-              <span>Gastos Directos</span>
+          <!-- ▼ PRODUCCIÓN -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="produccionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-hammer"></i> Producción
             </a>
+            <ul class="dropdown-menu" aria-labelledby="produccionDropdown">
+              <li><h6 class="dropdown-header">⚙️ SEGUIMIENTO DE TRABAJOS</h6></li>
+              <li><a class="dropdown-item" href="/pedidos/en-produccion">
+                <i class="bi bi-gear"></i> En Producción
+              </a></li>
+              <li><a class="dropdown-item" href="/pedidos/listos">
+                <i class="bi bi-check-circle"></i> Listos para Entregar
+              </a></li>
+              <li><a class="dropdown-item" href="/pedidos/entregados">
+                <i class="bi bi-box-seam"></i> Entregados
+              </a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="/catalogo">
+                <i class="bi bi-card-list"></i> Catálogo de Productos
+              </a></li>
+            </ul>
           </li>
-          <li class="sidebar-menu-item">
-            <a href="/finanzas/gastos-fijos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'gastos-fijos') ? 'active' : '' %>">
-              <i class="bi bi-building"></i>
-              <span>Gastos Fijos</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/finanzas/compras-cuotas" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'compras-cuotas') ? 'active' : '' %>">
-              <i class="bi bi-calendar2-week"></i>
-              <span>Compras a Cuotas</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/finanzas/facturas-recibidas" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'facturas-recibidas') ? 'active' : '' %>">
-              <i class="bi bi-file-earmark-text"></i>
-              <span>Facturas Recibidas</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/finanzas/vencimientos-fiscales" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'vencimientos-fiscales') ? 'active' : '' %>">
-              <i class="bi bi-calendar-range"></i>
-              <span>Vencimientos Fiscales</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/deudas" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'deudas') ? 'active' : '' %>">
-              <i class="bi bi-credit-card"></i>
-              <span>Deudas (Tarjetas, Cheques, Préstamos)</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/pagos" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'pagos') ? 'active' : '' %>">
-              <i class="bi bi-calendar-check"></i>
-              <span>Centro de Pagos</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/reportes" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'reportes') ? 'active' : '' %>">
-              <i class="bi bi-bar-chart-fill"></i>
-              <span>Reportes</span>
-            </a>
-          </li>
-        </ul>
-      </div>
 
-      <div class="sidebar-section">
-        <div class="sidebar-label">🛒 Ventas</div>
-        <ul class="sidebar-menu">
-          <li class="sidebar-menu-item">
-            <a href="/catalogo" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'catalogo') ? 'active' : '' %>">
-              <i class="bi bi-card-list"></i>
-              <span>Catálogo</span>
+          <!-- ▼ FINANZAS - NUEVO MENÚ -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="finanzasDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-cash-flow"></i> Finanzas
             </a>
-          </li>
-        </ul>
-      </div>
+            <ul class="dropdown-menu" aria-labelledby="finanzasDropdown">
+              <!-- DÍA A DÍA -->
+              <li><h6 class="dropdown-header">💵 DÍA A DÍA</h6></li>
+              <li><a class="dropdown-item" href="/caja-diaria">
+                <i class="bi bi-cash-coin"></i> Caja Diaria
+              </a></li>
+              <li><a class="dropdown-item" href="/gastos">
+                <i class="bi bi-receipt"></i> Gastos
+              </a></li>
 
-      <div class="sidebar-section">
-        <div class="sidebar-label">⚙️ Admin</div>
-        <ul class="sidebar-menu">
-          <li class="sidebar-menu-item">
-            <a href="/usuarios" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'usuarios') ? 'active' : '' %>">
-              <i class="bi bi-gear-fill"></i>
-              <span>Usuarios</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/stock" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'stock') ? 'active' : '' %>">
-              <i class="bi bi-boxes"></i>
-              <span>Stock</span>
-            </a>
-          </li>
-          <li class="sidebar-menu-item">
-            <a href="/proveedores" class="sidebar-menu-link <%= pages && pages.find(p => p.name === 'proveedores') ? 'active' : '' %>">
-              <i class="bi bi-truck"></i>
-              <span>Proveedores</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </aside>
+              <!-- MIS DEUDAS Y COMPROMISOS -->
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">📊 MIS DEUDAS Y COMPROMISOS</h6></li>
+              <li><a class="dropdown-item" href="/deudas/tarjetas">
+                <i class="bi bi-credit-card-2-back"></i> Tarjetas de Crédito
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/gastos-fijos">
+                <i class="bi bi-building"></i> Gastos Fijos
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/compras-cuotas">
+                <i class="bi bi-cart-check"></i> Compras en Cuotas
+              </a></li>
+              <li><a class="dropdown-item" href="/deudas/prestamos">
+                <i class="bi bi-piggy-bank"></i> Préstamos
+              </a></li>
+              <li><a class="dropdown-item" href="/deudas/cheques">
+                <i class="bi bi-file-earmark-check"></i> Cheques Diferidos
+              </a></li>
+              <li><a class="dropdown-item" href="/deudas/proveedores-deuda">
+                <i class="bi bi-truck"></i> Proveedores/Deuda
+              </a></li>
 
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
-      <!-- Alertas -->
-      <div class="alert-container">
-        <% if (success && success.length > 0) { %>
-          <% if (Array.isArray(success)) { %>
-            <% success.forEach(msg => { %>
-              <div class="alert alert-success">
-                <i class="bi bi-check-circle"></i> <%= msg %>
-              </div>
-            <% }); %>
-          <% } else { %>
-            <div class="alert alert-success">
-              <i class="bi bi-check-circle"></i> <%= success %>
-            </div>
+              <!-- COMPROBANTES -->
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">📄 COMPROBANTES</h6></li>
+              <li><a class="dropdown-item" href="/finanzas/facturas-recibidas">
+                <i class="bi bi-receipt-cutoff"></i> Facturas Recibidas
+              </a></li>
+              <li><a class="dropdown-item" href="/finanzas/vencimientos-fiscales">
+                <i class="bi bi-calendar-x"></i> Vencimientos Fiscales
+              </a></li>
+
+              <!-- ANÁLISIS -->
+              <li><hr class="dropdown-divider"></li>
+              <li><h6 class="dropdown-header">📈 ANÁLISIS</h6></li>
+              <li><a class="dropdown-item" href="/dashboard">
+                <i class="bi bi-graph-up"></i> Dashboard Financiero
+              </a></li>
+              <li><a class="dropdown-item" href="/reportes">
+                <i class="bi bi-bar-chart-fill"></i> Reportes
+              </a></li>
+            </ul>
+          </li>
           <% } %>
-        <% } %>
 
-        <% if (error && error.length > 0) { %>
-          <% if (Array.isArray(error)) { %>
-            <% error.forEach(msg => { %>
-              <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i> <%= msg %>
-              </div>
-            <% }); %>
-          <% } else { %>
-            <div class="alert alert-danger">
-              <i class="bi bi-exclamation-triangle"></i> <%= error %>
-            </div>
+          <!-- ▼ ADMINISTRACIÓN - SOLO PARA ADMIN -->
+          <% if (user && user.rol === 'admin') { %>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-gear-fill"></i> Admin
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+              <li><h6 class="dropdown-header">⚙️ CONFIGURACIÓN DEL SISTEMA</h6></li>
+              <li><a class="dropdown-item" href="/stock">
+                <i class="bi bi-boxes"></i> Stock/Inventario
+              </a></li>
+              <li><a class="dropdown-item" href="/usuarios">
+                <i class="bi bi-person-gear"></i> Usuarios
+              </a></li>
+              <li><a class="dropdown-item" href="/proveedores">
+                <i class="bi bi-gear"></i> Proveedores
+              </a></li>
+            </ul>
+          </li>
           <% } %>
-        <% } %>
+
+        </ul>
+
+        <!-- PERFIL DE USUARIO (DERECHA) -->
+        <ul class="navbar-nav">
+          <!-- MI RUTINA - ÍCONO PEQUEÑO CON TOOLTIP -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+            <li class="nav-item me-2">
+              <a class="nav-link p-2" href="/guia" title="Mi Rutina - Guía educativa" data-bs-toggle="tooltip" data-bs-placement="bottom">
+                <i class="bi bi-clipboard-list fs-5"></i>
+              </a>
+            </li>
+          <% } %>
+
+          <!-- SEMÁFORO FINANCIERO -->
+          <% if (user && (user.rol === 'admin' || user.rol === 'vendedor')) { %>
+            <li class="nav-item d-flex align-items-center me-2" title="Cargando...">
+              <span id="semaforo-dot" class="semaforo-dot" style="background:#6c757d;"></span>
+            </li>
+          <% } %>
+
+          <% if (user) { %>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle ps-3" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="user-profile">
+                  <div class="user-avatar">
+                    <i class="bi bi-person-fill"></i>
+                  </div>
+                  <div class="user-info">
+                    <div class="username"><%= user.username %></div>
+                    <div class="role"><%= user.rol ? user.rol.charAt(0).toUpperCase() + user.rol.slice(1) : 'Usuario' %></div>
+                  </div>
+                </div>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><h6 class="dropdown-header">👤 MI PERFIL</h6></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="bi bi-person"></i> Mi Perfil
+                </a></li>
+                <li><a class="dropdown-item" href="#">
+                  <i class="bi bi-shield-lock"></i> Cambiar Contraseña
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/auth/logout">
+                  <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                </a></li>
+              </ul>
+            </li>
+          <% } else { %>
+            <li class="nav-item">
+              <a class="nav-link" href="/auth/login">
+                <i class="bi bi-box-arrow-in-right"></i> Login
+              </a>
+            </li>
+          <% } %>
+        </ul>
       </div>
+    </div>
+  </nav>
 
-      <!-- Contenido renderizado -->
-      <%- body %>
-    </main>
-  </div>
+  <!-- ═══════════════════════════════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════════════════════════════ -->
+  <main class="container">
+    <% if (typeof error !== 'undefined' && Array.isArray(error) && error.length) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle"></i>
+        <%= error.join('<br>') %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+    <% if (typeof success !== 'undefined' && Array.isArray(success) && success.length) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle"></i>
+        <%= success.join('<br>') %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
 
-  <!-- Scripts -->
+    <%- body %>
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ -->
+  <footer>
+    <div class="container">
+      <p class="mb-0">
+        <strong>Imprenta El Gráfico</strong> &copy; <%= new Date().getFullYear() %> 
+        | Sistema de Gestión Profesional
+      </p>
+      <p class="small mt-2 mb-0">
+        📍 San Ramón de la Nueva Orán, Salta | 📱 (387) 000-0000
+      </p>
+    </div>
+  </footer>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SCRIPTS
+       ═══════════════════════════════════════════════════════════════ -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <script src="/js/table-interactive.js"></script>
 
   <script>
-    // Toggle Sidebar en móvil
-    document.getElementById('sidebarToggle')?.addEventListener('click', function() {
-      const sidebar = document.getElementById('sidebar');
-      sidebar.classList.toggle('open');
-    });
+    // Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('✔ SW registrado:', reg.scope))
+          .catch(err => console.error('❌ SW error:', err));
+      });
+    }
 
-    // Cerrar sidebar al hacer click en un link (móvil)
-    document.querySelectorAll('.sidebar-menu-link').forEach(link => {
-      link.addEventListener('click', function() {
-        const sidebar = document.getElementById('sidebar');
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('open');
+    // Marcar página activa
+    document.addEventListener('DOMContentLoaded', function() {
+      const currentPath = window.location.pathname;
+      document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        if (link.getAttribute('href') === currentPath) {
+          link.classList.add('active');
         }
       });
     });
 
-    // Marcar item activo en sidebar
-    document.querySelectorAll('.sidebar-menu-link').forEach(link => {
-      if (link.getAttribute('href') === window.location.pathname) {
-        link.classList.add('active');
+    // ═══════════════════════════════════════════════════════════════
+    // PREVENIR AUTO-SCROLL AL CARGAR LA PÁGINA
+    // ═══════════════════════════════════════════════════════════════
+    (function() {
+      // Forzar scroll a top al cargar
+      window.addEventListener('load', function() {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      });
+
+      // También al inicio del DOM
+      window.scrollTo(0, 0);
+
+      // Prevenir que los gráficos causen scroll
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+        }, 100);
+      });
+
+      // Si hay clicks en elementos, mantener en top
+      let lastScrollTop = 0;
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50 && lastScrollTop === 0) {
+          window.scrollTo(0, 0);
+        }
+        lastScrollTop = window.scrollY <= 0 ? 0 : window.scrollY;
+      }, { passive: true });
+
+      // ═════════════════════════════════════════════════════════════
+      // ACTUALIZAR COLORES DE ESTADOS EN SELECT
+      // ═════════════════════════════════════════════════════════════
+      document.querySelectorAll('.estado-select').forEach(select => {
+        // Establecer color inicial
+        const updateColor = () => {
+          select.setAttribute('data-estado', select.value);
+        };
+        updateColor();
+        select.addEventListener('change', updateColor);
+      });
+
+      // ═════════════════════════════════════════════════════════════
+      // INICIALIZAR POPOVERS Y TOOLTIPS BOOTSTRAP
+      // ═════════════════════════════════════════════════════════════
+      document.querySelectorAll('[data-bs-toggle="popover"]').forEach(el => {
+        new bootstrap.Popover(el, { trigger: 'click', html: false });
+      });
+
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+le]').setAttribute('title', data.tooltip);
+            // Inicializar Bootstrap Tooltip
+            new bootstrap.Tooltip(semaforoDot.parentElement, { placement: 'bottom' });
+          })
+          .catch(() => {});
       }
-    });
+    })();
 
     // Dark Mode Toggle
     function toggleDarkMode() {
@@ -1055,6 +1048,6 @@
     </div>
   </div>
 
-</body>
 
+</body>
 </html>

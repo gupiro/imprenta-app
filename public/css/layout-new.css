@@ -589,15 +589,16 @@ body {
    COMPONENTES EJECUTIVOS - Dashboard Profesional
    ───────────────────────────────────────────────────────────────── */
 
-/* CARDS DE URGENCIA */
+/* CARDS DE URGENCIA - DISEÑO SOFISTICADO */
 .card-urgencia {
-  background: white;
-  border-radius: 10px;
-  padding: 1.75rem;
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .card-urgencia::before {
@@ -606,70 +607,79 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
+}
+
+.card-urgencia:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .card-urgencia-rojo {
-  border-left: 5px solid #ef4444;
+  border-left: 4px solid #7c2d12;
 }
 
 .card-urgencia-rojo::before {
-  background: #ef4444;
+  background: linear-gradient(90deg, #7c2d12, #9a3412);
 }
 
 .card-urgencia-vencido {
-  border-left: 5px solid #991b1b;
+  border-left: 4px solid #431407;
 }
 
 .card-urgencia-vencido::before {
-  background: #991b1b;
+  background: linear-gradient(90deg, #431407, #5b21b6);
 }
 
 .card-urgencia-naranja {
-  border-left: 5px solid #f59e0b;
+  border-left: 4px solid #92400e;
 }
 
 .card-urgencia-naranja::before {
-  background: #f59e0b;
+  background: linear-gradient(90deg, #92400e, #b45309);
 }
 
 .urgencia-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #6b7280;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 0.5rem;
+  letter-spacing: 1px;
+  margin-bottom: 0.75rem;
+  font-family: 'Segoe UI', Roboto, sans-serif;
 }
 
 .urgencia-amount {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  color: #1f2937;
-  letter-spacing: -0.5px;
-  margin-bottom: 0.5rem;
+  color: #0f172a;
+  letter-spacing: -1px;
+  margin-bottom: 0.75rem;
+  font-family: 'Georgia', serif;
 }
 
 .urgencia-subtitle {
   font-size: 0.9rem;
-  color: #6b7280;
-  margin-bottom: 0.75rem;
+  color: #475569;
+  margin-bottom: 1rem;
   font-weight: 500;
+  line-height: 1.4;
 }
 
 .urgencia-action {
   display: inline-block;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #2563eb;
+  color: #1e3a8a;
   text-decoration: none;
-  margin-top: 0.5rem;
-  transition: color 0.2s ease;
+  margin-top: 0.75rem;
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
 }
 
 .urgencia-action:hover {
-  color: #1e40af;
-  text-decoration: underline;
+  color: #1e1b4b;
+  border-bottom-color: #1e3a8a;
 }
 
 /* KPI GRID - 6 MÉTRICAS EN 2 FILAS */

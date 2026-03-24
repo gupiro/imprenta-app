@@ -741,6 +741,54 @@ async function initDb() {
             )
         `);
 
+        // ════════════════════════════════════════════════════════════════
+        // ÍNDICES: Optimización de queries (FIX #6)
+        // ════════════════════════════════════════════════════════════════
+        // Índices críticos para 200+ pedidos/mes con 4 usuarios concurrentes
+        const indexQueries = [
+            // PEDIDOS - tablas más críticas (mayores volúmenes)
+            "CREATE INDEX IF NOT EXISTS idx_pedidos_estado ON pedidos(estado)",
+            "CREATE INDEX IF NOT EXISTS idx_pedidos_client_id ON pedidos(client_id)",
+            "CREATE INDEX IF NOT EXISTS idx_pedidos_monto_restante ON pedidos(monto_restante)",
+            "CREATE INDEX IF NOT EXISTS idx_pedidos_fecha ON pedidos(fecha)",
+            "CREATE INDEX IF NOT EXISTS idx_pedidos_estado_pago ON pedidos(estado_pago)",
+
+            // PRODUCTOS - por el N+1 fix
+            "CREATE INDEX IF NOT EXISTS idx_productos_pedido_id ON productos(pedido_id)",
+
+            // PRESUPUESTOS
+            "CREATE INDEX IF NOT EXISTS idx_presupuestos_estado ON presupuestos(estado)",
+            "CREATE INDEX IF NOT EXISTS idx_presupuestos_cliente_id ON presupuestos(cliente_id)",
+            "CREATE INDEX IF NOT EXISTS idx_presupuestos_usuario_id ON presupuestos(usuario_id)",
+
+            // MOVIMIENTOS CAJA
+            "CREATE INDEX IF NOT EXISTS idx_movimientos_caja_tipo ON movimientos_caja(tipo)",
+            "CREATE INDEX IF NOT EXISTS idx_movimientos_caja_fecha ON movimientos_caja(fecha)",
+            "CREATE INDEX IF NOT EXISTS idx_movimientos_caja_pedido_id ON movimientos_caja(pedido_id)",
+            "CREATE INDEX IF NOT EXISTS idx_movimientos_caja_usuario_id ON movimientos_caja(usuario_id)",
+
+            // DEUDAS - múltiples tablas
+            "CREATE INDEX IF NOT EXISTS idx_deudas_pagos_deuda_id ON deudas_pagos(deuda_id)",
+            "CREATE INDEX IF NOT EXISTS idx_deudas_pagos_tipo_deuda ON deudas_pagos(tipo_deuda)",
+            "CREATE INDEX IF NOT EXISTS idx_deudas_cheques_estado ON deudas_cheques(estado)",
+            "CREATE INDEX IF NOT EXISTS idx_deudas_cheques_fecha_vencimiento ON deudas_cheques(fecha_vencimiento)",
+            "CREATE INDEX IF NOT EXISTS idx_deudas_prestamos_estado ON deudas_prestamos(estado)",
+            "CREATE INDEX IF NOT EXISTS idx_deudas_proveedores_proveedor_id ON deudas_proveedores(proveedor_id)",
+
+            // GASTOS
+            "CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha)",
+            "CREATE INDEX IF NOT EXISTS idx_gastos_estado_pago ON gastos(estado_pago)",
+        ];
+
+        try {
+            for (const indexQuery of indexQueries) {
+                await db.run(indexQuery);
+            }
+            console.log(`✅ ${indexQueries.length} índices de performance creados`);
+        } catch (indexError) {
+            console.log('⚠️  Error al crear índices (pueden ya existir):', indexError.message);
+        }
+
         console.log('✅ Base de datos lista\n');
 
         // ════════════════════════════════════════════════════════════════

@@ -24,14 +24,24 @@ module.exports = (db) => {
       const totalPendiente       = balance.totalPendiente;
       const resultadoProyectado  = balance.resultadoProyectado;
 
-      // Contadores principales
+      // ✅ Contadores principales - CONSOLIDADOS EN 1 QUERY (no 6)
+      const statsRow = await db.get(`
+        SELECT
+          (SELECT COUNT(*) FROM pedidos WHERE estado = 'PENDIENTE') as pedidosPendientes,
+          (SELECT COUNT(*) FROM pedidos WHERE estado = 'EN_PRODUCCION') as pedidosEnProduccion,
+          (SELECT COUNT(*) FROM pedidos WHERE estado = 'LISTO') as pedidosListos,
+          (SELECT COUNT(*) FROM pedidos WHERE estado = 'ENTREGADO') as pedidosEntregados,
+          (SELECT COUNT(*) FROM presupuestos WHERE estado = 'PENDIENTE') as presupuestosAbiertos,
+          (SELECT COUNT(*) FROM clients) as clientesActivos
+      `) || {};
+
       const stats = {
-        pedidosPendientes: (await db.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
-        pedidosEnProduccion: (await db.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,
-        pedidosListos: (await db.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'LISTO'"))?.c || 0,
-        pedidosEntregados: (await db.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'ENTREGADO'"))?.c || 0,
-        presupuestosAbiertos: (await db.get("SELECT COUNT(*) AS c FROM presupuestos WHERE estado = 'PENDIENTE'"))?.c || 0,
-        clientesActivos: (await db.get("SELECT COUNT(*) AS c FROM clients"))?.c || 0
+        pedidosPendientes: statsRow.pedidosPendientes || 0,
+        pedidosEnProduccion: statsRow.pedidosEnProduccion || 0,
+        pedidosListos: statsRow.pedidosListos || 0,
+        pedidosEntregados: statsRow.pedidosEntregados || 0,
+        presupuestosAbiertos: statsRow.presupuestosAbiertos || 0,
+        clientesActivos: statsRow.clientesActivos || 0
       };
 
       // Ingresos
@@ -83,31 +93,47 @@ module.exports = (db) => {
         GROUP BY metodo_pago
       `) || [];
 
-      // Últimos 6 meses - Ingresos vs Egresos
+      // Últimos 6 meses - Ingresos vs Egresos (CONSOLIDADO: 12 queries → 1)
       const ingresos6Meses = [];
       const egresos6Meses = [];
       const meses6Labels = [];
 
+      // Obtener meses para construir query
+      const mesArray = [];
       for (let i = 5; i >= 0; i--) {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
-        const mes = d.toISOString().slice(0, 7);
-        const label = d.toLocaleDateString('es-AR', { year: '2-digit', month: 'short' });
-
-        const ingresos = (await db.get(
-          "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND strftime('%Y-%m', fecha) = ?",
-          mes
-        ))?.total || 0;
-
-        const egresos = (await db.get(
-          "SELECT COALESCE(SUM(monto), 0) AS total FROM gastos WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) = ?",
-          mes
-        ))?.total || 0;
-
-        meses6Labels.push(label);
-        ingresos6Meses.push(ingresos);
-        egresos6Meses.push(egresos);
+        mesArray.push({
+          mes: d.toISOString().slice(0, 7),
+          label: d.toLocaleDateString('es-AR', { year: '2-digit', month: 'short' })
+        });
       }
+
+      // Una sola query para ingresos de 6 meses
+      const ingresosData = await db.all(`
+        SELECT strftime('%Y-%m', fecha) as mes, COALESCE(SUM(monto), 0) AS total
+        FROM movimientos_caja
+        WHERE tipo = 'ingreso' AND strftime('%Y-%m', fecha) IN (${mesArray.map(() => '?').join(',')})
+        GROUP BY strftime('%Y-%m', fecha)
+      `, mesArray.map(m => m.mes)) || [];
+
+      // Una sola query para egresos de 6 meses
+      const egresosData = await db.all(`
+        SELECT strftime('%Y-%m', fecha) as mes, COALESCE(SUM(monto), 0) AS total
+        FROM gastos
+        WHERE tipo = 'negocio' AND strftime('%Y-%m', fecha) IN (${mesArray.map(() => '?').join(',')})
+        GROUP BY strftime('%Y-%m', fecha)
+      `, mesArray.map(m => m.mes)) || [];
+
+      // Mapear resultados por mes
+      const ingresosMap = Object.fromEntries(ingresosData.map(r => [r.mes, r.total]));
+      const egresosMap = Object.fromEntries(egresosData.map(r => [r.mes, r.total]));
+
+      mesArray.forEach(m => {
+        meses6Labels.push(m.label);
+        ingresos6Meses.push(ingresosMap[m.mes] || 0);
+        egresos6Meses.push(egresosMap[m.mes] || 0);
+      });
 
       // Deudores (últimos 5 con días de deuda)
       const deudores = await db.all(`
@@ -149,21 +175,32 @@ module.exports = (db) => {
         ORDER BY p.fecha DESC LIMIT 10
       `) || [];
 
-      // Gráfico: Últimos 7 días
-      const graficoLabels = [];
-      const graficoDatos = [];
+      // Gráfico: Últimos 7 días (CONSOLIDADO: 7 queries → 1)
+      const diasArray = [];
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
         d.setDate(d.getDate() - i);
-        const fecha = d.toISOString().slice(0, 10);
-        const label = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' });
-        const row = await db.get(
-          "SELECT COALESCE(SUM(monto), 0) AS total FROM movimientos_caja WHERE tipo = 'ingreso' AND DATE(fecha) = ?",
-          fecha
-        );
-        graficoLabels.push(label);
-        graficoDatos.push(row?.total || 0);
+        diasArray.push({
+          fecha: d.toISOString().slice(0, 10),
+          label: d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
+        });
       }
+
+      const ingresos7DiasData = await db.all(`
+        SELECT DATE(fecha) as fecha, COALESCE(SUM(monto), 0) AS total
+        FROM movimientos_caja
+        WHERE tipo = 'ingreso' AND DATE(fecha) IN (${diasArray.map(() => '?').join(',')})
+        GROUP BY DATE(fecha)
+      `, diasArray.map(d => d.fecha)) || [];
+
+      const ingresos7DiasMap = Object.fromEntries(ingresos7DiasData.map(r => [r.fecha, r.total]));
+
+      const graficoLabels = [];
+      const graficoDatos = [];
+      diasArray.forEach(d => {
+        graficoLabels.push(d.label);
+        graficoDatos.push(ingresos7DiasMap[d.fecha] || 0);
+      });
 
       // Gráfico: Estado de pedidos
       const estadoPedidos = await db.all(`

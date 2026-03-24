@@ -56,7 +56,8 @@ app.use(session({
 app.use(flash());
 
 // CSRF Protection middleware
-const csrfProtection = csrf({ cookie: false });
+// Using cookie: true para mejor compatibilidad con proxy reverso de Render
+const csrfProtection = csrf({ cookie: true });
 app.use(csrfProtection);
 
 // ════════════════════════════════════════════════════════════════

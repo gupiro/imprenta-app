@@ -141,7 +141,11 @@
                     <tr>
                       <td><strong><%= t.nombre_tarjeta %></strong></td>
                       <td><small><%= t.banco || '-' %></small></td>
-                      <td><small><%= t.titular || '-' %></small></td>
+                      <td>
+                        <small class="truncate-text" title="<%= t.titular || '-' %>" style="max-width: 200px; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          <%= t.titular || '-' %>
+                        </small>
+                      </td>
                       <td><span class="badge bg-<%= tipoColor %>"><%= tipoLabel %></span></td>
                       <td>
                         <% if (t.limite_credito > 0) { %>

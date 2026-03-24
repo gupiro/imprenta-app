@@ -743,4 +743,38 @@ body {
   .urgencia-amount {
     font-size: 1.875rem;
   }
+
+  /* RESPONSIVE MOBILE IMPROVEMENTS */
+  .table { font-size: 0.875rem; }
+  .table th, .table td { padding: 0.6rem 0.4rem; }
+
+  .btn-lg { padding: 0.75rem 1.5rem; font-size: 0.95rem; }
+  .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+
+  /* Tarjetas de flujo */
+  .grid-etapas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Tarjetas de acceso directo */
+  .row.g-3 > div { margin-bottom: 0.75rem; }
+
+  /* Hero section más compacto */
+  .hero-metric { padding: 1.5rem 1.25rem; }
+  .hero-amount { font-size: 2.25rem; }
+
+  /* Truncate para nombres largos */
+  .truncate-text { max-width: 150px; }
+
+  /* Modales más compactos */
+  .modal-dialog { margin: 0.5rem; }
+
+  /* Formularios responsivos */
+  .form-control, .form-select { font-size: 16px; } /* Previene zoom en iOS */
+
+  /* Tablas scrollables en móvil */
+  .table-responsive { overflow-x: auto; }
+
+  /* Cards en una columna */
+  .col-lg-5, .col-lg-7 { width: 100%; }
 }

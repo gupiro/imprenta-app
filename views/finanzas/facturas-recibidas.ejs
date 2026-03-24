@@ -1,0 +1,247 @@
+<!-- views/finanzas/facturas-recibidas.ejs - Profesional y responsive -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h1 class="display-6 mb-1"><i class="bi bi-file-earmark-invoice"></i> Facturas Recibidas</h1>
+          <p class="text-muted mb-0">Gestión de comprobantes de proveedores</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm ms-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasAyuda">
+          <i class="bi bi-question-circle me-1"></i> ¿Cómo usar?
+        </button>
+      </div>
+    </div>
+    <div class="col-md-4 text-end">
+      <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
+        <i class="bi bi-plus-circle"></i> Nueva Factura
+      </button>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <% if (success && success.length > 0) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (error && error.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error[0] %>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- SI NO HAY FACTURAS: EMPTY STATE -->
+  <% if (!facturas || facturas.length === 0) { %>
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body py-5">
+          <div class="text-center">
+            <div style="font-size: 4rem; margin-bottom: 1.5rem; opacity: 0.5;">📄</div>
+            <h3 class="mb-2">Sin facturas registradas</h3>
+            <p class="text-muted mb-4" style="max-width: 500px; margin: 0 auto;">
+              Aquí van las facturas que recibís de proveedores. Registrá cada comprobante para llevar control de gastos y pagos.
+            </p>
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNuevaFactura">
+              <i class="bi bi-plus-circle"></i> Registrar Primera Factura
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% } else { %>
+
+  <!-- RESUMEN: TOTALES -->
+  <div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">💰 Monto Neto (sin IVA)</p>
+          <h4 class="mb-0" style="color: #1e3a8a;">$<%= (totalNeto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">🏛️ IVA Total</p>
+          <h4 class="mb-0" style="color: #0891b2;">$<%= (totalIva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">📊 Total Facturas</p>
+          <h4 class="mb-0" style="color: #10b981;">$<%= (totalFacturas || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <p class="card-text small text-muted mb-2">⏳ Pendiente de Pago</p>
+          <h4 class="mb-0" style="color: #dc2626;">$<%= (totalPendiente || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE FACTURAS -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width: 100px;">Tipo</th>
+                <th>Proveedor</th>
+                <th style="width: 120px;">Comprobante</th>
+                <th style="width: 100px;">Emitido</th>
+                <th style="width: 110px;">Monto</th>
+                <th style="width: 80px;">IVA</th>
+                <th style="width: 100px;">Total</th>
+                <th style="width: 80px;">Estado</th>
+                <th style="width: 120px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% facturas.forEach(f => { %>
+              <tr>
+                <td><span class="badge bg-info"><%= f.tipo_comprobante || 'FC' %></span></td>
+                <td>
+                  <strong class="truncate-text" title="<%= f.razon_social || '-' %>" style="max-width: 250px; display: inline-block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    <%= f.razon_social || '-' %>
+                  </strong>
+                </td>
+                <td><small><%= f.numero_comprobante || '-' %></small></td>
+                <td><small><%= f.fecha_emision ? new Date(f.fecha_emision).toLocaleDateString('es-AR') : '-' %></small></td>
+                <td>$<%= (f.monto_neto || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                <td>$<%= (f.monto_iva || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                <td><strong>$<%= ((f.monto_neto || 0) + (f.monto_iva || 0)).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                <td>
+                  <% if (f.estado === 'pagada') { %>
+                    <span class="badge bg-success">✓ Pagada</span>
+                  <% } else { %>
+                    <span class="badge bg-warning">⏳ Pendiente</span>
+                  <% } %>
+                </td>
+                <td>
+                  <a href="/finanzas/facturas-recibidas/<%= f.id %>/detalle" class="btn btn-sm btn-outline-primary" title="Ver detalle">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <button type="button" class="btn btn-sm btn-outline-danger" onclick="if(confirm('¿Eliminar esta factura?')) { fetch('/finanzas/facturas-recibidas/<%= f.id %>/eliminar', { method: 'POST', headers: { 'X-CSRF-Token': document.querySelector('[name=_csrf]')?.value || '' } }).then(() => location.reload()); }" title="Eliminar">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <% } %>
+
+</div>
+
+<!-- MODAL: NUEVA FACTURA -->
+<div class="modal fade" id="modalNuevaFactura" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="bi bi-file-earmark-plus"></i> Nueva Factura Recibida</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/finanzas/facturas-recibidas/crear" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Tipo de Comprobante *</label>
+            <select name="tipo_comprobante" class="form-select" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="FC">Factura C</option>
+              <option value="FE">Factura E</option>
+              <option value="ND">Nota de Débito</option>
+              <option value="NC">Nota de Crédito</option>
+              <option value="OTRO">Otro</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Número de Comprobante *</label>
+              <input type="text" name="numero_comprobante" class="form-control" placeholder="Ej: 0001-00012345" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha de Emisión *</label>
+              <input type="date" name="fecha_emision" class="form-control" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Proveedor/Razón Social *</label>
+            <input type="text" name="razon_social" class="form-control" placeholder="Ej: Distribuidora ABC S.A." required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto Neto (sin IVA) *</label>
+              <input type="number" name="monto_neto" class="form-control" step="0.01" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Alícuota IVA (%)</label>
+              <input type="number" name="alicuota_iva" class="form-control" step="0.01" value="21">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Monto IVA</label>
+              <input type="number" name="monto_iva" class="form-control" step="0.01" placeholder="Auto-calcula si dejas vacío">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Estado</label>
+              <select name="estado" class="form-select">
+                <option value="pendiente">⏳ Pendiente de Pago</option>
+                <option value="pagada">✓ Pagada</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Notas (opcional)</label>
+            <textarea name="notas" class="form-control" rows="2" placeholder="Ej: Factura de mercaderías de marcas..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Registrar Factura
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (max-width: 768px) {
+    .table { font-size: 0.875rem; }
+    .table th, .table td { padding: 0.5rem; }
+    .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+  }
+</style>

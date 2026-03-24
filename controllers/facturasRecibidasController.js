@@ -88,57 +88,92 @@ module.exports = (db) => {
 
     crear: async (req, res) => {
       try {
-        const { tipo_comprobante, numero_comprobante, fecha_emision, proveedor_id, razon_social, concepto, monto_neto, alicuota_iva, monto_iva, estado, fecha_pago, tiene_documento, notas, pago_inicial, metodo_pago_inicial } = req.body;
+        const { tipo_comprobante, numero_comprobante, fecha_emision, proveedor_id, razon_social, concepto, monto_neto, alicuota_iva, monto_iva, estado, fecha_pago, tiene_documento, notas, pago_inicial, metodo_pago_inicial, items } = req.body;
 
-        // Validaciones obligatorias simplificadas
-        if (!tipo_comprobante || !numero_comprobante || !razon_social || !monto_neto) {
-          req.flash('error', '❌ Completá los campos obligatorios: tipo, número, proveedor y monto neto.');
+        // Validación: al menos tipo, número y razon_social
+        if (!tipo_comprobante || !numero_comprobante || !razon_social) {
+          req.flash('error', '❌ Completá los campos obligatorios: tipo, número y proveedor.');
           return res.redirect('/finanzas/facturas-recibidas');
         }
 
-        const montoNetoNum = parseFloat(monto_neto) || 0;
-        const alicuotaNum = parseFloat(alicuota_iva) || 0;
-        // Usar monto_iva del form si fue ingresado manualmente
-        const montoIvaNum = parseFloat(monto_iva) || 0;
-        const montoTotal = montoNetoNum + montoIvaNum;
+        // Procesar items si existen (IVA múltiple)
+        const itemsObj = items || {};
+        const itemsArray = Object.values(itemsObj).filter(item => item.descripcion?.trim());
+
+        // Calcular totales desde los items
+        let montoNetoTotal = 0, montoIvaTotal = 0;
+        for (const item of itemsArray) {
+          montoNetoTotal += parseFloat(item.monto_neto) || 0;
+          montoIvaTotal  += parseFloat(item.monto_iva)  || 0;
+        }
+
+        // Fallback: si no hay items válidos, usar los campos legacy (para compatibilidad)
+        if (itemsArray.length === 0) {
+          montoNetoTotal = parseFloat(monto_neto) || 0;
+          montoIvaTotal  = parseFloat(monto_iva)  || 0;
+        }
+
+        const montoTotal = montoNetoTotal + montoIvaTotal;
         const periodo = fecha_emision ? fecha_emision.substring(0, 7) : obtenerFechaLocal().periodo;
 
-        // Si ya está pagada: estado = 'pagada', monto_pagado = montoTotal
+        // Si monto_total es 0, error
+        if (montoTotal <= 0) {
+          req.flash('error', '❌ El monto total debe ser mayor a 0. Agregá al menos una línea.');
+          return res.redirect('/finanzas/facturas-recibidas');
+        }
+
+        // Estado final
         const estadoFinal = estado === 'pagada' ? 'pagada' : 'pendiente';
         const montoPagadoFinal = estadoFinal === 'pagada' ? montoTotal : 0;
         const fechaPagoFinal = estadoFinal === 'pagada' ? (fecha_pago || obtenerFechaLocal().fecha) : null;
         const tieneDocNum = tiene_documento ? 1 : 0;
 
+        // INSERT factura header
         const result = await db.run(
           `INSERT INTO facturas_recibidas
            (tipo_comprobante, numero_comprobante, fecha_emision, proveedor_id, razon_social, descripcion, monto_neto, alicuota_iva, monto_iva, monto_total, monto_pagado, estado, fecha_pago, notas, periodo, tiene_documento)
            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-          [tipo_comprobante, numero_comprobante, fecha_emision || obtenerFechaLocal().fecha, proveedor_id || null, razon_social, concepto || '', montoNetoNum, alicuotaNum, montoIvaNum, montoTotal, montoPagadoFinal, estadoFinal, fechaPagoFinal || '', notas || '', periodo, tieneDocNum]
+          [tipo_comprobante, numero_comprobante, fecha_emision || obtenerFechaLocal().fecha, proveedor_id || null, razon_social, concepto || '', montoNetoTotal, itemsArray.length > 1 ? null : parseFloat(alicuota_iva) || 0, montoIvaTotal, montoTotal, montoPagadoFinal, estadoFinal, fechaPagoFinal || '', notas || '', periodo, tieneDocNum]
         );
 
         const facturaId = result.lastID;
-        const pagoInicialNum = parseFloat(pago_inicial) || 0;
 
-        // Si hay pago inicial, registrar como pago
+        // INSERT items si hay líneas
+        if (itemsArray.length > 0) {
+          for (const item of itemsArray) {
+            const neto = parseFloat(item.monto_neto) || 0;
+            const iva  = parseFloat(item.monto_iva)  || 0;
+            const alicuota = parseFloat(item.alicuota_iva) || 0;
+            await db.run(
+              `INSERT INTO facturas_recibidas_items
+               (factura_id, descripcion, cantidad, precio_unitario, monto_neto, alicuota_iva, monto_iva, subtotal)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+              [facturaId, item.descripcion.trim(), 1, neto, neto, alicuota, iva, neto + iva]
+            );
+          }
+        }
+
+        // Si hay pago inicial
+        const pagoInicialNum = parseFloat(pago_inicial) || 0;
         if (pagoInicialNum > 0) {
           const fechaPago = obtenerFechaLocal().fecha;
           const { timestamp } = obtenerFechaLocal();
 
-          // Registrar en tabla pagos_facturas
+          // Registrar en pagos_facturas
           await db.run(
             `INSERT INTO pagos_facturas (factura_id, monto_pagado, fecha_pago, metodo_pago, notas)
              VALUES (?, ?, ?, ?, ?)`,
             [facturaId, pagoInicialNum, fechaPago, metodo_pago_inicial || 'manual', '']
           );
 
-          // Registrar en Caja Diaria (egreso)
+          // Registrar en Caja Diaria
           await db.run(
             `INSERT INTO movimientos_caja (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             ['egreso', `Pago Factura ${numero_comprobante} - ${razon_social}`, 'compras', pagoInicialNum, metodo_pago_inicial || 'manual', timestamp, turnoByHora(timestamp)]
           );
 
-          // Actualizar estado y monto_pagado en factura
+          // Actualizar estado
           let nuevoEstado = 'parcial';
           if (pagoInicialNum >= montoTotal) {
             nuevoEstado = 'pagada';
@@ -150,11 +185,11 @@ module.exports = (db) => {
           );
         }
 
-        req.flash('success', `✅ Factura ${numero_comprobante} registrada correctamente — $${montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}${pagoInicialNum > 0 ? ` (Pago inicial: $${pagoInicialNum.toLocaleString('es-AR', {minimumFractionDigits: 2})})` : ''}`);
+        req.flash('success', `✅ Factura ${numero_comprobante} registrada — $${montoTotal.toLocaleString('es-AR', {minimumFractionDigits: 2})}${pagoInicialNum > 0 ? ` (Pago: $${pagoInicialNum.toLocaleString('es-AR', {minimumFractionDigits: 2})})` : ''}`);
         res.redirect(`/finanzas/facturas-recibidas?periodo=${periodo}`);
       } catch (err) {
         console.error('Error al crear factura:', err);
-        req.flash('error', 'Error al registrar factura');
+        req.flash('error', 'Error al registrar factura: ' + err.message);
         res.redirect('/finanzas/facturas-recibidas');
       }
     },

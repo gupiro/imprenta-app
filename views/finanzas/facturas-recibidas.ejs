@@ -252,21 +252,62 @@
             </div>
           </div>
 
-          <!-- SECCIÓN 4: MONTOS -->
-          <div class="row">
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">Monto Neto (sin IVA) *</label>
-              <input type="number" id="montoNeto" name="monto_neto" class="form-control" step="0.01" required onchange="calcularIVA()">
+          <!-- SECCIÓN 4: LÍNEAS DE ITEMS CON IVA MÚLTIPLE -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">📋 Líneas de la Factura (Netos + IVA por línea)</label>
+            <div class="table-responsive" style="border: 1px solid #dee2e6; border-radius: 0.375rem; overflow: hidden;">
+              <table class="table table-sm mb-0" id="tablaItems">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 35%;">Descripción</th>
+                    <th style="width: 15%;">Neto $</th>
+                    <th style="width: 15%;">IVA %</th>
+                    <th style="width: 15%;">IVA $</th>
+                    <th style="width: 15%;">Total</th>
+                    <th style="width: 5%; text-align: center;">Acc.</th>
+                  </tr>
+                </thead>
+                <tbody id="itemsBody">
+                  <tr class="itemRow" data-index="0">
+                    <td><input type="text" name="items[0][descripcion]" class="form-control form-control-sm" placeholder="Ej: Papelería" required></td>
+                    <td><input type="number" name="items[0][monto_neto]" class="form-control form-control-sm neto" step="0.01" min="0" required></td>
+                    <td>
+                      <select name="items[0][alicuota_iva]" class="form-select form-select-sm alicuota" onchange="calcularLinea(0)">
+                        <option value="0">0%</option>
+                        <option value="10.5">10.5%</option>
+                        <option value="21" selected>21%</option>
+                        <option value="27">27%</option>
+                      </select>
+                    </td>
+                    <td><input type="number" name="items[0][monto_iva]" class="form-control form-control-sm iva" step="0.01" min="0" readonly style="background-color: #f0f0f0;"></td>
+                    <td><input type="text" class="form-control form-control-sm total" readonly style="background-color: #e8f5e9; font-weight: bold;"></td>
+                    <td style="text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarLinea(0)" title="Eliminar línea"><i class="bi bi-trash"></i></button></td>
+                  </tr>
+                </tbody>
+                <tfoot class="table-light">
+                  <tr style="font-weight: bold;">
+                    <td colspan="1">TOTALES</td>
+                    <td><input type="text" id="totalNeto" class="form-control form-control-sm" readonly style="background-color: #fff3cd; font-weight: bold;" value="$0.00"></td>
+                    <td colspan="2" style="padding: 0.5rem;"><small style="color: #666;">Desglose por IVA →</small></td>
+                    <td><input type="text" id="totalGeneral" class="form-control form-control-sm" readonly style="background-color: #fff3cd; font-weight: bold; color: #d32f2f;" value="$0.00"></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td colspan="6" id="desgoseIva" style="padding: 0.75rem; background-color: #f5f5f5; font-size: 0.85rem; color: #333;">
+                      <small>Desglose: IVA 0%: $0.00 | IVA 10.5%: $0.00 | IVA 21%: $0.00 | IVA 27%: $0.00</small>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">Alícuota IVA (%)</label>
-              <input type="number" id="alicuotaIva" name="alicuota_iva" class="form-control" step="0.01" value="21" onchange="calcularIVA()">
-            </div>
-            <div class="col-md-4 mb-3">
-              <label class="form-label fw-bold">Monto IVA (auto)</label>
-              <input type="number" name="monto_iva" id="montoIvaInput" class="form-control" step="0.01" readonly style="background-color: #f0f0f0;">
-            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="agregarLinea()">
+              <i class="bi bi-plus"></i> Agregar línea
+            </button>
           </div>
+
+          <!-- Hidden fields para enviar totales al servidor -->
+          <input type="hidden" name="monto_neto" id="hiddenMontoNeto" value="0">
+          <input type="hidden" name="monto_iva" id="hiddenMontoIva" value="0">
 
           <!-- SECCIÓN 5: PAGO AL CREAR -->
           <div class="mb-3 p-3 bg-info bg-opacity-10 rounded border border-info border-opacity-25">
@@ -391,28 +432,110 @@ function seleccionarProveedor(id, nombre, cuit, alicuota) {
   document.getElementById('proveedorIdHidden').value = id;
   document.getElementById('razonSocialInput').value = nombre;
   document.getElementById('cuitProveedorInput').value = cuit;
-  document.getElementById('alicuotaIva').value = alicuota;
+  // Usar la primera alícuota para la primera línea
+  const firstRow = document.querySelector('.itemRow');
+  if (firstRow) {
+    firstRow.querySelector('.alicuota').value = alicuota;
+  }
   document.getElementById('buscarProveedor').value = nombre;
   document.getElementById('dropdownProveedores').style.display = 'none';
-  calcularIVA();
+  calcularTotales();
 }
 
 // ════════════════════════════════════════════════════════════════
-// CÁLCULO DE IVA
+// TABLA DINÀMICA DE ITEMS CON MÚLTIPLE IVA
 // ════════════════════════════════════════════════════════════════
 
-function calcularIVA() {
-  const neto = parseFloat(document.getElementById('montoNeto').value) || 0;
-  const alicuota = parseFloat(document.getElementById('alicuotaIva').value) || 21;
+let itemCounter = 1;
+
+function agregarLinea() {
+  const tbody = document.getElementById('itemsBody');
+  const index = itemCounter++;
+  const newRow = document.createElement('tr');
+  newRow.className = 'itemRow';
+  newRow.dataset.index = index;
+  newRow.innerHTML = `
+    <td><input type="text" name="items[${index}][descripcion]" class="form-control form-control-sm" placeholder="Ej: Papelería" required></td>
+    <td><input type="number" name="items[${index}][monto_neto]" class="form-control form-control-sm neto" step="0.01" min="0" required onchange="calcularLinea(${index})"></td>
+    <td>
+      <select name="items[${index}][alicuota_iva]" class="form-select form-select-sm alicuota" onchange="calcularLinea(${index})">
+        <option value="0">0%</option>
+        <option value="10.5">10.5%</option>
+        <option value="21" selected>21%</option>
+        <option value="27">27%</option>
+      </select>
+    </td>
+    <td><input type="number" name="items[${index}][monto_iva]" class="form-control form-control-sm iva" step="0.01" min="0" readonly style="background-color: #f0f0f0;"></td>
+    <td><input type="text" class="form-control form-control-sm total" readonly style="background-color: #e8f5e9; font-weight: bold;"></td>
+    <td style="text-align: center;"><button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarLinea(${index})" title="Eliminar línea"><i class="bi bi-trash"></i></button></td>
+  `;
+  tbody.appendChild(newRow);
+  calcularTotales();
+}
+
+function calcularLinea(index) {
+  const row = document.querySelector(`.itemRow[data-index="${index}"]`);
+  if (!row) return;
+
+  const neto = parseFloat(row.querySelector('.neto').value) || 0;
+  const alicuota = parseFloat(row.querySelector('.alicuota').value) || 21;
   const iva = neto * (alicuota / 100);
   const total = neto + iva;
 
-  document.getElementById('montoIvaInput').value = iva.toFixed(2);
-  document.getElementById('totalFacturaLabel').textContent = '$' + total.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  row.querySelector('.iva').value = iva.toFixed(2);
+  row.querySelector('.total').value = '$' + total.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+  calcularTotales();
+}
+
+function eliminarLinea(index) {
+  const rows = document.querySelectorAll('.itemRow');
+  if (rows.length <= 1) {
+    alert('Debe haber al menos una línea en la factura');
+    return;
+  }
+  const row = document.querySelector(`.itemRow[data-index="${index}"]`);
+  if (row) row.remove();
+  calcularTotales();
+}
+
+function calcularTotales() {
+  let totalNeto = 0;
+  let totalIva = 0;
+  const ivaByRate = { '0': 0, '10.5': 0, '21': 0, '27': 0 };
+
+  document.querySelectorAll('.itemRow').forEach(row => {
+    const neto = parseFloat(row.querySelector('.neto').value) || 0;
+    const iva = parseFloat(row.querySelector('.iva').value) || 0;
+    const alicuota = row.querySelector('.alicuota').value;
+
+    totalNeto += neto;
+    totalIva += iva;
+    ivaByRate[alicuota] = (ivaByRate[alicuota] || 0) + iva;
+  });
+
+  const totalGeneral = totalNeto + totalIva;
+
+  // Actualizar campos totales
+  document.getElementById('totalNeto').value = '$' + totalNeto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+  document.getElementById('totalGeneral').value = '$' + totalGeneral.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+  // Desglose por alícuota
+  const desglose = Object.entries(ivaByRate)
+    .map(([rate, amount]) => `IVA ${rate}%: $${amount.toLocaleString('es-AR', {minimumFractionDigits: 2})}`)
+    .join(' | ');
+  document.getElementById('desgoseIva').innerHTML = `<small>Desglose: ${desglose}</small>`;
+
+  // Actualizar hidden fields
+  document.getElementById('hiddenMontoNeto').value = totalNeto.toFixed(2);
+  document.getElementById('hiddenMontoIva').value = totalIva.toFixed(2);
+
+  // Actualizar label de total en sección pago
+  document.getElementById('totalFacturaLabel').textContent = '$' + totalGeneral.toLocaleString('es-AR', {minimumFractionDigits: 2});
 
   // Actualizar máximo de pago
   const pagoInput = document.getElementById('pagoInicial');
-  if (pagoInput) pagoInput.max = total.toFixed(2);
+  if (pagoInput) pagoInput.max = totalGeneral.toFixed(2);
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -472,9 +595,21 @@ async function guardarProveedorRapido() {
 
 // Validar total de factura al enviar
 document.getElementById('formNuevaFactura').addEventListener('submit', function(e) {
-  const neto = parseFloat(document.getElementById('montoNeto').value) || 0;
-  const iva = parseFloat(document.getElementById('montoIvaInput').value) || 0;
-  const total = neto + iva;
+  // Validar que todas las líneas tengan descripción y neto
+  const rows = document.querySelectorAll('.itemRow');
+  for (let row of rows) {
+    const desc = row.querySelector('.form-control').value.trim();
+    const neto = parseFloat(row.querySelector('.neto').value) || 0;
+    if (!desc || neto <= 0) {
+      e.preventDefault();
+      alert('Todas las líneas deben tener descripción y monto neto > 0');
+      return;
+    }
+  }
+
+  const totalNeto = parseFloat(document.getElementById('hiddenMontoNeto').value) || 0;
+  const totalIva = parseFloat(document.getElementById('hiddenMontoIva').value) || 0;
+  const total = totalNeto + totalIva;
 
   if (total <= 0) {
     e.preventDefault();

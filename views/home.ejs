@@ -29,10 +29,10 @@
 
   <!-- URGENCIAS: 3 BLOQUES CRÍTICOS -->
   <%
-    const deudasVencidas = (deudasVencidas && Array.isArray(deudasVencidas)) ? deudasVencidas : [];
-    const deudasProximas = (deudasProximas && Array.isArray(deudasProximas)) ? deudasProximas : [];
-    const totalVencidas = deudasVencidas.reduce((s, d) => s + (d.monto || 0), 0);
-    const totalProximas = deudasProximas.reduce((s, d) => s + (d.monto || 0), 0);
+    const deudVencidas = (typeof deudasVencidas !== 'undefined' && Array.isArray(deudasVencidas)) ? deudasVencidas : [];
+    const deudProximas = (typeof deudasProximas !== 'undefined' && Array.isArray(deudasProximas)) ? deudasProximas : [];
+    const totalVencidas = deudVencidas.reduce((s, d) => s + (d.monto || 0), 0);
+    const totalProximas = deudProximas.reduce((s, d) => s + (d.monto || 0), 0);
     const deudoresImpagos = deudores ? deudores.length : 0;
   %>
 
@@ -54,8 +54,8 @@
       <div class="card-urgencia card-urgencia-vencido">
         <div class="urgencia-badge">🔴 VENCIDAS</div>
         <div class="urgencia-amount">$<%= totalVencidas.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
-        <div class="urgencia-subtitle"><%= deudasVencidas.length %> deudas vencidas</div>
-        <% if (deudasVencidas.length > 0) { %>
+        <div class="urgencia-subtitle"><%= deudVencidas.length %> deudas vencidas</div>
+        <% if (deudVencidas.length > 0) { %>
           <a href="/deudas" class="urgencia-action">Gestionar →</a>
         <% } %>
       </div>
@@ -66,8 +66,8 @@
       <div class="card-urgencia card-urgencia-naranja">
         <div class="urgencia-badge">🟡 PRÓXIMOS 7D</div>
         <div class="urgencia-amount">$<%= totalProximas.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
-        <div class="urgencia-subtitle"><%= deudasProximas.length %> pagos programados</div>
-        <% if (deudasProximas.length > 0) { %>
+        <div class="urgencia-subtitle"><%= deudProximas.length %> pagos programados</div>
+        <% if (deudProximas.length > 0) { %>
           <a href="/deudas" class="urgencia-action">Planificar →</a>
         <% } %>
       </div>
@@ -265,31 +265,13 @@
       <div class="kpi-exec-change">Acumulado</div>
     </div>
 
-    <!-- GASTOS MES -->
+    <!-- INGRESOS HOY -->
     <div class="kpi-card-exec">
-      <div class="kpi-exec-label">Gastos Mes</div>
-      <div class="kpi-exec-value" style="color: #ef4444;">
-        $<%= (gastosMes || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      <div class="kpi-exec-label">Ingresos Hoy</div>
+      <div class="kpi-exec-value" style="color: #0ea5e9;">
+        $<%= (ingresosHoy || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
       </div>
-      <div class="kpi-exec-change">Egresos totales</div>
-    </div>
-
-    <!-- SALDO NETO -->
-    <div class="kpi-card-exec">
-      <div class="kpi-exec-label">Saldo Neto</div>
-      <div class="kpi-exec-value" style="color: <%= ((ingresosMes || 0) - (gastosMes || 0)) >= 0 ? '#10b981' : '#ef4444' %>;">
-        $<%= (((ingresosMes || 0) - (gastosMes || 0)) || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
-      </div>
-      <div class="kpi-exec-change">Resultado</div>
-    </div>
-
-    <!-- MARGEN % -->
-    <div class="kpi-card-exec">
-      <div class="kpi-exec-label">Margen Neto</div>
-      <div class="kpi-exec-value" style="color: <%= (((ingresosMes || 0) - (gastosMes || 0)) / (ingresosMes || 1) * 100 >= 40) ? '#10b981' : '#f59e0b' %>;">
-        <%= ((((ingresosMes || 0) - (gastosMes || 0)) / (ingresosMes || 1) * 100) || 0).toFixed(1) %>%
-      </div>
-      <div class="kpi-exec-change">Meta: 40%</div>
+      <div class="kpi-exec-change">Movimiento diario</div>
     </div>
 
     <!-- DEUDA CLIENTES -->
@@ -301,10 +283,28 @@
       <div class="kpi-exec-change"><%= deudores ? deudores.length : 0 %> clientes</div>
     </div>
 
+    <!-- PEDIDOS PENDIENTES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Pendientes</div>
+      <div class="kpi-exec-value" style="color: #dc3545;">
+        <%= counts.pendientes || 0 %>
+      </div>
+      <div class="kpi-exec-change">Esperando producción</div>
+    </div>
+
+    <!-- PEDIDOS LISTOS -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Listos</div>
+      <div class="kpi-exec-value" style="color: #10b981;">
+        <%= counts.listos || 0 %>
+      </div>
+      <div class="kpi-exec-change">Para entregar</div>
+    </div>
+
     <!-- CLIENTES ACTIVOS -->
     <div class="kpi-card-exec">
       <div class="kpi-exec-label">Clientes Activos</div>
-      <div class="kpi-exec-value" style="color: #0ea5e9;">
+      <div class="kpi-exec-value" style="color: #0d6efd;">
         <%= counts.clientes || 0 %>
       </div>
       <div class="kpi-exec-change">Base de datos</div>

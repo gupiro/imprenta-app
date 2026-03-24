@@ -17,6 +17,17 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
+       FRASE MOTIVACIONAL DE LA SEMANA
+       ════════════════════════════════════════════════════════════════ -->
+  <% if (frase) { %>
+  <div class="alert alert-info mb-4" style="border-left: 4px solid #0ea5e9; background: #f0f9ff; color: #0c2d6b;">
+    <p style="margin: 0; font-style: italic; font-size: 0.95rem;">
+      💡 <%= frase %>
+    </p>
+  </div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════
        🔴 ALERTA CRÍTICA: PEDIDOS LISTOS PERO IMPAGOS (AL PRINCIPIO)
        ════════════════════════════════════════════════════════════════ -->
   <% if (pedidosListosImpagos && pedidosListosImpagos.length > 0) { %>

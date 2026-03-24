@@ -3,4 +3,50 @@ body {
     background-color: #f0f0f0;
     text-align: center;
   }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area *,
+  .print-header,
+  .print-header * {
+    visibility: visible !important;
+  }
+
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    background-color: white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-header {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+  }
+
+  .card,
+  .row,
+  .table {
+    page-break-inside: avoid;
+  }
+
+  .btn,
+  .navbar,
+  .modal,
+  .no-print {
+    display: none !important;
+  }
+}
+
   

@@ -245,6 +245,15 @@ a:hover {
   background-color: #059669;
 }
 
+.btn-warning-minimal {
+  background-color: var(--color-warning);
+  color: white;
+}
+
+.btn-warning-minimal:hover {
+  background-color: #d97706;
+}
+
 .btn-sm-minimal {
   padding: var(--spacing-xs) var(--spacing-md);
   font-size: var(--font-size-xs);

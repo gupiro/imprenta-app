@@ -350,6 +350,21 @@ module.exports = (db) => {
           });
       }
 
+      // Datos para sección de Deudas y Gastos Pendientes
+      const deudas = {
+        tarjetas: (await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(saldo_adeudado), 0) AS total FROM deudas_tarjetas WHERE estado = 'activa'")) || { c: 0, total: 0 },
+        cheques: (await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(monto), 0) AS total FROM deudas_cheques WHERE estado = 'pendiente'")) || { c: 0, total: 0 },
+        prestamos: (await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(monto_pendiente), 0) AS total FROM deudas_prestamos WHERE estado = 'activo'")) || { c: 0, total: 0 },
+        proveedores: (await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(monto_total - monto_pagado), 0) AS total FROM deudas_proveedores WHERE estado != 'pagado'")) || { c: 0, total: 0 }
+      };
+      const deudaEmpresa = deudas.tarjetas.total + deudas.cheques.total + deudas.prestamos.total + deudas.proveedores.total;
+      const countDeudas = deudas.tarjetas.c + deudas.cheques.c + deudas.prestamos.c + deudas.proveedores.c;
+
+      const gastos = {
+        pendientes: gastosPendientesMes || { c: 0, total: 0 },
+        fijos: (await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(monto), 0) AS total FROM gastos_fijos WHERE activo = 1")) || { c: 0, total: 0 }
+      };
+
       res.render('dashboard', {
         title: 'Dashboard Ejecutivo',
         frase: getFraseDelDia(),
@@ -396,6 +411,10 @@ module.exports = (db) => {
         totalDeudaTarjetas,
         semaforo,
         accionesAhora,
+        deudas,
+        deudaEmpresa,
+        countDeudas,
+        gastos,
         success: req.flash('success'),
         error: req.flash('error')
       });

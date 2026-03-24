@@ -249,9 +249,16 @@
                   <i class="bi bi-pencil"></i>
                 </button>
                 <% if (g.estado_pago !== 'pagado') { %>
+                <button class="btn btn-sm btn-warning"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalPagoParcial"
+                        onclick="abrirPagoParcial(<%= g.id %>, <%= g.monto %>, '<%= g.metodo_pago || 'efectivo' %>')"
+                        title="Pago parcial">
+                  <i class="bi bi-cash-coin"></i>
+                </button>
                 <form action="/gastos/<%= g.id %>/pagar" method="POST" style="display:inline;">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado">
+                  <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado completamente">
                     <i class="bi bi-check-lg"></i>
                   </button>
                 </form>
@@ -523,6 +530,82 @@
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: PAGO PARCIAL DE GASTO -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="modalPagoParcial" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <form id="formPagoParcial" action="" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="modal-header bg-success bg-opacity-10">
+          <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Pago Parcial de Gasto</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="alert alert-info small">
+            <i class="bi bi-info-circle me-2"></i>
+            Pagá parte del gasto ahora. El saldo restante seguirá pendiente.
+          </div>
+
+          <div class="row g-3">
+            <!-- MONTO TOTAL -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">💵 Monto Total del Gasto</label>
+              <div class="p-3 bg-light border rounded">
+                <div style="font-size: 1.5rem; font-weight: bold; color: #dc3545;">
+                  $<span id="modalMontoTotal">0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- MONTO A PAGAR -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">💳 ¿Cuánto pagás ahora? *</label>
+              <input type="number" id="modalMontoPago" name="monto_pago" class="form-control"
+                     step="0.01" min="0" placeholder="0.00" required
+                     oninput="actualizarSaldoRestante()">
+              <small class="text-muted d-block mt-1">Monto máximo: $<span id="maxPago">0.00</span></small>
+            </div>
+
+            <!-- SALDO RESTANTE (PREVIEW) -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">⏳ Saldo después del pago</label>
+              <div class="p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded">
+                <div style="font-weight: bold; color: #d97706;">
+                  $<span id="modalSaldoRestante">0.00</span>
+                </div>
+                <small class="text-muted">Quedará pendiente de pagar</small>
+              </div>
+            </div>
+
+            <!-- MÉTODO DE PAGO -->
+            <div class="col-12">
+              <label class="form-label fw-semibold">💳 Método de Pago *</label>
+              <select name="metodo_pago" class="form-select" required>
+                <option value="">— Seleccionar —</option>
+                <option value="efectivo">💵 Efectivo</option>
+                <option value="transferencia">🏦 Transferencia</option>
+                <option value="tarjeta">💳 Tarjeta</option>
+                <option value="cheque">📄 Cheque</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle me-2"></i>Registrar Pago
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
 <!-- MODAL: REVISAR CLASIFICACIÓN -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 <div class="modal fade" id="modalRevisar" tabindex="-1">
@@ -645,6 +728,39 @@
 
     // Actualizar action del form
     document.getElementById('formEditar').action = '/gastos/' + id + '/editar';
+  }
+
+  // Función para abrir modal de pago parcial
+  let gastoIdActual = null;
+  let gastoMontoActual = null;
+
+  function abrirPagoParcial(id, monto, metodo) {
+    gastoIdActual = id;
+    gastoMontoActual = monto;
+
+    // Llenar los campos del modal
+    document.getElementById('modalMontoTotal').textContent = monto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    document.getElementById('maxPago').textContent = monto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    document.getElementById('modalMontoPago').value = '';
+    document.getElementById('modalMontoPago').max = monto;
+    document.getElementById('modalSaldoRestante').textContent = monto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    document.querySelector('select[name="metodo_pago"]').value = metodo || 'efectivo';
+
+    // Actualizar action del form
+    document.getElementById('formPagoParcial').action = '/gastos/' + id + '/pago-parcial';
+  }
+
+  function actualizarSaldoRestante() {
+    const montoPago = parseFloat(document.getElementById('modalMontoPago').value) || 0;
+    const saldoRestante = gastoMontoActual - montoPago;
+    document.getElementById('modalSaldoRestante').textContent = saldoRestante.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+    // Validar que no exceda el monto
+    if (montoPago > gastoMontoActual) {
+      document.getElementById('modalMontoPago').classList.add('is-invalid');
+    } else {
+      document.getElementById('modalMontoPago').classList.remove('is-invalid');
+    }
   }
 </script>
 

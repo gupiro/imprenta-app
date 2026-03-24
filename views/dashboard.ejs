@@ -108,11 +108,17 @@
       <a href="/presupuestos/nuevo" class="btn-minimal btn-primary-minimal">
         <i class="bi bi-calculator"></i> Nuevo Presupuesto
       </a>
-      <a href="/pedidos/listos" class="btn-minimal btn-secondary-minimal">
-        <i class="bi bi-check-circle"></i> Listos para entrega
+      <a href="/pedidos/vista-rapida" class="btn-minimal btn-secondary-minimal">
+        <i class="bi bi-eye"></i> Vista Rápida
+      </a>
+      <a href="/deudas" class="btn-minimal btn-warning-minimal">
+        <i class="bi bi-exclamation-triangle"></i> Deudas
+      </a>
+      <a href="/gastos" class="btn-minimal btn-danger-minimal">
+        <i class="bi bi-receipt"></i> Gastos
       </a>
       <a href="/reportes" class="btn-minimal btn-secondary-minimal">
-        <i class="bi bi-bar-chart"></i> Ver reportes
+        <i class="bi bi-bar-chart"></i> Reportes
       </a>
     </div>
   </div>
@@ -183,6 +189,141 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       DEUDAS Y GASTOS PENDIENTES
+       ════════════════════════════════════════════════════════════════ -->
+  <div class="row mb-5 g-4">
+    <!-- DEUDAS DE LA EMPRESA -->
+    <% if (countDeudas > 0) { %>
+    <div class="col-md-6">
+      <div class="card-minimal">
+        <div class="card-header">💳 Deudas de la Empresa</div>
+        <div class="row g-3 mt-3">
+          <% if (deudas.tarjetas.c > 0) { %>
+          <div class="col-6">
+            <div style="text-align: center; padding: 1rem; background: #fff3cd; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: #856404;">
+                <%= deudas.tarjetas.c %>
+              </div>
+              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Tarjetas</div>
+              <div style="color: #d97706; font-weight: bold; font-size: 0.9rem;">
+                $<%= deudas.tarjetas.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <% if (deudas.cheques.c > 0) { %>
+          <div class="col-6">
+            <div style="text-align: center; padding: 1rem; background: #f8d7da; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: #721c24;">
+                <%= deudas.cheques.c %>
+              </div>
+              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Cheques</div>
+              <div style="color: #dc3545; font-weight: bold; font-size: 0.9rem;">
+                $<%= deudas.cheques.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <% if (deudas.prestamos.c > 0) { %>
+          <div class="col-6">
+            <div style="text-align: center; padding: 1rem; background: #d1ecf1; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: #0c5460;">
+                <%= deudas.prestamos.c %>
+              </div>
+              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Préstamos</div>
+              <div style="color: #17a2b8; font-weight: bold; font-size: 0.9rem;">
+                $<%= deudas.prestamos.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <% if (deudas.proveedores.c > 0) { %>
+          <div class="col-6">
+            <div style="text-align: center; padding: 1rem; background: #e7e8ea; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: #383d41;">
+                <%= deudas.proveedores.c %>
+              </div>
+              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Proveedores</div>
+              <div style="color: #6c757d; font-weight: bold; font-size: 0.9rem;">
+                $<%= deudas.proveedores.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+        </div>
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <small style="color: #6b7280;">Total adeudado</small>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #dc3545;">
+                $<%= deudaEmpresa.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+            <a href="/deudas" class="btn btn-sm btn-outline-warning">
+              <i class="bi bi-arrow-right"></i> Ver detalles
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- GASTOS PENDIENTES -->
+    <% if (gastos.pendientes.c > 0 || gastos.fijos.c > 0) { %>
+    <div class="col-md-6">
+      <div class="card-minimal">
+        <div class="card-header">💸 Gastos Pendientes</div>
+        <div class="row g-3 mt-3">
+          <% if (gastos.pendientes.c > 0) { %>
+          <div class="col-6">
+            <div style="text-align: center; padding: 1rem; background: #ffebee; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: #c62828;">
+                <%= gastos.pendientes.c %>
+              </div>
+              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Por Pagar</div>
+              <div style="color: #dc3545; font-weight: bold; font-size: 0.9rem;">
+                $<%= gastos.pendientes.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <% if (gastos.fijos.c > 0) { %>
+          <div class="col-6">
+            <div style="text-align: center; padding: 1rem; background: #f3e5f5; border-radius: 8px;">
+              <div style="font-size: 1.5rem; font-weight: 700; color: #6a1b9a;">
+                <%= gastos.fijos.c %>
+              </div>
+              <div style="color: #6b7280; font-size: 0.875rem; margin-bottom: 0.5rem;">Gastos Fijos</div>
+              <div style="color: #9c27b0; font-weight: bold; font-size: 0.9rem;">
+                $<%= gastos.fijos.total.toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+        </div>
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <small style="color: #6b7280;">Total pendiente</small>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #9c27b0;">
+                $<%= (gastos.pendientes.total + gastos.fijos.total).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+              </div>
+            </div>
+            <a href="/gastos" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-arrow-right"></i> Ver gastos
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════

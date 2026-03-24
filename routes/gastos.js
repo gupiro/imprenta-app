@@ -249,6 +249,66 @@ module.exports = (db) => {
         res.redirect('/gastos');
     });
 
+    // Pago parcial de gasto
+    router.post('/:id/pago-parcial', checkPermission, async (req, res) => {
+        try {
+            const id = parseInt(req.params.id);
+            const { monto_pago, metodo_pago } = req.body;
+            const montoPago = parseFloat(monto_pago);
+
+            if (!montoPago || montoPago <= 0) {
+                req.flash('error', 'Ingresá un monto válido para el pago');
+                return res.redirect('/gastos');
+            }
+
+            // Obtener datos del gasto
+            const gasto = await db.get("SELECT * FROM gastos WHERE id = ?", id);
+            if (!gasto) {
+                req.flash('error', 'Gasto no encontrado');
+                return res.redirect('/gastos');
+            }
+
+            if (montoPago > gasto.monto) {
+                req.flash('error', `No podés pagar más de lo que debe ($${gasto.monto.toLocaleString('es-AR', {minimumFractionDigits: 2})})`);
+                return res.redirect('/gastos');
+            }
+
+            // Restar el pago parcial del monto del gasto
+            const nuevoMonto = gasto.monto - montoPago;
+            const nuevoEstado = nuevoMonto <= 0 ? 'pagado' : 'pendiente';
+
+            await db.run(
+                "UPDATE gastos SET monto = ?, estado_pago = ? WHERE id = ?",
+                [nuevoMonto, nuevoEstado, id]
+            );
+
+            // Registrar el egreso en movimientos_caja
+            const fechaLocal = obtenerFechaLocal();
+            const turno = turnoByHora(fechaLocal.timestamp);
+
+            await db.run(
+                `INSERT INTO movimientos_caja
+                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    'egreso',
+                    `Pago parcial - ${gasto.descripcion || gasto.categoria}`,
+                    gasto.categoria,
+                    montoPago,
+                    metodo_pago || gasto.metodo_pago || 'manual',
+                    fechaLocal.timestamp,
+                    turno
+                ]
+            );
+
+            req.flash('success', `✅ Pago parcial de $${montoPago.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado. ${nuevoEstado === 'pagado' ? 'Gasto completamente pagado.' : `Monto pendiente: $${nuevoMonto.toLocaleString('es-AR', {minimumFractionDigits: 2})}`}`);
+        } catch (err) {
+            console.error('Error al registrar pago parcial:', err);
+            req.flash('error', 'Error: ' + err.message);
+        }
+        res.redirect('/gastos');
+    });
+
     // Eliminar gasto
     router.post('/:id/eliminar', checkPermission, async (req, res) => {
         try {

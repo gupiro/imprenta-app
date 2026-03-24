@@ -1,83 +1,92 @@
-<!-- views/home.ejs - DASHBOARD COMPLETO Y PROFESIONAL -->
+<!-- Panel Principal Ejecutivo - Control de Negocio -->
+
 <div class="container-fluid py-4">
-  <!-- ═══════════════════════════════════════════════════════
-       HEADER
-       ═══════════════════════════════════════════════════════ -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <h1 class="display-5 fw-bold mb-1">
-        <i class="bi bi-speedometer2"></i> Panel de Control
-      </h1>
-      <p class="text-muted">
-        Bienvenido, <strong><%= (user && user.username) || "Usuario" %></strong> | 
-        <%= new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
-      </p>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       CAPA 1 - URGENCIAS (Solo si hay datos críticos)
+       ════════════════════════════════════════════════════════════════ -->
+
+  <% if (user && user.rol === 'admin') { %>
+
+  <!-- HERO METRIC - DINERO HOY -->
+  <%
+  const metaDiaria = ingresosMes / (new Date().getDate() || 1);
+  const porcentajeMeta = metaDiaria > 0 ? (ingresosHoy / metaDiaria) * 100 : 0;
+  const heroColor = porcentajeMeta >= 100
+    ? 'linear-gradient(135deg, #10b981, #059669)'
+    : porcentajeMeta >= 70
+    ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+    : 'linear-gradient(135deg, #ef4444, #dc2626)';
+  %>
+  <div class="hero-metric mb-4" style="background: <%= heroColor %>;">
+    <div class="hero-label">💰 HOY</div>
+    <div class="hero-amount">$<%= (ingresosHoy || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+    <div class="hero-progress">
+      <div class="hero-progress-bar" style="width: <%= Math.min(porcentajeMeta, 100) %>%;"></div>
     </div>
+    <div class="hero-meta">Meta: $<%= metaDiaria.toLocaleString('es-AR', {maximumFractionDigits: 0}) %> — <strong><%= porcentajeMeta.toFixed(0) %>%</strong></div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       ACCIONES RÁPIDAS - SECCIÓN 1
-       ═══════════════════════════════════════════════════════ -->
-  <div class="row mb-4">
-    <div class="col-12">
-      <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-        <div class="card-body py-4">
-          <h6 class="mb-3"><i class="bi bi-lightning-fill"></i> ACCIONES RÁPIDAS</h6>
-          <div class="row g-2">
-            <% if (!isEmpleado) { %>
-              <div class="col-6 col-md-4 col-lg-2">
-                <a href="/pedidos/nuevo" class="btn w-100 fw-bold text-white" style="padding: 1.5rem 0.5rem; font-size: 0.85rem; background-color: #28a745; border-color: #28a745;">
-                  <div><i class="bi bi-plus-circle" style="font-size: 1.5rem;"></i></div>
-                  Nuevo Pedido
-                </a>
-              </div>
-              <div class="col-6 col-md-4 col-lg-2">
-                <a href="/presupuestos/nuevo" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
-                  <div><i class="bi bi-calculator" style="font-size: 1.5rem;"></i></div>
-                  Presupuesto
-                </a>
-              </div>
-            <% } %>
-            <div class="col-6 col-md-4 col-lg-2">
-              <a href="/pedidos/pendientes" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
-                <div><i class="bi bi-clock-history" style="font-size: 1.5rem;"></i></div>
-                Pendientes
-              </a>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-              <a href="/pedidos/en-produccion" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
-                <div><i class="bi bi-gear" style="font-size: 1.5rem;"></i></div>
-                Producción
-              </a>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-              <a href="/pedidos/listos" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
-                <div><i class="bi bi-check-circle" style="font-size: 1.5rem;"></i></div>
-                Listos
-              </a>
-            </div>
-            <div class="col-6 col-md-4 col-lg-2">
-              <a href="/pedidos/entregados" class="btn btn-light w-100 fw-bold" style="padding: 1.5rem 0.5rem; font-size: 0.85rem;">
-                <div><i class="bi bi-box-seam" style="font-size: 1.5rem;"></i></div>
-                Entregados
-              </a>
-            </div>
-          </div>
-        </div>
+  <!-- URGENCIAS: 3 BLOQUES CRÍTICOS -->
+  <%
+    const deudasVencidas = (deudasVencidas && Array.isArray(deudasVencidas)) ? deudasVencidas : [];
+    const deudasProximas = (deudasProximas && Array.isArray(deudasProximas)) ? deudasProximas : [];
+    const totalVencidas = deudasVencidas.reduce((s, d) => s + (d.monto || 0), 0);
+    const totalProximas = deudasProximas.reduce((s, d) => s + (d.monto || 0), 0);
+    const deudoresImpagos = deudores ? deudores.length : 0;
+  %>
+
+  <div class="row g-3 mb-4">
+    <!-- COBRANZA URGENTE -->
+    <div class="col-md-4">
+      <div class="card-urgencia card-urgencia-rojo">
+        <div class="urgencia-badge">🔴 COBRAR AHORA</div>
+        <div class="urgencia-amount">$<%= ((deudores && deudores.reduce((s, d) => s + (d.monto_restante || 0), 0)) || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+        <div class="urgencia-subtitle"><%= deudoresImpagos %> clientes con deuda</div>
+        <% if (deudoresImpagos > 0) { %>
+          <a href="#deudores-lista" class="urgencia-action">Ver detalles →</a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- DEUDAS VENCIDAS -->
+    <div class="col-md-4">
+      <div class="card-urgencia card-urgencia-vencido">
+        <div class="urgencia-badge">🔴 VENCIDAS</div>
+        <div class="urgencia-amount">$<%= totalVencidas.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+        <div class="urgencia-subtitle"><%= deudasVencidas.length %> deudas vencidas</div>
+        <% if (deudasVencidas.length > 0) { %>
+          <a href="/deudas" class="urgencia-action">Gestionar →</a>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- PRÓXIMOS 7 DÍAS -->
+    <div class="col-md-4">
+      <div class="card-urgencia card-urgencia-naranja">
+        <div class="urgencia-badge">🟡 PRÓXIMOS 7D</div>
+        <div class="urgencia-amount">$<%= totalProximas.toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+        <div class="urgencia-subtitle"><%= deudasProximas.length %> pagos programados</div>
+        <% if (deudasProximas.length > 0) { %>
+          <a href="/deudas" class="urgencia-action">Planificar →</a>
+        <% } %>
       </div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 2: ESTADOS DE PEDIDOS (KPIs)
-       ═══════════════════════════════════════════════════════ -->
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       CAPA 2 - OPERACIÓN (Estados + Últimos Pedidos + Stock)
+       ════════════════════════════════════════════════════════════════ -->
+
+  <!-- ESTADOS DE PEDIDOS (4 CARDS) -->
   <div class="row g-3 mb-4">
-    <div class="col-md-6 col-lg-2-4">
+    <div class="col-md-6 col-lg-3">
       <a href="/pedidos/pendientes" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-danger" style="border-left: 4px solid #dc3545 !important; cursor: pointer; transition: transform 0.2s;">
-          <div class="card-body text-center">
-            <i class="bi bi-clock-history" style="font-size: 2rem; color: #dc3545;"></i>
-            <p class="text-muted small mt-2 mb-1">📋 PENDIENTES</p>
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #dc3545 !important; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-clock-history"></i> Pendientes</p>
             <h2 class="text-danger mb-0 fw-bold"><%= counts.pendientes || 0 %></h2>
             <small class="text-muted">Esperando producción</small>
           </div>
@@ -85,12 +94,11 @@
       </a>
     </div>
 
-    <div class="col-md-6 col-lg-2-4">
+    <div class="col-md-6 col-lg-3">
       <a href="/pedidos/en-produccion" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-warning" style="border-left: 4px solid #ffc107 !important; cursor: pointer; transition: transform 0.2s;">
-          <div class="card-body text-center">
-            <i class="bi bi-gear" style="font-size: 2rem; color: #ffc107;"></i>
-            <p class="text-muted small mt-2 mb-1">⚙️ EN PRODUCCIÓN</p>
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #ffc107 !important; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-gear"></i> En Producción</p>
             <h2 class="text-warning mb-0 fw-bold"><%= counts.en_produccion || 0 %></h2>
             <small class="text-muted">Trabajos activos</small>
           </div>
@@ -98,12 +106,11 @@
       </a>
     </div>
 
-    <div class="col-md-6 col-lg-2-4">
+    <div class="col-md-6 col-lg-3">
       <a href="/pedidos/listos" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-info" style="border-left: 4px solid #0dcaf0 !important; cursor: pointer; transition: transform 0.2s;">
-          <div class="card-body text-center">
-            <i class="bi bi-check-circle" style="font-size: 2rem; color: #0dcaf0;"></i>
-            <p class="text-muted small mt-2 mb-1">✅ LISTOS</p>
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0dcaf0 !important; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-check-circle"></i> Listos</p>
             <h2 class="text-info mb-0 fw-bold"><%= counts.listos || 0 %></h2>
             <small class="text-muted">Para entregar</small>
           </div>
@@ -111,129 +118,40 @@
       </a>
     </div>
 
-    <div class="col-md-6 col-lg-2-4">
+    <div class="col-md-6 col-lg-3">
       <a href="/pedidos/entregados" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-success" style="border-left: 4px solid #198754 !important; cursor: pointer; transition: transform 0.2s;">
-          <div class="card-body text-center">
-            <i class="bi bi-box-seam" style="font-size: 2rem; color: #198754;"></i>
-            <p class="text-muted small mt-2 mb-1">🎉 ENTREGADOS</p>
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754 !important; cursor: pointer;">
+          <div class="card-body">
+            <p class="small mb-2 opacity-75"><i class="bi bi-box-seam"></i> Entregados</p>
             <h2 class="text-success mb-0 fw-bold"><%= counts.entregados || 0 %></h2>
             <small class="text-muted">Completados</small>
           </div>
         </div>
       </a>
     </div>
-
-    <div class="col-md-6 col-lg-2-4">
-      <a href="/presupuestos" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-primary" style="border-left: 4px solid #0d6efd !important; cursor: pointer; transition: transform 0.2s;">
-          <div class="card-body text-center">
-            <i class="bi bi-calculator" style="font-size: 2rem; color: #0d6efd;"></i>
-            <p class="text-muted small mt-2 mb-1">📊 PRESUPUESTOS</p>
-            <h2 class="text-primary mb-0 fw-bold"><%= counts.presupuestos || 0 %></h2>
-            <small class="text-muted">Pendientes</small>
-          </div>
-        </div>
-      </a>
-    </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 3: CAJA DIARIA PROMINENTE (EMPLEADO)
-       ═══════════════════════════════════════════════════════ -->
+  <!-- ACCIONES RÁPIDAS (PARA EMPLEADOS) -->
   <% if (isEmpleado) { %>
   <div class="row g-3 mb-4">
-    <div class="col-12 col-md-6">
-      <a href="/caja-diaria" class="text-decoration-none">
-        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; transform: scale(1); transition: all 0.3s;">
-          <div class="card-body py-5 text-center">
-            <i class="bi bi-cash-coin" style="font-size: 3.5rem; opacity: 0.9;"></i>
-            <h4 class="mt-3 mb-2">💰 CAJA DIARIA</h4>
-            <p class="lead mb-0 opacity-75">Registrar movimientos</p>
-            <small class="opacity-75 d-block mt-2">Ingresos y egresos</small>
-          </div>
-        </div>
-      </a>
-    </div>
-    <div class="col-12 col-md-6">
-      <a href="/pedidos" class="text-decoration-none">
-        <div class="card border-0 shadow-lg h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; cursor: pointer; transition: all 0.3s;">
-          <div class="card-body py-5 text-center">
-            <i class="bi bi-kanban-fill" style="font-size: 3.5rem; opacity: 0.9;"></i>
-            <h4 class="mt-3 mb-2">📋 MIS TRABAJOS</h4>
-            <p class="lead mb-0 opacity-75">Ver y gestionar pedidos</p>
-            <small class="opacity-75 d-block mt-2">Cargar y cambiar estado</small>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
-  <% } else { %>
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 3: INFORMACIÓN FINANCIERA (ADMIN/VENDEDOR)
-       ═══════════════════════════════════════════════════════ -->
-  <div class="row g-3 mb-4 align-items-stretch">
-    <!-- TARJETA INGRESOS: Diferente para Admin vs No-Admin -->
-    <% if (user && user.rol === 'admin') { %>
-    <!-- Admin: Muestra número de ingresos -->
-    <div class="col-md-6 col-lg-3">
+    <div class="col-md-6">
       <a href="/caja-diaria" class="text-decoration-none">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer;">
-          <div class="card-body">
-            <p class="small mb-2 opacity-75"><i class="bi bi-calendar-day"></i> 📅 Ingresos Hoy</p>
-            <h3 class="mb-0 fw-bold">$<%= (ingresosHoy || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
-            <small class="opacity-75">Movimientos del día</small>
+          <div class="card-body text-center py-4">
+            <i class="bi bi-cash-coin" style="font-size: 2rem;"></i>
+            <h5 class="mt-3 mb-0 fw-bold">Caja Diaria</h5>
+            <p class="small opacity-75 mt-2">Registrar ingresos y egresos</p>
           </div>
         </div>
       </a>
     </div>
-    <% } else { %>
-    <!-- No-Admin: Solo botón simple -->
-    <div class="col-md-6 col-lg-3">
-      <a href="/caja-diaria" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; min-height: 150px;">
-          <div class="card-body text-center">
-            <h2 style="font-size: 3rem; margin: 0;"><i class="bi bi-cash-coin"></i></h2>
-            <p class="small mt-3 mb-0">Caja Diaria</p>
-          </div>
-        </div>
-      </a>
-    </div>
-    <% } %>
-
-    <% if (!isRecepcionista) { %>
-    <div class="col-md-6 col-lg-3">
-      <a href="/caja-diaria" class="text-decoration-none">
+    <div class="col-md-6">
+      <a href="/pedidos" class="text-decoration-none">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; cursor: pointer;">
-          <div class="card-body">
-            <p class="small mb-2 opacity-75"><i class="bi bi-calendar-month"></i> 📆 Ingresos Mes</p>
-            <h3 class="mb-0 fw-bold">$<%= (ingresosMes || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
-            <small class="opacity-75">Acumulado mensual</small>
-          </div>
-        </div>
-      </a>
-    </div>
-    <% } %>
-
-    <div class="col-md-6 col-lg-3">
-      <a href="/clientes" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; cursor: pointer;">
-          <div class="card-body">
-            <p class="small mb-2 opacity-75"><i class="bi bi-people"></i> 👥 Clientes</p>
-            <h3 class="mb-0 fw-bold"><%= counts.clientes || 0 %></h3>
-            <small class="opacity-75">Base de datos</small>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-6 col-lg-3">
-      <a href="/stock" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; cursor: pointer;">
-          <div class="card-body">
-            <p class="small mb-2 opacity-75"><i class="bi bi-boxes"></i> 📦 Stock</p>
-            <h3 class="mb-0 fw-bold">Ver</h3>
-            <small class="opacity-75">Gestionar inventario</small>
+          <div class="card-body text-center py-4">
+            <i class="bi bi-kanban-fill" style="font-size: 2rem;"></i>
+            <h5 class="mt-3 mb-0 fw-bold">Mis Trabajos</h5>
+            <p class="small opacity-75 mt-2">Ver y gestionar pedidos</p>
           </div>
         </div>
       </a>
@@ -241,499 +159,264 @@
   </div>
   <% } %>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 4: NAVEGACIÓN A OTRAS ÁREAS
-       ═══════════════════════════════════════════════════════ -->
+  <!-- ÚLTIMOS PEDIDOS + STOCK (2 COLS) -->
   <% if (!isEmpleado) { %>
-  <div class="row g-3 mb-4">
-    <div class="col-md-6 col-lg-3">
-      <a href="/catalogo" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-3 border-primary">
-          <div class="card-body text-center">
-            <i class="bi bi-card-list" style="font-size: 2rem; color: #0d6efd;"></i>
-            <h6 class="mt-2 mb-0 fw-bold">Catálogo</h6>
-            <small class="text-muted">Productos y servicios</small>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-6 col-lg-3">
-      <a href="/gastos" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-3 border-danger">
-          <div class="card-body text-center">
-            <i class="bi bi-receipt" style="font-size: 2rem; color: #dc3545;"></i>
-            <h6 class="mt-2 mb-0 fw-bold">Gastos</h6>
-            <small class="text-muted">Egresos registrados</small>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-6 col-lg-3">
-      <a href="/proveedores" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-3 border-warning">
-          <div class="card-body text-center">
-            <i class="bi bi-truck" style="font-size: 2rem; color: #ffc107;"></i>
-            <h6 class="mt-2 mb-0 fw-bold">Proveedores</h6>
-            <small class="text-muted">Gestión de contactos</small>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <div class="col-md-6 col-lg-3">
-      <a href="/reportes" class="text-decoration-none">
-        <div class="card border-0 shadow-sm h-100 border-left border-3 border-success">
-          <div class="card-body text-center">
-            <i class="bi bi-bar-chart-fill" style="font-size: 2rem; color: #198754;"></i>
-            <h6 class="mt-2 mb-0 fw-bold">Reportes</h6>
-            <small class="text-muted">Análisis y estadísticas</small>
-          </div>
-        </div>
-      </a>
-    </div>
-  </div>
-  <% } %>
-
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 5: PRÓXIMOS 5 VENCIMIENTOS (ADMIN ONLY)
-       ═══════════════════════════════════════════════════════ -->
-  <% if (!isEmpleado && user && user.rol === 'admin') { %>
-  <div class="row mb-4">
-    <div class="col-12">
+  <div class="row g-4 mb-4">
+    <!-- ÚLTIMOS PEDIDOS -->
+    <div class="col-lg-7">
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-info text-white" style="cursor: pointer;" onclick="toggleProximos()">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-calendar-check"></i> 📋 PRÓXIMOS 5 VENCIMIENTOS</h6>
-            <i class="bi bi-chevron-down" id="iconProximos"></i>
-          </div>
+        <div class="card-header bg-light" style="border-bottom: 2px solid #e5e7eb;">
+          <h6 class="mb-0"><i class="bi bi-list-ul"></i> Últimos Pedidos</h6>
         </div>
-        <div class="card-body p-0" id="contenedorProximos" style="max-height: 500px; overflow-y: auto;">
-          <% if (proximos5Vencimientos && proximos5Vencimientos.length > 0) { %>
-            <div class="list-group list-group-flush">
-              <% proximos5Vencimientos.forEach((p, idx) => { %>
-                <div class="list-group-item <%= (p.dias_restantes !== null && p.dias_restantes < 0) ? 'bg-danger-light' : '' %>">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div style="flex: 1;">
-                      <div class="d-flex gap-2 align-items-start mb-2">
-                        <span class="badge <%= p.prioridad.clase %>" style="white-space: nowrap;">
-                          <%= p.prioridad.label %>
-                        </span>
-                        <span class="badge bg-secondary"><%= p.source_tipo === 'cheque' ? 'Cheque' : (p.source_tipo === 'proveedor' ? 'Proveedor' : (p.source_tipo === 'prestamo' ? 'Préstamo' : 'Tarjeta')) %></span>
-                      </div>
-                      <h6 class="mb-1"><%= p.titulo %></h6>
-                      <small class="text-muted">
-                        <% if (p.fecha_calculada) { %>
-                          Vence: <%= p.fecha_calculada.toLocaleDateString('es-AR') %>
-                          <% if (p.dias_restantes !== null) { %>
-                            • <%= p.dias_restantes < 0 ? Math.abs(p.dias_restantes) + ' días vencido' : (p.dias_restantes + ' días') %>
-                          <% } %>
-                        <% } else { %>
-                          Sin fecha definida
-                        <% } %>
-                      </small>
-                    </div>
-                    <span class="badge bg-dark fs-6 ms-2" style="white-space: nowrap;">
-                      $<%= p.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
-                    </span>
-                  </div>
-                  <div class="btn-group btn-group-sm" role="group">
-                    <% if (p.source_tipo === 'cheque') { %>
-                      <a href="/deudas/cheques" class="btn btn-outline-info">
-                        <i class="bi bi-arrow-right"></i> Ver Cheques
-                      </a>
-                    <% } else if (p.source_tipo === 'proveedor') { %>
-                      <a href="/deudas/proveedores-deuda" class="btn btn-outline-info">
-                        <i class="bi bi-arrow-right"></i> Ver Proveedores
-                      </a>
-                    <% } else if (p.source_tipo === 'prestamo') { %>
-                      <a href="/deudas/prestamos" class="btn btn-outline-info">
-                        <i class="bi bi-arrow-right"></i> Ver Préstamos
-                      </a>
-                    <% } else { %>
-                      <a href="/deudas/tarjetas" class="btn btn-outline-info">
-                        <i class="bi bi-arrow-right"></i> Ver Tarjetas
-                      </a>
-                    <% } %>
-                  </div>
+        <div style="max-height: 300px; overflow-y: auto;">
+          <% if (ultimosPedidos && ultimosPedidos.length > 0) { %>
+            <% ultimosPedidos.slice(0, 8).forEach(ped => { %>
+            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="location.href='/pedidos/detalle/<%= ped.id %>';">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; color: #2563eb;">#<%= ped.id %></div>
+                <small style="color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">
+                  <%= (ped.cliente_nombre || 'Sin cliente').substring(0, 28) %>
+                </small>
+              </div>
+              <div style="text-align: right; white-space: nowrap; margin-left: 1rem;">
+                <span style="font-weight: 600;">$<%= (ped.precio || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></span>
+                <div style="font-size: 0.75rem; color: #9ca3af;">
+                  <%
+                    const estado = ped.estado === 'ENTREGADO' ? '✓' : ped.estado === 'LISTO' ? '✓' : ped.estado === 'EN_PRODUCCION' ? '⚙️' : '📋';
+                  %>
+                  <%= estado %> <%= ped.estado.replace('_', ' ') %>
                 </div>
-              <% }); %>
+              </div>
             </div>
+            <% }); %>
           <% } else { %>
-            <div class="card-body text-center py-4">
-              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-              <p class="text-success mt-2 mb-0"><strong>✓ ¡Sin pagos próximos!</strong></p>
-            </div>
+            <div style="padding: 2rem; text-align: center; color: #9ca3af;">No hay pedidos</div>
           <% } %>
         </div>
       </div>
-      <div class="mt-2 text-end">
-        <a href="/pagos" class="btn btn-sm btn-outline-info">
-          <i class="bi bi-calendar-check"></i> Centro de Pagos Completo
-        </a>
-      </div>
     </div>
-  </div>
-  <% } %>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 6: ALERTAS Y DEUDORES (DESPLEGABLES)
-       ═══════════════════════════════════════════════════════ -->
-  <% if (!isEmpleado) { %>
-  <div class="row g-3 mb-4">
-    <!-- TOP DEUDORES - DESPLEGABLE -->
-    <% if (!isRecepcionista) { %>
-    <div class="col-lg-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-danger text-white" style="cursor: pointer;" onclick="toggleDeudores()">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> ⚠️ TOP DEUDORES</h6>
-            <i class="bi bi-chevron-down" id="iconDeudores"></i>
-          </div>
+    <!-- STOCK CRÍTICO + TOP DEUDORES -->
+    <div class="col-lg-5">
+      <!-- STOCK CRÍTICO -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-light" style="border-bottom: 2px solid #e5e7eb;">
+          <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Stock Crítico</h6>
         </div>
-        <div class="card-body p-0" id="contenedorDeudores" style="max-height: 400px; overflow-y: auto;">
+        <div style="padding: 1rem;">
+          <%
+            const stockBajoCount = stockBajo ? stockBajo.length : 0;
+            if (stockBajoCount === 0) {
+          %>
+            <div style="text-align: center; color: #10b981; font-weight: 600;">✓ Stock OK</div>
+          <% } else { %>
+            <ul style="margin: 0; padding-left: 1rem; list-style: disc;">
+              <% (stockBajo || []).slice(0, 4).forEach(item => { %>
+              <li style="color: #1f2937; font-size: 0.9rem; margin-bottom: 0.4rem;">
+                <strong><%= (item.nombre || '').substring(0, 22) %></strong> • <%= item.cantidad %>/<%= item.stock_minimo %>
+              </li>
+              <% }); %>
+            </ul>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- TOP DEUDORES -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light" style="border-bottom: 2px solid #e5e7eb;">
+          <h6 class="mb-0"><i class="bi bi-exclamation-circle"></i> Top Deudores</h6>
+        </div>
+        <div style="max-height: 250px; overflow-y: auto;">
           <% if (deudores && deudores.length > 0) { %>
-            <div class="list-group list-group-flush">
-              <% deudores.forEach((d, idx) => { %>
-                <div class="list-group-item">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <h6 class="mb-1"><span class="badge bg-danger"><%= idx + 1 %></span> <%= d.cliente_nombre %></h6>
-                      <small class="text-muted">Pedido #<%= d.id %> • <%= d.phone || 'Sin teléfono' %></small>
-                    </div>
-                    <span class="badge bg-danger fs-6">$<%= (d.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
-                  </div>
-                  <a href="/pedidos/detalle/<%= d.id %>" class="btn btn-sm btn-danger">
-                    <i class="bi bi-cash-coin"></i> Cobrar Ahora
-                  </a>
+            <% deudores.slice(0, 5).forEach((d, idx) => { %>
+            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; color: #1f2937; font-size: 0.95rem;">
+                  <%= (d.cliente_nombre || 'Cliente').substring(0, 24) %>
                 </div>
-              <% }); %>
+                <small style="color: #9ca3af;">Pedido #<%= d.id %></small>
+              </div>
+              <div style="text-align: right; margin-left: 0.5rem; white-space: nowrap;">
+                <div style="font-weight: 600; color: #ef4444;">$<%= (d.monto_restante || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %></div>
+              </div>
             </div>
+            <% }); %>
           <% } else { %>
-            <div class="card-body text-center py-4">
-              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-              <p class="text-success mt-2 mb-0"><strong>✓ ¡Sin deudas!</strong></p>
-            </div>
+            <div style="padding: 1.5rem; text-align: center; color: #10b981; font-weight: 600;">✓ Sin deudas</div>
           <% } %>
         </div>
       </div>
     </div>
-    <% } %>
-
-    <!-- STOCK BAJO - DESPLEGABLE -->
-    <% if (!isRecepcionista) { %>
-    <div class="col-lg-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-warning text-dark" style="cursor: pointer;" onclick="toggleStock()">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-exclamation-circle"></i> ⚠️ STOCK BAJO</h6>
-            <i class="bi bi-chevron-down" id="iconStock"></i>
-          </div>
-        </div>
-        <div class="card-body p-0" id="contenedorStock" style="max-height: 400px; overflow-y: auto;">
-          <% if (stockBajo && stockBajo.length > 0) { %>
-            <div class="list-group list-group-flush">
-              <% stockBajo.forEach((s, idx) => { %>
-                <div class="list-group-item">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <h6 class="mb-1"><span class="badge bg-warning text-dark"><%= idx + 1 %></span> <%= s.nombre %></h6>
-                      <small class="text-muted">Unidad: <%= s.unidad %></small>
-                    </div>
-                    <div class="text-end">
-                      <div class="badge bg-danger"><%= s.cantidad %> / <%= s.stock_minimo %></div>
-                    </div>
-                  </div>
-                  <a href="/stock" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-pencil"></i> Reponer
-                  </a>
-                </div>
-              <% }); %>
-            </div>
-          <% } else { %>
-            <div class="card-body text-center py-4">
-              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-              <p class="text-success mt-2 mb-0"><strong>✓ Stock OK</strong></p>
-            </div>
-          <% } %>
-        </div>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- DEUDAS VENCIDAS -->
-    <% if (!isRecepcionista) { %>
-    <div class="col-lg-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-danger text-white" style="cursor: pointer;" onclick="toggleDeudasVencidas()">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-cash-stack"></i> 🔴 DEUDAS VENCIDAS</h6>
-            <i class="bi bi-chevron-down" id="iconDeudasVencidas"></i>
-          </div>
-        </div>
-        <div class="card-body p-0" id="contenedorDeudasVencidas" style="max-height: 400px; overflow-y: auto;">
-          <% if (deudasVencidas && deudasVencidas.length > 0) { %>
-            <div class="list-group list-group-flush">
-              <% deudasVencidas.forEach((d, idx) => { %>
-                <div class="list-group-item">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <h6 class="mb-1">
-                        <span class="badge bg-danger"><%= idx + 1 %></span>
-                        <% if (d.tipo === 'cheque') { %>
-                          Cheque #<%= d.descripcion %>
-                        <% } else { %>
-                          <%= d.descripcion %>
-                        <% } %>
-                      </h6>
-                      <small class="text-muted">Vencido desde <%= new Date(d.fecha_vencimiento).toLocaleDateString('es-AR') %></small>
-                    </div>
-                    <span class="badge bg-danger fs-6">$<%= d.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
-                  </div>
-                  <a href="/deudas" class="btn btn-sm btn-danger">
-                    <i class="bi bi-cash-coin"></i> Gestionar
-                  </a>
-                </div>
-              <% }); %>
-            </div>
-          <% } else { %>
-            <div class="card-body text-center py-4">
-              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-              <p class="text-success mt-2 mb-0"><strong>✓ Sin deudas vencidas</strong></p>
-            </div>
-          <% } %>
-        </div>
-      </div>
-    </div>
-    <% } %>
-
-    <!-- DEUDAS PRÓXIMAS A VENCER -->
-    <% if (!isRecepcionista) { %>
-    <div class="col-lg-6">
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-warning text-dark" style="cursor: pointer;" onclick="toggleDeudasProximas()">
-          <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-cash-stack"></i> ⚠️ PRÓXIMAS A VENCER</h6>
-            <i class="bi bi-chevron-down" id="iconDeudasProximas"></i>
-          </div>
-        </div>
-        <div class="card-body p-0" id="contenedorDeudasProximas" style="max-height: 400px; overflow-y: auto;">
-          <% if (deudasProximas && deudasProximas.length > 0) { %>
-            <div class="list-group list-group-flush">
-              <% deudasProximas.forEach((d, idx) => { %>
-                <div class="list-group-item">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div>
-                      <h6 class="mb-1">
-                        <span class="badge bg-warning text-dark"><%= idx + 1 %></span>
-                        <% if (d.tipo === 'cheque') { %>
-                          Cheque #<%= d.descripcion %>
-                        <% } else { %>
-                          <%= d.descripcion %>
-                        <% } %>
-                      </h6>
-                      <small class="text-muted">Vence el <%= new Date(d.fecha_vencimiento).toLocaleDateString('es-AR') %></small>
-                    </div>
-                    <span class="badge bg-warning text-dark fs-6">$<%= d.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
-                  </div>
-                  <a href="/deudas" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-cash-coin"></i> Pagar
-                  </a>
-                </div>
-              <% }); %>
-            </div>
-          <% } else { %>
-            <div class="card-body text-center py-4">
-              <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
-              <p class="text-success mt-2 mb-0"><strong>✓ Todas al día</strong></p>
-            </div>
-          <% } %>
-        </div>
-      </div>
-    </div>
-    <% } %>
   </div>
   <% } %>
 
-  <!-- ═══════════════════════════════════════════════════════
-       SECCIÓN 8: ÚLTIMO RESUMEN
-       ═══════════════════════════════════════════════════════ -->
+  <!-- ════════════════════════════════════════════════════════════════
+       CAPA 3 - KPIs FINANCIEROS (6 MÉTRICAS - ADMIN ONLY)
+       ════════════════════════════════════════════════════════════════ -->
+
+  <% if (user && user.rol === 'admin') { %>
+  <div class="kpi-grid mb-4">
+    <!-- INGRESOS MES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Ingresos Mes</div>
+      <div class="kpi-exec-value" style="color: #10b981;">
+        $<%= (ingresosMes || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-exec-change">Acumulado</div>
+    </div>
+
+    <!-- GASTOS MES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Gastos Mes</div>
+      <div class="kpi-exec-value" style="color: #ef4444;">
+        $<%= (gastosMes || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-exec-change">Egresos totales</div>
+    </div>
+
+    <!-- SALDO NETO -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Saldo Neto</div>
+      <div class="kpi-exec-value" style="color: <%= ((ingresosMes || 0) - (gastosMes || 0)) >= 0 ? '#10b981' : '#ef4444' %>;">
+        $<%= (((ingresosMes || 0) - (gastosMes || 0)) || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-exec-change">Resultado</div>
+    </div>
+
+    <!-- MARGEN % -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Margen Neto</div>
+      <div class="kpi-exec-value" style="color: <%= (((ingresosMes || 0) - (gastosMes || 0)) / (ingresosMes || 1) * 100 >= 40) ? '#10b981' : '#f59e0b' %>;">
+        <%= ((((ingresosMes || 0) - (gastosMes || 0)) / (ingresosMes || 1) * 100) || 0).toFixed(1) %>%
+      </div>
+      <div class="kpi-exec-change">Meta: 40%</div>
+    </div>
+
+    <!-- DEUDA CLIENTES -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Deuda Clientes</div>
+      <div class="kpi-exec-value" style="color: #f59e0b;">
+        $<%= ((deudores && deudores.reduce((s, d) => s + (d.monto_restante || 0), 0)) || 0).toLocaleString('es-AR', {maximumFractionDigits: 0}) %>
+      </div>
+      <div class="kpi-exec-change"><%= deudores ? deudores.length : 0 %> clientes</div>
+    </div>
+
+    <!-- CLIENTES ACTIVOS -->
+    <div class="kpi-card-exec">
+      <div class="kpi-exec-label">Clientes Activos</div>
+      <div class="kpi-exec-value" style="color: #0ea5e9;">
+        <%= counts.clientes || 0 %>
+      </div>
+      <div class="kpi-exec-change">Base de datos</div>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       NAVEGACIÓN RÁPIDA (OPERACIÓN)
+       ════════════════════════════════════════════════════════════════ -->
+
   <% if (!isEmpleado) { %>
-  <div class="row">
-    <div class="col-12">
-      <div class="card border-0 shadow-sm bg-light">
-        <div class="card-body text-center py-4">
-          <h6 class="mb-3">📊 FLUJO DE TRABAJO RECOMENDADO</h6>
-          <div class="d-flex justify-content-around flex-wrap gap-3">
-            <div>
-              <span class="badge bg-danger fs-6">1</span>
-              <p class="mb-0 small mt-1"><strong>Crear Pedido</strong></p>
-            </div>
-            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
-            <div>
-              <span class="badge bg-warning text-dark fs-6">2</span>
-              <p class="mb-0 small mt-1"><strong>En Producción</strong></p>
-            </div>
-            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
-            <div>
-              <span class="badge bg-info fs-6">3</span>
-              <p class="mb-0 small mt-1"><strong>Marcar Listo</strong></p>
-            </div>
-            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
-            <div>
-              <span class="badge bg-success fs-6">4</span>
-              <p class="mb-0 small mt-1"><strong>Entregar</strong></p>
-            </div>
-            <i class="bi bi-arrow-right text-muted" style="align-self: center;"></i>
-            <div>
-              <span class="badge bg-primary fs-6">5</span>
-              <p class="mb-0 small mt-1"><strong>Cobrar</strong></p>
-            </div>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <a href="/catalogo" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0d6efd !important;">
+          <div class="card-body text-center">
+            <i class="bi bi-card-list" style="font-size: 1.5rem; color: #0d6efd;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Catálogo</h6>
+            <small class="text-muted">Productos</small>
           </div>
         </div>
-      </div>
+      </a>
+    </div>
+
+    <div class="col-md-3">
+      <a href="/gastos" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #dc3545 !important;">
+          <div class="card-body text-center">
+            <i class="bi bi-receipt" style="font-size: 1.5rem; color: #dc3545;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Gastos</h6>
+            <small class="text-muted">Egresos</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-3">
+      <a href="/proveedores" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #ffc107 !important;">
+          <div class="card-body text-center">
+            <i class="bi bi-truck" style="font-size: 1.5rem; color: #ffc107;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Proveedores</h6>
+            <small class="text-muted">Contactos</small>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-3">
+      <a href="/reportes" class="text-decoration-none">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754 !important;">
+          <div class="card-body text-center">
+            <i class="bi bi-bar-chart-fill" style="font-size: 1.5rem; color: #198754;"></i>
+            <h6 class="mt-2 mb-0 fw-bold">Reportes</h6>
+            <small class="text-muted">Análisis</small>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
   <% } %>
 
 </div>
 
-<style>
-  .border-left {
-    border-left: 4px solid !important;
-  }
-  
-  .col-lg-2-4 {
-    flex: 0 0 auto;
-    width: 20%;
-  }
-
-  @media (max-width: 1200px) {
-    .col-lg-2-4 {
-      width: 33.333%;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .col-lg-2-4 {
-      width: 50%;
-    }
-  }
-
-  a.text-decoration-none .card {
-    transition: all 0.3s ease;
-  }
-
-  a.text-decoration-none:hover .card {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
-  }
-</style>
+<!-- ════════════════════════════════════════════════════════════════
+     Scripts para interactividad
+     ════════════════════════════════════════════════════════════════ -->
 
 <script>
-// Desplegables de deudores y stock
-let deudoresExpandido = false;
-let stockExpandido = false;
-
-function toggleDeudores() {
-  const contenedor = document.getElementById('contenedorDeudores');
-  const icon = document.getElementById('iconDeudores');
-
-  deudoresExpandido = !deudoresExpandido;
-
-  if (deudoresExpandido) {
-    contenedor.style.maxHeight = '10000px';
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    contenedor.style.maxHeight = '0px';
-    icon.style.transform = 'rotate(0deg)';
+  function toggleDeudores() {
+    const container = document.getElementById('contenedorDeudores');
+    const icon = document.getElementById('iconDeudores');
+    if (container) {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      icon.style.transform = container.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
   }
 
-  contenedor.style.transition = 'max-height 0.3s ease, max-width 0.3s ease';
-}
-
-function toggleStock() {
-  const contenedor = document.getElementById('contenedorStock');
-  const icon = document.getElementById('iconStock');
-
-  stockExpandido = !stockExpandido;
-
-  if (stockExpandido) {
-    contenedor.style.maxHeight = '10000px';
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    contenedor.style.maxHeight = '0px';
-    icon.style.transform = 'rotate(0deg)';
+  function toggleStock() {
+    const container = document.getElementById('contenedorStock');
+    const icon = document.getElementById('iconStock');
+    if (container) {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      icon.style.transform = container.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
   }
 
-  contenedor.style.transition = 'max-height 0.3s ease';
-}
-
-let deudasVencidasExpandido = false;
-let deudasProximasExpandido = false;
-
-function toggleDeudasVencidas() {
-  const contenedor = document.getElementById('contenedorDeudasVencidas');
-  const icon = document.getElementById('iconDeudasVencidas');
-
-  deudasVencidasExpandido = !deudasVencidasExpandido;
-
-  if (deudasVencidasExpandido) {
-    contenedor.style.maxHeight = '10000px';
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    contenedor.style.maxHeight = '0px';
-    icon.style.transform = 'rotate(0deg)';
+  function toggleProximos() {
+    const container = document.getElementById('contenedorProximos');
+    const icon = document.getElementById('iconProximos');
+    if (container) {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      icon.style.transform = container.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
   }
 
-  contenedor.style.transition = 'max-height 0.3s ease';
-}
-
-function toggleDeudasProximas() {
-  const contenedor = document.getElementById('contenedorDeudasProximas');
-  const icon = document.getElementById('iconDeudasProximas');
-
-  deudasProximasExpandido = !deudasProximasExpandido;
-
-  if (deudasProximasExpandido) {
-    contenedor.style.maxHeight = '10000px';
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    contenedor.style.maxHeight = '0px';
-    icon.style.transform = 'rotate(0deg)';
+  function toggleDeudasVencidas() {
+    const container = document.getElementById('contenedorDeudasVencidas');
+    const icon = document.getElementById('iconDeudasVencidas');
+    if (container) {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      icon.style.transform = container.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
   }
 
-  contenedor.style.transition = 'max-height 0.3s ease';
-}
-
-let proximosExpandido = false;
-
-function toggleProximos() {
-  const contenedor = document.getElementById('contenedorProximos');
-  const icon = document.getElementById('iconProximos');
-
-  proximosExpandido = !proximosExpandido;
-
-  if (proximosExpandido) {
-    contenedor.style.maxHeight = '10000px';
-    icon.style.transform = 'rotate(180deg)';
-  } else {
-    contenedor.style.maxHeight = '0px';
-    icon.style.transform = 'rotate(0deg)';
+  function toggleDeudasProximas() {
+    const container = document.getElementById('contenedorDeudasProximas');
+    const icon = document.getElementById('iconDeudasProximas');
+    if (container) {
+      container.style.display = container.style.display === 'none' ? 'block' : 'none';
+      icon.style.transform = container.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
+    }
   }
-
-  contenedor.style.transition = 'max-height 0.3s ease';
-}
-
-// Inicialmente contraídos (excepto Próximos 5 que está EXPANDIDO)
-document.addEventListener('DOMContentLoaded', function() {
-  const deudoresDiv = document.getElementById('contenedorDeudores');
-  const stockDiv = document.getElementById('contenedorStock');
-  const proximosDiv = document.getElementById('contenedorProximos');
-  if (deudoresDiv) deudoresDiv.style.maxHeight = '0px';
-  if (stockDiv) stockDiv.style.maxHeight = '0px';
-  // proximosDiv EXPANDIDO - comentado
-  // if (proximosDiv) proximosDiv.style.maxHeight = '0px';
-});
 </script>

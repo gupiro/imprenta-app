@@ -321,5 +321,42 @@ module.exports = (db) => {
         res.redirect('/gastos');
     });
 
+    // 🚀 GASTO RÁPIDO (endpoint JSON para botón flotante)
+    router.post('/rapido', checkPermission, async (req, res) => {
+        try {
+            const { monto, categoria, descripcion } = req.body;
+
+            // Validaciones
+            if (!monto || parseFloat(monto) <= 0) {
+                return res.json({ ok: false, error: 'Monto inválido' });
+            }
+            if (!categoria || categoria.trim().length === 0) {
+                return res.json({ ok: false, error: 'Categoría requerida' });
+            }
+
+            const montoNum = parseFloat(monto);
+            const { fecha } = obtenerFechaLocal();
+
+            // Insertar gasto (tipo='negocio' por defecto para gastos rápidos)
+            await db.run(
+                "INSERT INTO gastos (fecha, categoria, descripcion, monto, tipo, estado_pago, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [
+                    fecha,
+                    categoria,
+                    (descripcion || 'Gasto Rápido').trim(),
+                    montoNum,
+                    'negocio',
+                    'pendiente',
+                    req.session.user?.id || null
+                ]
+            );
+
+            res.json({ ok: true, message: `Gasto de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado` });
+        } catch (err) {
+            console.error('Error en gasto rápido:', err);
+            res.json({ ok: false, error: err.message });
+        }
+    });
+
     return router;
 };

@@ -365,6 +365,16 @@ module.exports = (db) => {
         fijos: (await db.get("SELECT COUNT(*) AS c, COALESCE(SUM(monto), 0) AS total FROM gastos_fijos WHERE activo = 1")) || { c: 0, total: 0 }
       };
 
+      // 🔴 Pedidos LISTOS pero sin pagar (CRÍTICO)
+      const pedidosListosImpagos = await db.all(`
+        SELECT p.id, p.cliente_id, c.name AS cliente_nombre, p.precio, p.monto_restante, p.precio as monto_total
+        FROM pedidos p
+        LEFT JOIN clients c ON p.client_id = c.id
+        WHERE p.estado = 'LISTO' AND p.monto_restante > 0
+        ORDER BY p.fecha ASC
+      `) || [];
+      const totalImpago = pedidosListosImpagos.reduce((s, p) => s + (p.monto_restante || 0), 0);
+
       res.render('dashboard', {
         title: 'Dashboard Ejecutivo',
         frase: getFraseDelDia(),
@@ -415,6 +425,8 @@ module.exports = (db) => {
         deudaEmpresa,
         countDeudas,
         gastos,
+        pedidosListosImpagos,
+        totalImpago,
         success: req.flash('success'),
         error: req.flash('error')
       });

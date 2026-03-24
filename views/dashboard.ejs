@@ -124,6 +124,57 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
+       🔴 ALERTA: PEDIDOS LISTOS PERO IMPAGOS (CRÍTICO)
+       ════════════════════════════════════════════════════════════════ -->
+  <% if (pedidosListosImpagos && pedidosListosImpagos.length > 0) { %>
+  <div class="card-minimal mb-5" style="border-left: 4px solid #ef4444; background: #fff5f5;">
+    <div class="card-header" style="color: #ef4444; font-weight: bold;">
+      <i class="bi bi-exclamation-circle-fill"></i> ⚠️ ACCIÓN REQUERIDA: <%= pedidosListosImpagos.length %> Pedido(s) Listo(s) Sin Cobrar
+    </div>
+    <div class="table-responsive" style="margin: 0; padding: 1rem;">
+      <table class="table table-sm mb-0" style="margin: 0;">
+        <thead style="background: #ffebee;">
+          <tr>
+            <th>Pedido #</th>
+            <th>Cliente</th>
+            <th>Monto</th>
+            <th>Deuda</th>
+            <th style="text-align: center;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pedidosListosImpagos.forEach(ped => { %>
+          <tr style="border-bottom: 1px solid #ffcccc;">
+            <td>
+              <a href="/pedidos/detalle/<%= ped.id %>" style="font-weight: bold; color: #ef4444;">
+                #<%= ped.id %>
+              </a>
+            </td>
+            <td><%= ped.cliente_nombre || '(sin cliente)' %></td>
+            <td>$<%= (ped.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+            <td style="font-weight: bold; color: #ef4444;">
+              $<%= (ped.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
+            </td>
+            <td style="text-align: center;">
+              <a href="/pedidos/detalle/<%= ped.id %>" class="btn btn-sm btn-danger" style="font-size: 0.8rem;">
+                <i class="bi bi-cash-coin"></i> Cobrar
+              </a>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+        <tfoot style="background: #ffcccc; font-weight: bold;">
+          <tr>
+            <td colspan="3" style="text-align: right;">TOTAL PENDIENTE:</td>
+            <td colspan="2" style="color: #ef4444;">$<%= totalImpago.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
+  <!-- ════════════════════════════════════════════════════════════════
        ESTADOS DE PEDIDOS
        ════════════════════════════════════════════════════════════════ -->
   <div class="row mb-5 g-4">

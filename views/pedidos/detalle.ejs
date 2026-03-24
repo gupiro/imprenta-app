@@ -170,9 +170,17 @@
         <i class="bi bi-printer"></i> 🖨️ Imprimir Comprobante
       </a>
     </div>
-    <% if (pedido.monto_restante > 0) { %>
+    <!-- BOTÓN PRINCIPAL: Cobrar Pedido (cuando está LISTO) -->
+    <% if (pedido.estado === 'LISTO' && pedido.monto_restante > 0) { %>
       <div class="col-md-4">
-        <button class="btn btn-success btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCancelarDeuda">
+        <button class="btn btn-success btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCobrarPedido" style="font-weight: bold; box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);">
+          <i class="bi bi-cash-coin"></i> 💰 Cobrar Pedido
+        </button>
+      </div>
+    <% } else if (pedido.monto_restante > 0 && pedido.estado !== 'ENTREGADO') { %>
+      <!-- Botón alternativo para otros estados con deuda -->
+      <div class="col-md-4">
+        <button class="btn btn-outline-success btn-lg w-100" data-bs-toggle="modal" data-bs-target="#modalCancelarDeuda">
           <i class="bi bi-cash-coin"></i> Cobrar Deuda
         </button>
       </div>
@@ -225,7 +233,71 @@
   <% } %>
 </main>
 
-<!-- MODAL: Cancelar Deuda -->
+<!-- MODAL: Cobrar Pedido (para LISTO) -->
+<div class="modal fade" id="modalCobrarPedido" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content border-success border-3">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="bi bi-cash-coin"></i> 💰 Cobrar Pedido</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/pedidos/<%= pedido.id %>/cancelar-deuda">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="modal-body">
+          <div class="alert alert-success mb-3">
+            <strong>✅ Pedido LISTO para retirar</strong><br>
+            <small>Monto pendiente: $<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Monto a cobrar *</label>
+            <input type="number" name="monto_a_pagar" class="form-control form-control-lg"
+                   step="0.01" min="0.01" max="<%= pedido.monto_restante || 0 %>"
+                   value="<%= pedido.monto_restante || 0 %>" required
+                   onchange="actualizarSaldoRestantePedido()">
+            <small class="text-muted mt-1 d-block">Puedes cobrar el total o una cantidad parcial</small>
+          </div>
+
+          <div class="mb-3">
+            <div class="row">
+              <div class="col-6">
+                <label class="form-label text-muted">Monto Total</label>
+                <p class="fw-bold fs-5">$<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %></p>
+              </div>
+              <div class="col-6">
+                <label class="form-label text-muted">Te quedarán</label>
+                <p class="fw-bold fs-5" id="saldoRestantePedido">$0.00</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Método de Pago *</label>
+            <select name="metodo_pago" class="form-select form-select-lg" required>
+              <option value="">-- Seleccionar --</option>
+              <option value="Efectivo" selected>💵 Efectivo</option>
+              <option value="Transferencia">🏦 Transferencia</option>
+              <option value="Tarjeta">💳 Tarjeta</option>
+              <option value="QR">📱 QR</option>
+            </select>
+          </div>
+
+          <div class="alert alert-info mt-4">
+            <small><strong>📌 Después de cobrar:</strong> Podrás marcar el pedido como ENTREGADO en la sección "Cambiar Estado"</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success btn-lg">
+            <i class="bi bi-check-circle"></i> Cobrar & Registrar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Cancelar Deuda (fallback para otros estados) -->
 <div class="modal fade" id="modalCancelarDeuda" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -239,14 +311,14 @@
           <div class="alert alert-info mb-3">
             <strong>Deuda a cobrar:</strong> $<%= (pedido.monto_restante || 0).toLocaleString('es-AR', {minimumFractionDigits: 2}) %>
           </div>
-          
+
           <div class="mb-3">
             <label class="form-label fw-bold">Monto a pagar *</label>
-            <input type="number" name="monto_a_pagar" class="form-control form-control-lg" 
+            <input type="number" name="monto_a_pagar" class="form-control form-control-lg"
                    step="0.01" min="0.01" max="<%= pedido.monto_restante || 0 %>"
                    value="<%= pedido.monto_restante || 0 %>" required>
           </div>
-          
+
           <div class="mb-3">
             <label class="form-label fw-bold">Método de Pago *</label>
             <select name="metodo_pago" class="form-select form-select-lg" required>
@@ -586,7 +658,39 @@
     form.submit();
   }
 
-  // Enviar mensajePor WhatsApp (dinámico según estado)
+  // Actualizar saldo restante en modalCobrarPedido (tiempo real)
+  function actualizarSaldoRestantePedido() {
+    const inputMonto = document.querySelector('#modalCobrarPedido input[name="monto_a_pagar"]');
+    if (!inputMonto) return;
+
+    const montoIngresado = parseFloat(inputMonto.value) || 0;
+    const montoTotal = <%= pedido.monto_restante || 0 %>;
+    const saldoRestante = Math.max(0, montoTotal - montoIngresado);
+
+    const saldoEl = document.getElementById('saldoRestantePedido');
+    if (saldoEl) {
+      saldoEl.textContent = '$' + saldoRestante.toLocaleString('es-AR', {minimumFractionDigits: 2});
+
+      // Cambiar color si se paga todo
+      if (saldoRestante <= 0.01) {
+        saldoEl.classList.remove('text-muted');
+        saldoEl.classList.add('text-success');
+      } else {
+        saldoEl.classList.remove('text-success');
+        saldoEl.classList.add('text-muted');
+      }
+    }
+  }
+
+  // Inicializar el saldo cuando se abre el modal
+  const modalCobrarPedido = document.getElementById('modalCobrarPedido');
+  if (modalCobrarPedido) {
+    modalCobrarPedido.addEventListener('show.bs.modal', function() {
+      actualizarSaldoRestantePedido();
+    });
+  }
+
+  // Enviar mensaje Por WhatsApp (dinámico según estado)
   function enviarWhatsApp(pedidoId, cliente, deuda, estado) {
     fetch(`/api/pedidos/${pedidoId}/cliente-phone`)
       .then(r => r.json())

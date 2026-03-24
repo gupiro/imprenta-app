@@ -230,6 +230,7 @@ async function startServer() {
     const deudasRouterConfigured       = require('./routes/deudas')(dbInstance);
     const pagosRouterConfigured        = require('./routes/pagos')(dbInstance);
     const finanzasRouterConfigured     = require('./routes/finanzas')(dbInstance);
+    const deudoresRouterConfigured     = require('./routes/deudores')(dbInstance);
     const guiaRouterConfigured         = require('./routes/guia')(dbInstance);
 
     // ────────────────────────────────────────────────────────────────────
@@ -436,6 +437,7 @@ async function startServer() {
     app.use('/reportes',     permitirRoles('admin'),                       reportesRouterConfigured);
     app.use('/deudas',       permitirRoles('admin'),                       deudasRouterConfigured);
     app.use('/pagos',        permitirRoles('admin'),                       pagosRouterConfigured);
+    app.use('/deudores',     permitirRoles('admin','vendedor'),            deudoresRouterConfigured);
     app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
     app.use('/guia',         permitirRoles('admin','vendedor'),            guiaRouterConfigured);
 

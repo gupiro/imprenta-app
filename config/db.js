@@ -742,6 +742,23 @@ async function initDb() {
         `);
 
         // ════════════════════════════════════════════════════════════════
+        // TABLA: PAGOS CLIENTES (Historial de pagos)
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS pagos_clientes (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                cliente_id          INTEGER NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+                monto               REAL NOT NULL,
+                metodo_pago         TEXT DEFAULT 'Efectivo' CHECK(metodo_pago IN ('Efectivo', 'Transferencia', 'Tarjeta')),
+                nota                TEXT,
+                usuario_id          INTEGER REFERENCES users(id),
+                pedidos_afectados   TEXT,
+                fecha               TEXT DEFAULT CURRENT_TIMESTAMP,
+                created_at          TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
         // ÍNDICES: Optimización de queries (FIX #6)
         // ════════════════════════════════════════════════════════════════
         // Índices críticos para 200+ pedidos/mes con 4 usuarios concurrentes
@@ -778,6 +795,10 @@ async function initDb() {
             // GASTOS
             "CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha)",
             "CREATE INDEX IF NOT EXISTS idx_gastos_estado_pago ON gastos(estado_pago)",
+
+            // PAGOS CLIENTES
+            "CREATE INDEX IF NOT EXISTS idx_pagos_clientes_cliente_id ON pagos_clientes(cliente_id)",
+            "CREATE INDEX IF NOT EXISTS idx_pagos_clientes_fecha ON pagos_clientes(fecha)",
         ];
 
         try {

@@ -533,6 +533,11 @@
               <li><a class="dropdown-item" href="/clientes">
                 <i class="bi bi-people-fill"></i> Clientes
               </a></li>
+              <% if (['admin','vendedor'].includes(user.rol)) { %>
+              <li><a class="dropdown-item" href="/deudores">
+                <i class="bi bi-person-exclamation text-warning"></i> Deudores
+              </a></li>
+              <% } %>
             </ul>
           </li>
 

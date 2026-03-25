@@ -868,56 +868,8 @@ le]').setAttribute('title', data.tooltip);
     // Inicializar dark mode al cargar
     document.addEventListener('DOMContentLoaded', initDarkMode);
 
-    // Botón Gasto Rápido - Setup Ultra Simple
-    (function() {
-      const btn = document.getElementById('btnGastoRapido');
-      if (btn) {
-        btn.onclick = window.abrirGastoRapido;
-      }
-    })();
-
     // ════════════════════════════════════════════════════════════════
-    // SIDEBAR FLOTANTE
-    // ════════════════════════════════════════════════════════════════
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    const sidebarClose = document.getElementById('sidebar-close');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-
-    if (sidebarToggle && sidebar && overlay) {
-      // Abrir sidebar
-      sidebarToggle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.add('open');
-        overlay.classList.add('active');
-      });
-
-      // Cerrar sidebar con botón X
-      if (sidebarClose) {
-        sidebarClose.addEventListener('click', () => {
-          sidebar.classList.remove('open');
-          overlay.classList.remove('active');
-        });
-      }
-
-      // Cerrar sidebar cuando haces click en overlay
-      overlay.addEventListener('click', () => {
-        sidebar.classList.remove('open');
-        overlay.classList.remove('active');
-      });
-
-      // Cerrar sidebar cuando haces click en un link del menú
-      const sidebarLinks = sidebar.querySelectorAll('a');
-      sidebarLinks.forEach(link => {
-        link.addEventListener('click', () => {
-          sidebar.classList.remove('open');
-          overlay.classList.remove('active');
-        });
-      });
-    }
-
-    // ════════════════════════════════════════════════════════════════
-    // GASTO RÁPIDO - BOTÓN FLOTANTE
+    // GASTO RÁPIDO - BOTÓN FLOTANTE (DEFINIR PRIMERO)
     // ════════════════════════════════════════════════════════════════
     window.abrirGastoRapido = function() {
       console.log('🔴 Abriendo Gasto Rápido...');
@@ -1005,6 +957,56 @@ le]').setAttribute('title', data.tooltip);
         btnEnviar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Gasto';
       });
     }
+
+    // ════════════════════════════════════════════════════════════════
+    // SIDEBAR FLOTANTE
+    // ════════════════════════════════════════════════════════════════
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarClose = document.getElementById('sidebar-close');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (sidebarToggle && sidebar && overlay) {
+      // Abrir sidebar
+      sidebarToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+      });
+
+      // Cerrar sidebar con botón X
+      if (sidebarClose) {
+        sidebarClose.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        });
+      }
+
+      // Cerrar sidebar cuando haces click en overlay
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+
+      // Cerrar sidebar cuando haces click en un link del menú
+      const sidebarLinks = sidebar.querySelectorAll('a');
+      sidebarLinks.forEach(link => {
+        link.addEventListener('click', () => {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        });
+      });
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // INICIALIZAR BOTÓN GASTO RÁPIDO (después de definir la función)
+    // ════════════════════════════════════════════════════════════════
+    (function() {
+      const btn = document.getElementById('btnGastoRapido');
+      if (btn) {
+        btn.onclick = window.abrirGastoRapido;
+      }
+    })();
   </script>
 
   <!-- MODAL: Gasto Rápido -->

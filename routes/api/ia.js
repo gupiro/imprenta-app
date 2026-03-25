@@ -942,7 +942,12 @@ Responde SOLO con el nombre de la categoría más apropiada, sin explicación ad
      */
     router.post('/consejo-tesoreria', async (req, res) => {
         try {
+            console.log('🔍 [Groq] POST /api/ia/consejo-tesoreria llamado');
+            console.log('🔍 [Groq] groqKeyConfigured:', groqKeyConfigured);
+            console.log('🔍 [Groq] session.user:', req.session?.user?.id);
+
             if (!groqKeyConfigured) {
+                console.error('❌ [Groq] API key no configurada');
                 return res.status(400).json({
                     success: false,
                     error: 'API key de Groq no configurada. Por favor, configura GROQ_API_KEY en las variables de entorno.'
@@ -950,6 +955,7 @@ Responde SOLO con el nombre de la categoría más apropiada, sin explicación ad
             }
 
             if (!req.session.user) {
+                console.error('❌ [Groq] Usuario no autenticado');
                 return res.status(403).json({
                     success: false,
                     error: 'Acceso denegado'
@@ -1084,6 +1090,10 @@ IMPORTANTE:
 - Sé específico con montos y fechas
 - Evita tecnicismos innecesarios`;
 
+            console.log('🔍 [Groq] Enviando prompt a Groq...');
+            console.log('🔍 [Groq] Saldo:', saldoReal);
+            console.log('🔍 [Groq] Obligaciones:', obligaciones.length);
+
             const message = await groqClient.chat.completions.create({
                 model: 'mixtral-8x7b-32768',
                 max_tokens: 250,
@@ -1095,6 +1105,9 @@ IMPORTANTE:
                     }
                 ]
             });
+
+            console.log('✅ [Groq] Respuesta recibida de Groq');
+            console.log('✅ [Groq] Contenido:', message?.choices?.[0]?.message?.content?.substring(0, 100));
 
             const consejo = message.choices[0]?.message?.content?.trim() || 'No se pudo generar consejo';
 

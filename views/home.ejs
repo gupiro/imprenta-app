@@ -426,17 +426,19 @@
     <i class="bi bi-plus-lg"></i>
   </a>
 
-  <!-- VERDE CLARO: Ingreso Rápido -->
-  <button id="btnIngresoRapido" onclick="window.abrirVentanaRapida('ingreso')" class="btn btn-success btn-accion-rapida"
-          style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.2s ease; border: none; cursor: pointer; background-color: #06b6d4; border-color: #06b6d4;"
-          title="Ingreso Rápido">
+  <!-- CELESTE: Ingreso Rápido -->
+  <a href="/gastos/form-rapido?tipo=ingreso" target="ventana-rapida" class="btn btn-info btn-accion-rapida"
+     style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4); transition: all 0.2s ease; text-decoration: none; color: white; background-color: #06b6d4; border-color: #06b6d4; border: none; cursor: pointer;"
+     onclick="window.open(this.href, 'ventana-rapida', 'width=500,height=600'); return false;"
+     title="Ingreso Rápido">
     <i class="bi bi-cash-coin"></i>
-  </button>
+  </a>
 
   <!-- ROJO: Gasto Rápido -->
-  <button id="btnGastoRapido" onclick="window.abrirVentanaRapida('gasto')" class="btn btn-danger btn-accion-rapida"
-          style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.2s ease; border: none; cursor: pointer;"
-          title="Gasto Rápido">
+  <a href="/gastos/form-rapido?tipo=gasto" target="ventana-rapida" class="btn btn-danger btn-accion-rapida"
+     style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); transition: all 0.2s ease; text-decoration: none; color: white; border: none; cursor: pointer;"
+     onclick="window.open(this.href, 'ventana-rapida', 'width=500,height=600'); return false;"
+     title="Gasto Rápido">
     <i class="bi bi-lightning-fill"></i>
-  </button>
+  </a>
 </div>

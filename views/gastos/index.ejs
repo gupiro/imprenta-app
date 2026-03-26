@@ -257,7 +257,6 @@
                   <i class="bi bi-cash-coin"></i>
                 </button>
                 <form action="/gastos/<%= g.id %>/pagar" method="POST" style="display:inline;">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <button type="submit" class="btn btn-sm btn-success" title="Marcar como pagado completamente">
                     <i class="bi bi-check-lg"></i>
                   </button>
@@ -266,7 +265,6 @@
                 <form action="/gastos/<%= g.id %>/eliminar" method="POST"
                       onsubmit="return confirm('¿Eliminar este gasto de $<%= g.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')"
                       style="display:inline;">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <button class="btn btn-sm btn-outline-danger" title="Eliminar">
                     <i class="bi bi-trash"></i>
                   </button>
@@ -289,7 +287,6 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form action="/gastos/nuevo" method="POST">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
         <div class="modal-header bg-light">
           <h5 class="modal-title"><i class="bi bi-plus-lg me-2"></i>Registrar Nuevo Gasto</h5>
@@ -423,7 +420,6 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form id="formEditar" action="" method="POST">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
         <div class="modal-header bg-light">
           <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Editar Gasto</h5>
@@ -536,7 +532,6 @@
   <div class="modal-dialog modal-sm">
     <div class="modal-content">
       <form id="formPagoParcial" action="" method="POST">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
         <div class="modal-header bg-success bg-opacity-10">
           <h5 class="modal-title"><i class="bi bi-cash-coin me-2"></i>Pago Parcial de Gasto</h5>

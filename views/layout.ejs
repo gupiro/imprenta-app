@@ -973,37 +973,44 @@ le]').setAttribute('title', data.tooltip);
           descripcion
         })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.ok) {
-          // ✅ Mostrar toast de éxito
-          const toastEl = document.getElementById('toastAccionExito');
-          const toastBody = toastEl.querySelector('.toast-body');
-          const icono = tipo === 'gasto' ? '💸' : '💰';
-          toastBody.textContent = `${icono} $${monto.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado en ${categoria}`;
-
-          // Cambiar color del toast
-          toastEl.className = 'toast align-items-center text-white border-0';
-          toastEl.classList.add(tipo === 'gasto' ? 'bg-danger' : 'bg-info');
-
-          const toast = new bootstrap.Toast(toastEl);
-          toast.show();
-
-          // Cerrar modal
-          window.cerrarVentanaRapida();
-
-          // Reset botón
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = textOriginal;
-        } else {
-          alert('❌ Error: ' + (data.error || 'No se pudo registrar'));
-          btnSubmit.disabled = false;
-          btnSubmit.textContent = textOriginal;
+      .then(res => {
+        // Verificar si la respuesta es JSON válido
+        if (!res.ok && res.status === 401) {
+          return res.json().then(data => {
+            throw new Error(data.error || 'No autorizado. Por favor, inicia sesión.');
+          });
         }
+        return res.json().then(data => {
+          if (!data.ok) {
+            throw new Error(data.error || 'Error desconocido');
+          }
+          return data;
+        });
       })
-      .catch(err => {
-        console.error('Error:', err);
-        alert('❌ Error de conexión');
+      .then(data => {
+        // ✅ Mostrar toast de éxito
+        const toastEl = document.getElementById('toastAccionExito');
+        const toastBody = toastEl.querySelector('.toast-body');
+        const icono = tipo === 'gasto' ? '💸' : '💰';
+        toastBody.textContent = `${icono} $${monto.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado en ${categoria}`;
+
+        // Cambiar color del toast
+        toastEl.className = 'toast align-items-center text-white border-0';
+        toastEl.classList.add(tipo === 'gasto' ? 'bg-danger' : 'bg-info');
+
+        const toast = new bootstrap.Toast(toastEl);
+        toast.show();
+
+        // Cerrar modal
+        window.cerrarVentanaRapida();
+
+        // Reset botón
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = textOriginal;
+      })
+      .catch(error => {
+        console.error('❌ Error en acción rápida:', error);
+        alert('❌ Error: ' + (error.message || 'No se pudo registrar. Verifica que estés autenticado.'));
         btnSubmit.disabled = false;
         btnSubmit.textContent = textOriginal;
       });

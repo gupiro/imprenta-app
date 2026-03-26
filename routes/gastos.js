@@ -30,6 +30,273 @@ module.exports = (db) => {
         'Otros gastos personales'
     ];
 
+    // 🚀 FORMULARIO PARA GASTO/INGRESO RÁPIDO (ventana nueva)
+    router.get('/form-rapido', async (req, res) => {
+        const tipo = req.query.tipo || 'gasto'; // 'gasto' o 'ingreso'
+        const titulo = tipo === 'gasto' ? '⚡ Gasto Rápido' : '💰 Ingreso Rápido';
+        const colorBg = tipo === 'gasto' ? '#ef4444' : '#06b6d4';
+        const colorBtn = tipo === 'gasto' ? '#ef4444' : '#06b6d4';
+        const categorias = tipo === 'gasto' ? CATEGORIAS_NEGOCIO : [
+            'Ventas de Productos',
+            'Servicios Prestados',
+            'Ingresos por Comisiones',
+            'Devoluciones de Pagos',
+            'Otros Ingresos'
+        ];
+
+        const html = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${titulo}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+        .container-form {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            margin: 20px;
+            overflow: hidden;
+        }
+        .form-header {
+            background: ${colorBg};
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid rgba(0,0,0,0.1);
+        }
+        .form-header h2 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .form-body {
+            padding: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 0.95rem;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: ${colorBtn};
+            box-shadow: 0 0 0 3px ${colorBtn}20;
+        }
+        .input-monto {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            background: white;
+            color: #666;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+        .btn-cancel:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+        }
+        .btn-submit {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: ${colorBtn};
+            color: white;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+        .btn-submit:hover {
+            background: ${colorBtn};
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px ${colorBtn}40;
+        }
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .alert {
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            display: none;
+        }
+        .alert.show {
+            display: block;
+        }
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-form">
+        <div class="form-header">
+            <h2>${titulo}</h2>
+            <small style="opacity: 0.9;">Registra en tiempo real</small>
+        </div>
+
+        <div class="form-body">
+            <div class="alert alert-error" id="errorAlert"></div>
+
+            <form id="formRapido" method="POST" action="/gastos/${tipo === 'gasto' ? 'rapido' : 'ingreso-rapido'}">
+                <input type="hidden" name="tipo" value="${tipo}">
+
+                <!-- Monto -->
+                <div class="form-group">
+                    <label for="monto">💵 Monto *</label>
+                    <input type="number" id="monto" name="monto" step="0.01" min="0.01" 
+                           placeholder="Ej: 1500.50" required class="input-monto">
+                </div>
+
+                <!-- Categoría -->
+                <div class="form-group">
+                    <label for="categoria">📁 Categoría *</label>
+                    <select id="categoria" name="categoria" required>
+                        <option value="">-- Seleccionar categoría --</option>
+                        ${categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
+                    </select>
+                </div>
+
+                <!-- Descripción -->
+                <div class="form-group">
+                    <label for="descripcion">📝 Descripción (opcional)</label>
+                    <textarea id="descripcion" name="descripcion" rows="3" 
+                              placeholder="Ej: Gasto en papel A4 de 75g"></textarea>
+                </div>
+
+                <!-- Botones -->
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancel" onclick="window.close()">❌ Cancelar</button>
+                    <button type="submit" class="btn-submit" id="btnSubmit">
+                        ${tipo === 'gasto' ? '⚡ Registrar Gasto' : '💰 Registrar Ingreso'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const form = document.getElementById('formRapido');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const alertBox = document.getElementById('errorAlert');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const monto = parseFloat(document.getElementById('monto').value);
+            const categoria = document.getElementById('categoria').value;
+            const descripcion = document.getElementById('descripcion').value || '(sin descripción)';
+
+            // Validaciones
+            if (!monto || monto <= 0) {
+                showError('⚠️ Ingresa un monto válido');
+                return;
+            }
+            if (!categoria.trim()) {
+                showError('⚠️ Selecciona una categoría');
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            const textOriginal = btnSubmit.textContent;
+            btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+
+            try {
+                const endpoint = '${tipo === 'gasto' ? '/gastos/rapido' : '/gastos/ingreso-rapido'}';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ monto, categoria, descripcion })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    // ✅ Éxito - cerrar ventana y volver a principal
+                    setTimeout(() => {
+                        window.opener.location.reload();
+                        window.close();
+                    }, 500);
+                } else {
+                    showError('❌ Error: ' + (data.error || 'No se pudo registrar'));
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = textOriginal;
+                }
+            } catch (error) {
+                console.error(error);
+                showError('❌ Error de conexión: ' + error.message);
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = textOriginal;
+            }
+        });
+
+        function showError(message) {
+            alertBox.textContent = message;
+            alertBox.classList.add('show');
+            setTimeout(() => {
+                alertBox.classList.remove('show');
+            }, 5000);
+        }
+
+        // Focus en monto al cargar
+        document.getElementById('monto').focus();
+    </script>
+</body>
+</html>
+        `;
+
+        res.send(html);
+    });
+
     // Listar gastos del mes
     router.get('/', checkPermission, async (req, res) => {
         try {
@@ -304,8 +571,14 @@ module.exports = (db) => {
     });
 
     // 🚀 GASTO RÁPIDO (endpoint JSON para botón flotante)
-    router.post('/rapido', checkPermission, async (req, res) => {
+    // ✅ Validación de autenticación con respuesta JSON
+    router.post('/rapido', async (req, res) => {
         try {
+            // Verificar autenticación y devolver JSON si falla
+            if (!req.session || !req.session.user) {
+                return res.status(401).json({ ok: false, error: 'Debes iniciar sesión' });
+            }
+
             const { monto, categoria, descripcion } = req.body;
 
             // Validaciones
@@ -317,19 +590,22 @@ module.exports = (db) => {
             }
 
             const montoNum = parseFloat(monto);
-            const { fecha } = obtenerFechaLocal();
+            const { fecha, timestamp } = obtenerFechaLocal();
+            const turno = turnoByHora(timestamp);
 
-            // Insertar gasto (tipo='negocio' por defecto para gastos rápidos)
+            // Insertar egreso en movimientos_caja (para que aparezca en caja diaria)
             await db.run(
-                "INSERT INTO gastos (fecha, categoria, descripcion, monto, tipo, estado_pago, usuario_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                `INSERT INTO movimientos_caja
+                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [
-                    fecha,
-                    categoria,
+                    'egreso',
                     (descripcion || 'Gasto Rápido').trim(),
+                    categoria,
                     montoNum,
-                    'negocio',
-                    'pendiente',
-                    req.session.user?.id || null
+                    'manual',
+                    timestamp,
+                    turno
                 ]
             );
 
@@ -341,8 +617,14 @@ module.exports = (db) => {
     });
 
     // 🚀 INGRESO RÁPIDO (endpoint JSON para botón flotante)
-    router.post('/ingreso-rapido', checkPermission, async (req, res) => {
+    // ✅ Validación de autenticación con respuesta JSON
+    router.post('/ingreso-rapido', async (req, res) => {
         try {
+            // Verificar autenticación y devolver JSON si falla
+            if (!req.session || !req.session.user) {
+                return res.status(401).json({ ok: false, error: 'Debes iniciar sesión' });
+            }
+
             const { monto, categoria, descripcion } = req.body;
 
             // Validaciones

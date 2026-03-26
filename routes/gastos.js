@@ -340,5 +340,45 @@ module.exports = (db) => {
         }
     });
 
+    // 🚀 INGRESO RÁPIDO (endpoint JSON para botón flotante)
+    router.post('/ingreso-rapido', checkPermission, async (req, res) => {
+        try {
+            const { monto, categoria, descripcion } = req.body;
+
+            // Validaciones
+            if (!monto || parseFloat(monto) <= 0) {
+                return res.json({ ok: false, error: 'Monto inválido' });
+            }
+            if (!categoria || categoria.trim().length === 0) {
+                return res.json({ ok: false, error: 'Categoría requerida' });
+            }
+
+            const montoNum = parseFloat(monto);
+            const { fecha, timestamp } = obtenerFechaLocal();
+            const turno = turnoByHora(timestamp);
+
+            // Insertar ingreso en movimientos_caja
+            await db.run(
+                `INSERT INTO movimientos_caja
+                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    'ingreso',
+                    (descripcion || 'Ingreso Rápido').trim(),
+                    categoria,
+                    montoNum,
+                    'manual',
+                    timestamp,
+                    turno
+                ]
+            );
+
+            res.json({ ok: true, message: `Ingreso de $${montoNum.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado` });
+        } catch (err) {
+            console.error('Error en ingreso rápido:', err);
+            res.json({ ok: false, error: err.message });
+        }
+    });
+
     return router;
 };

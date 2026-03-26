@@ -392,13 +392,21 @@
     background: #94a3b8;
   }
 
-  /* Botón Flotante: Gasto Rápido */
-  #btnGastoRapido:hover {
+  /* Botones Flotantes: Acciones Rápidas */
+  .btn-accion-rapida:hover {
     transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   }
-  #btnGastoRapido:active {
+  .btn-accion-rapida:active {
     transform: scale(0.95);
+  }
+
+  #btnGastoRapido {
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  }
+
+  #btnIngresoRapido {
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
   }
 </style>
 
@@ -418,9 +426,16 @@
     <i class="bi bi-plus-lg"></i>
   </a>
 
+  <!-- VERDE CLARO: Ingreso Rápido -->
+  <button id="btnIngresoRapido" class="btn btn-success btn-accion-rapida"
+          style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.2s ease; border: none; cursor: pointer; background-color: #06b6d4; border-color: #06b6d4;"
+          title="Ingreso Rápido">
+    <i class="bi bi-cash-coin"></i>
+  </button>
+
   <!-- ROJO: Gasto Rápido -->
-  <button id="btnGastoRapido" class="btn btn-danger btn-gasto-rapido"
-          style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4); transition: all 0.2s ease; border: none; cursor: pointer;"
+  <button id="btnGastoRapido" class="btn btn-danger btn-accion-rapida"
+          style="width: 60px; height: 60px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 24px; transition: all 0.2s ease; border: none; cursor: pointer;"
           title="Gasto Rápido">
     <i class="bi bi-lightning-fill"></i>
   </button>

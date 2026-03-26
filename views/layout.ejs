@@ -869,7 +869,7 @@ le]').setAttribute('title', data.tooltip);
     document.addEventListener('DOMContentLoaded', initDarkMode);
 
     // ════════════════════════════════════════════════════════════════
-    // GASTO RÁPIDO - BOTÓN FLOTANTE (DEFINIR PRIMERO)
+    // GASTO RÁPIDO - BOTÓN FLOTANTE
     // ════════════════════════════════════════════════════════════════
     window.abrirGastoRapido = function() {
       console.log('🔴 Abriendo Gasto Rápido...');
@@ -959,6 +959,96 @@ le]').setAttribute('title', data.tooltip);
     }
 
     // ════════════════════════════════════════════════════════════════
+    // INGRESO RÁPIDO - BOTÓN FLOTANTE
+    // ════════════════════════════════════════════════════════════════
+    window.abrirIngresoRapido = function() {
+      console.log('💰 Abriendo Ingreso Rápido...');
+      try {
+        const modalEl = document.getElementById('modalIngresoRapido');
+        if (!modalEl) {
+          console.error('❌ Modal no encontrado');
+          alert('Error: Modal no cargó correctamente');
+          return;
+        }
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+
+        // Limpiar formulario
+        const form = document.getElementById('formIngresoRapido');
+        const btnEnviar = document.getElementById('btnEnviarIngreso');
+        if (form) form.reset();
+        if (btnEnviar) {
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Ingreso';
+        }
+        console.log('✅ Modal abierto');
+      } catch (err) {
+        console.error('❌ Error abriendo modal:', err);
+        alert('Error: ' + err.message);
+      }
+    };
+
+    function registrarIngresoRapido() {
+      const btnEnviar = document.getElementById('btnEnviarIngreso');
+      const monto = parseFloat(document.getElementById('ingresoRapidoMonto').value);
+      const categoria = document.getElementById('ingresoRapidoCategoria').value;
+      const descripcion = document.getElementById('ingresoRapidoDescripcion').value || '(sin descripción)';
+
+      // Validaciones
+      if (!monto || monto <= 0) {
+        alert('⚠️ Ingresa un monto válido');
+        return;
+      }
+      if (!categoria) {
+        alert('⚠️ Selecciona una categoría');
+        return;
+      }
+
+      btnEnviar.disabled = true;
+      btnEnviar.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Guardando...';
+
+      // Enviar datos al servidor
+      fetch('/gastos/ingreso-rapido', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          monto,
+          categoria,
+          descripcion
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.ok) {
+          // ✅ Mostrar toast de éxito
+          const toastEl = document.getElementById('toastIngresoExito');
+          const toast = new bootstrap.Toast(toastEl);
+          document.getElementById('toastIngresoMensaje').textContent = `✅ $${monto.toLocaleString('es-AR', {minimumFractionDigits: 2})} registrado en ${categoria}`;
+          toast.show();
+
+          // Cerrar modal
+          bootstrap.Modal.getInstance(document.getElementById('modalIngresoRapido')).hide();
+
+          // Reset botón
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Ingreso';
+        } else {
+          alert('❌ Error: ' + (data.error || 'No se pudo registrar el ingreso'));
+          btnEnviar.disabled = false;
+          btnEnviar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Ingreso';
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('❌ Error de conexión');
+        btnEnviar.disabled = false;
+        btnEnviar.innerHTML = '<i class="bi bi-plus-circle"></i> Registrar Ingreso';
+      });
+    }
+
+    // ════════════════════════════════════════════════════════════════
     // SIDEBAR FLOTANTE
     // ════════════════════════════════════════════════════════════════
     const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -1002,9 +1092,14 @@ le]').setAttribute('title', data.tooltip);
     // INICIALIZAR BOTÓN GASTO RÁPIDO (después de definir la función)
     // ════════════════════════════════════════════════════════════════
     (function() {
-      const btn = document.getElementById('btnGastoRapido');
-      if (btn) {
-        btn.onclick = window.abrirGastoRapido;
+      const btnGasto = document.getElementById('btnGastoRapido');
+      if (btnGasto) {
+        btnGasto.onclick = window.abrirGastoRapido;
+      }
+
+      const btnIngreso = document.getElementById('btnIngresoRapido');
+      if (btnIngreso) {
+        btnIngreso.onclick = window.abrirIngresoRapido;
       }
     })();
   </script>
@@ -1067,6 +1162,67 @@ le]').setAttribute('title', data.tooltip);
     <div id="toastGastoExito" class="toast align-items-center text-white bg-success border-0" role="alert">
       <div class="d-flex">
         <div class="toast-body" id="toastMensaje"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Ingreso Rápido -->
+  <div class="modal fade" id="modalIngresoRapido" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title"><i class="bi bi-cash-coin"></i> Ingreso Rápido</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <form id="formIngresoRapido" onsubmit="event.preventDefault(); registrarIngresoRapido();">
+          <div class="modal-body">
+            <!-- Monto -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Monto *</label>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text">$</span>
+                <input type="number" id="ingresoRapidoMonto" class="form-control"
+                       step="0.01" min="0.01" placeholder="500" required autofocus>
+              </div>
+            </div>
+
+            <!-- Categoría -->
+            <div class="mb-3">
+              <label class="form-label fw-bold">Categoría *</label>
+              <select id="ingresoRapidoCategoria" class="form-select form-select-lg" required>
+                <option value="">-- Seleccionar --</option>
+                <option value="Ventas de Productos">📦 Ventas</option>
+                <option value="Servicios Prestados">🔧 Servicios</option>
+                <option value="Ingresos por Comisiones">💰 Comisiones</option>
+                <option value="Devoluciones de Pagos">↩️ Devoluciones</option>
+                <option value="Otros Ingresos">📌 Otros</option>
+              </select>
+            </div>
+
+            <!-- Descripción (opcional) -->
+            <div class="mb-0">
+              <label class="form-label fw-bold">Descripción (opcional)</label>
+              <input type="text" id="ingresoRapidoDescripcion" class="form-control"
+                     placeholder="Ej: Venta del pedido #123">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" id="btnEnviarIngreso" class="btn btn-info btn-lg">
+              <i class="bi bi-plus-circle"></i> Registrar Ingreso
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST: Ingreso Registrado -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 2000; top: auto;">
+    <div id="toastIngresoExito" class="toast align-items-center text-white bg-info border-0" role="alert">
+      <div class="d-flex">
+        <div class="toast-body" id="toastIngresoMensaje"></div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>
     </div>

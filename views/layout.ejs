@@ -1089,19 +1089,27 @@ le]').setAttribute('title', data.tooltip);
     }
 
     // ════════════════════════════════════════════════════════════════
-    // INICIALIZAR BOTÓN GASTO RÁPIDO (después de definir la función)
+    // INICIALIZAR BOTONES DE ACCIONES RÁPIDAS (después de que el DOM esté listo)
     // ════════════════════════════════════════════════════════════════
-    (function() {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🔧 Inicializando botones de acciones rápidas...');
+
       const btnGasto = document.getElementById('btnGastoRapido');
       if (btnGasto) {
+        console.log('✅ Botón Gasto Rápido encontrado');
         btnGasto.onclick = window.abrirGastoRapido;
+      } else {
+        console.warn('⚠️ Botón Gasto Rápido NO encontrado');
       }
 
       const btnIngreso = document.getElementById('btnIngresoRapido');
       if (btnIngreso) {
+        console.log('✅ Botón Ingreso Rápido encontrado');
         btnIngreso.onclick = window.abrirIngresoRapido;
+      } else {
+        console.warn('⚠️ Botón Ingreso Rápido NO encontrado');
       }
-    })();
+    });
   </script>
 
   <!-- MODAL: Gasto Rápido -->

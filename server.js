@@ -73,21 +73,17 @@ console.log('✅ Servidor iniciado correctamente - Versión 2.4.2');
 
 // Mock CSRF middleware bypass - prevent any CSRF errors
 app.use((req, res, next) => {
-    // Create a mock csrfToken function that always returns empty string
     req.csrfToken = req.csrfToken || (() => '');
-    // Allow empty CSRF tokens since CSRF is disabled
     req.body._csrf = req.body._csrf || '';
     next();
 });
 
 // CSRF bypass - ignore all CSRF validation errors
 app.use((err, req, res, next) => {
-    // If this is a CSRF validation error, just skip it
     if (err && (err.code === 'EBADCSRFTOKEN' || err.message?.includes('csrf token'))) {
         console.log('⚠️  CSRF validation bypassed');
         return next();
     }
-    // Pass other errors
     return next(err);
 });
 
@@ -97,11 +93,10 @@ app.use((req, res, next) => {
     res.locals.user        = req.session.user     || null;
     res.locals.currentPath = req.path;
 
-    // CSRF Token - deshabilitado completamente
     res.locals.csrfToken = '';
-    req._csrfBypass = true; // Bypass any CSRF checks
+    req._csrfBypass = true;
 
-    res.locals.empresaTel  = '3878224908'; // Teléfono de la empresa
+    res.locals.empresaTel  = '3878224908';
     next();
 });
 
@@ -136,9 +131,6 @@ app.use((req, res, next) => {
 // DOCUMENTACIÓN Y ARCHIVOS ESTÁTICOS
 // ════════════════════════════════════════════════════════════════
 
-// Swagger UI deshabilitado
-// app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
 const uploadsDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 if (!fs.existsSync(path.join(uploadsDir, 'thumbs'))) fs.mkdirSync(path.join(uploadsDir, 'thumbs'), { recursive: true });
@@ -148,7 +140,6 @@ app.use('/uploads', express.static(uploadsDir));
 
 // ✅ File download con validación y autenticación
 app.get('/pedidos/revision/descargar/:filename', authMiddleware.isAuthenticated, async (req, res) => {
-    // Validar que filename solo contiene caracteres seguros (prevenir path traversal)
     const filename = req.params.filename;
     if (!/^[a-zA-Z0-9._-]+$/.test(filename)) {
         return res.status(400).send('❌ Nombre de archivo inválido');
@@ -156,7 +147,6 @@ app.get('/pedidos/revision/descargar/:filename', authMiddleware.isAuthenticated,
 
     const filePath = path.join(__dirname, 'public', 'uploads', filename);
 
-    // Verificar que el archivo existe y está dentro de uploads/
     const uploadsDir = path.join(__dirname, 'public', 'uploads');
     const resolvedPath = path.resolve(filePath);
     const resolvedUploadsDir = path.resolve(uploadsDir);
@@ -177,21 +167,9 @@ app.get('/pedidos/revision/descargar/:filename', authMiddleware.isAuthenticated,
 // ════════════════════════════════════════════════════════════════
 
 async function startServer() {
-    // ✅ Validar SESSION_SECRET antes de cualquier otra cosa
     const SESSION_SECRET = process.env.SESSION_SECRET;
     if (!SESSION_SECRET || SESSION_SECRET === 'default_unsafe_secret_change_env') {
-        console.error(
-            '\n❌ ═══════════════════════════════════════════════════════════════════\n' +
-            '   FATAL ERROR: SESSION_SECRET no configurado correctamente\n' +
-            '═══════════════════════════════════════════════════════════════════\n' +
-            '   El servidor no puede iniciarse de forma segura sin un SESSION_SECRET\n' +
-            '   configurado en las variables de entorno.\n\n' +
-            '   Acciones:\n' +
-            '   1. En producción (Render): Establecer SESSION_SECRET en env variables\n' +
-            '   2. En desarrollo: Crear .env con SESSION_SECRET=<valor_seguro>\n' +
-            '   3. Usar una cadena aleatoria de 32+ caracteres\n' +
-            '═══════════════════════════════════════════════════════════════════\n'
-        );
+        console.error('❌ SESSION_SECRET no configurado correctamente');
         process.exit(1);
     }
     console.log("✅ SESSION_SECRET validado correctamente");
@@ -204,10 +182,6 @@ async function startServer() {
         console.error("❌ Error de base de datos:", error);
         process.exit(1);
     }
-
-    // ────────────────────────────────────────────────────────────────────
-    // CARGAR CONTROLADORES Y RUTAS
-    // ────────────────────────────────────────────────────────────────────
 
     const cajaController               = initCajaController(dbInstance);
     const authRouterConfigured         = require('./routes/auth')(dbInstance);
@@ -233,19 +207,13 @@ async function startServer() {
     const deudoresRouterConfigured     = require('./routes/deudores')(dbInstance);
     const guiaRouterConfigured         = require('./routes/guia')(dbInstance);
 
-    // ────────────────────────────────────────────────────────────────────
-    // APIS INTERNAS (Autocomplete, etc)
-    // ────────────────────────────────────────────────────────────────────
-
     app.use('/api/clientes',     apiClientesRouterConfigured);
     app.use('/api/productos',    apiProductosRouterConfigured);
     app.use('/api/autocomplete', apiAutocompleteConfigured);
     app.use('/api/pedidos',      apiPedidosRouterConfigured);
     app.use('/api/ia',           authMiddleware.isAuthenticated, iaApiRouterConfigured);
 
-    // ════════════════════════════════════════════════════════════════
     // SEMÁFORO FINANCIERO
-    // ════════════════════════════════════════════════════════════════
     app.get('/api/semaforo', authMiddleware.isAuthenticated, async (req, res) => {
         const rol = req.session.user?.rol;
         if (!['admin', 'vendedor'].includes(rol)) return res.json({ mostrar: false });
@@ -285,7 +253,6 @@ async function startServer() {
         }
     });
 
-    // GET /api/caja-movimientos - Obtener movimientos del día (con zona horaria correcta)
     app.get('/api/caja-movimientos', authMiddleware.isAuthenticated, async (req, res) => {
         try {
             const { obtenerFechaLocal } = require('./utils/dateHelper');
@@ -316,14 +283,11 @@ async function startServer() {
         }
     });
 
-    // GET /caja-diaria/exportar - Exportar movimientos a CSV
     app.get('/caja-diaria/exportar', authMiddleware.isAuthenticated, async (req, res) => {
         try {
             const { obtenerFechaLocal } = require('./utils/dateHelper');
             const fecha = req.query.fecha || obtenerFechaLocal().fecha;
-            const turno = req.query.turno || ''; // 'mañana', 'tarde', o vacío para ambos
-
-            console.log('📥 Exportando Caja:', { fecha, turno });
+            const turno = req.query.turno || '';
 
             let query = `
                 SELECT tipo, concepto, monto, metodo_pago, turno, fecha, categoria
@@ -344,33 +308,13 @@ async function startServer() {
             query += ' ORDER BY fecha DESC';
 
             const movimientos = await dbInstance.all(query, params) || [];
-            console.log(`📊 Encontrados ${movimientos.length} movimientos`);
 
-            if (movimientos.length === 0) {
-                // Si no encuentra con esa query, intentar más simple
-                console.log('⚠️ No hay movimientos, intentando query alternativa...');
-                const movimientosAlt = await dbInstance.all(
-                    `SELECT tipo, concepto, monto, metodo_pago, turno, fecha, categoria
-                     FROM movimientos_caja
-                     WHERE SUBSTR(fecha, 1, 10) = ?
-                     ${turno ? 'AND turno = ?' : ''}
-                     ORDER BY fecha DESC`,
-                    turno ? [fecha, turno] : [fecha]
-                ) || [];
-                console.log(`📊 Consulta alternativa: ${movimientosAlt.length} movimientos`);
-                if (movimientosAlt.length > 0) {
-                    movimientos.push(...movimientosAlt);
-                }
-            }
-
-            // Calcular totales
             let totalIngresos = 0, totalEgresos = 0;
             movimientos.forEach(m => {
                 if (m.tipo === 'ingreso') totalIngresos += m.monto;
                 else totalEgresos += m.monto;
             });
 
-            // Generar CSV
             const headers = ['Tipo', 'Concepto', 'Monto', 'Método de Pago', 'Turno', 'Fecha', 'Categoría'];
             const rows = movimientos.map(m => [
                 m.tipo.toUpperCase(),
@@ -382,7 +326,6 @@ async function startServer() {
                 m.categoria || '-'
             ]);
 
-            // Agregar totales
             rows.push([]);
             rows.push(['INGRESOS', '', totalIngresos.toFixed(2)]);
             rows.push(['EGRESOS', '', totalEgresos.toFixed(2)]);
@@ -394,42 +337,19 @@ async function startServer() {
 
             res.setHeader('Content-Type', 'text/csv; charset=utf-8');
             res.setHeader('Content-Disposition', `attachment; filename="Caja-${fecha}${turno ? '-' + turno : ''}.csv"`);
-            res.send('\uFEFF' + csv); // BOM para Excel con UTF-8
+            res.send('\uFEFF' + csv);
         } catch(e) {
             console.error('Error en exportar caja:', e.message);
             res.status(500).json({ error: e.message });
         }
     });
 
-    // ────────────────────────────────────────────────────────────────────
-    // AUTH (Público) - Con protección de rate limiting
-    // ────────────────────────────────────────────────────────────────────
-
-    // Rate limiting: máximo 5 intentos de login por 15 minutos
-    // RATE LIMITER DESHABILITADO PARA TESTING LOCAL
-    // const loginLimiter = rateLimit({
-    //     windowMs: 15 * 60 * 1000, // 15 minutos
-    //     max: 5,                    // 5 intentos máximo
-    //     message: 'Demasiados intentos de login. Intenta más tarde.',
-    //     standardHeaders: true,
-    //     legacyHeaders: false,
-    // });
-    // app.post('/auth/login', loginLimiter);
     app.use('/auth', authRouterConfigured);
 
-    // ────────────────────────────────────────────────────────────────────
-    // RUTAS PÚBLICAS (sin login)
-    // ────────────────────────────────────────────────────────────────────
-
-    // Formulario público de presupuesto (para clientes externos)
     const presupuestosControllerPublico = require('./controllers/presupuestosController')(dbInstance);
     const upload = require('./config/multer');
     app.get('/presupuestos/publico', presupuestosControllerPublico.formPresupuestoPublico);
     app.post('/presupuestos/publico', upload.single('archivo_imagen'), presupuestosControllerPublico.recibirPresupuestoPublico);
-
-    // ────────────────────────────────────────────────────────────────────
-    // RUTAS PROTEGIDAS
-    // ────────────────────────────────────────────────────────────────────
 
     app.use('/dashboard', authMiddleware.isAuthenticated, permitirRoles('admin','vendedor'), dashboardRouterConfigured);
     app.use('/clientes',     permitirRoles('admin','vendedor','recepcionista'), clientesRouterConfigured);
@@ -448,71 +368,44 @@ async function startServer() {
     app.use('/finanzas',     permitirRoles('admin'),                       finanzasRouterConfigured);
     app.use('/guia',         permitirRoles('admin','vendedor'),            guiaRouterConfigured);
 
-    // ────────────────────────────────────────────────────────────────────
-    // ADMIN - IMPORTACIÓN DE DATOS
-    // ────────────────────────────────────────────────────────────────────
     const adminImportRouterConfigured = require('./routes/admin-import')(dbInstance);
     app.use('/', authMiddleware.isAuthenticated, adminImportRouterConfigured);
 
-    // ────────────────────────────────────────────────────────────────────
     // CAJA DIARIA
-    // ────────────────────────────────────────────────────────────────────
-
-    // ⚠️ IMPORTANTE: Rutas POST primero, luego el GET (app.use)
-    // Si app.use() va primero, intercepta todos los requests y no deja llegar a POST
-
     app.post('/caja-diaria/agregar',
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
-        async (req, res, next) => {
-            return cajaController.agregarMovimiento(req, res);
-        }
+        async (req, res) => cajaController.agregarMovimiento(req, res)
     );
     app.post('/caja-diaria/eliminar/:id',
         authMiddleware.isAuthenticated,
         permitirRoles('admin'),
-        async (req, res, next) => {
-            return cajaController.eliminarMovimiento(req, res);
-        }
+        async (req, res) => cajaController.eliminarMovimiento(req, res)
     );
     app.post('/caja-diaria/:id/editar',
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
-        async (req, res, next) => {
-            return cajaController.editarMovimiento(req, res);
-        }
+        async (req, res) => cajaController.editarMovimiento(req, res)
     );
-
     app.post('/caja-diaria/cerrar-turno',
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
-        async (req, res, next) => {
-            return cajaController.cerrarTurno(req, res);
-        }
+        async (req, res) => cajaController.cerrarTurno(req, res)
     );
-
     app.post('/caja-diaria/reabrir-turno',
         authMiddleware.isAuthenticated,
         permitirRoles('admin'),
-        async (req, res, next) => {
-            return cajaController.reabrirTurno(req, res);
-        }
+        async (req, res) => cajaController.reabrirTurno(req, res)
     );
-
     app.use('/caja-diaria',
         authMiddleware.isAuthenticated,
         permitirRoles('admin','vendedor','empleado','recepcionista','operador'),
-        async (req, res, next) => {
-            // Flag para mostrar/ocultar números contables: únicamente admin ve totales/desglose
+        async (req, res) => {
             res.locals.puedeVerNumeros = req.session.user?.rol === 'admin';
             res.locals.user = req.session.user;
             return cajaController.mostrarCajaDiaria(req, res);
         }
     );
-
-    // ────────────────────────────────────────────────────────────────────
-    // DASHBOARD PRINCIPAL
-    // ────────────────────────────────────────────────────────────────────
 
     app.get('/', authMiddleware.isAuthenticated, async (req, res) => {
         try {
@@ -561,10 +454,8 @@ async function startServer() {
                 ORDER BY p.fecha DESC LIMIT 10
             `) || [];
 
-            // Próximos 5 vencimientos (solo admin)
             let proximos5Vencimientos = [];
             if (req.session.user?.rol === 'admin') {
-                // Cheques pendientes
                 const cheques = await dbInstance.all(`
                     SELECT 'cheque' AS source_tipo, id, numero_cheque AS titulo,
                            monto, fecha_vencimiento, banco AS subtitulo, estado
@@ -572,7 +463,6 @@ async function startServer() {
                     WHERE estado = 'pendiente'
                 `) || [];
 
-                // Proveedores pendientes
                 const proveedores = await dbInstance.all(`
                     SELECT 'proveedor' AS source_tipo, dp.id,
                            COALESCE(p.nombre, 'Sin proveedor') || ' - ' || dp.concepto AS titulo,
@@ -583,7 +473,6 @@ async function startServer() {
                     WHERE dp.estado != 'pagado'
                 `) || [];
 
-                // Préstamos activos
                 const prestamosRaw = await dbInstance.all(`
                     SELECT 'prestamo' AS source_tipo, id, descripcion AS titulo,
                            cuota_mensual AS monto, dia_vencimiento_mensual,
@@ -592,7 +481,6 @@ async function startServer() {
                     WHERE estado = 'activo'
                 `) || [];
 
-                // Tarjetas activas
                 const tarjetasRaw = await dbInstance.all(`
                     SELECT 'tarjeta' AS source_tipo, id, nombre_tarjeta AS titulo,
                            monto_minimo AS monto, fecha_vencimiento,
@@ -601,7 +489,6 @@ async function startServer() {
                     WHERE estado = 'activa'
                 `) || [];
 
-                // Enriquecer cheques y proveedores (ya tienen fecha completa)
                 const chequesMejorados = cheques.map(c => ({
                     ...c,
                     fecha_calculada: c.fecha_vencimiento ? new Date(c.fecha_vencimiento) : null,
@@ -616,7 +503,6 @@ async function startServer() {
                     prioridad: calcularPrioridad(diasHasta(p.fecha_vencimiento))
                 }));
 
-                // Enriquecer préstamos (tienen día del mes)
                 const prestamosMejorados = prestamosRaw.map(p => ({
                     ...p,
                     fecha_calculada: calcularProximaCuota(p.dia_vencimiento_mensual),
@@ -624,7 +510,6 @@ async function startServer() {
                     prioridad: calcularPrioridad(diasHasta(calcularProximaCuota(p.dia_vencimiento_mensual)))
                 }));
 
-                // Enriquecer tarjetas (tienen día del mes)
                 const tarjetasMejoradas = tarjetasRaw.map(t => ({
                     ...t,
                     fecha_calculada: calcularFechaVencTarjeta(t.fecha_vencimiento),
@@ -632,7 +517,6 @@ async function startServer() {
                     prioridad: calcularPrioridad(diasHasta(calcularFechaVencTarjeta(t.fecha_vencimiento)))
                 }));
 
-                // Consolidar todos
                 const todos = [
                     ...chequesMejorados,
                     ...proveedoresMejorados,
@@ -640,7 +524,6 @@ async function startServer() {
                     ...tarjetasMejoradas
                 ];
 
-                // Ordenar por dias_restantes y agrupar por urgencia
                 todos.sort((a, b) => {
                     if (a.dias_restantes === null && b.dias_restantes === null) return 0;
                     if (a.dias_restantes === null) return 1;
@@ -651,7 +534,6 @@ async function startServer() {
                 proximos5Vencimientos = todos.slice(0, 5);
             }
 
-            // Deudas vencidas (solo admin puede verlas)
             let deudasVencidas = [];
             if (req.session.user?.rol === 'admin') {
                 deudasVencidas = await dbInstance.all(`
@@ -668,7 +550,6 @@ async function startServer() {
                 `) || [];
             }
 
-            // Deudas próximas (próximos 7 días)
             let deudasProximas = [];
             if (req.session.user?.rol === 'admin') {
                 deudasProximas = await dbInstance.all(`
@@ -709,7 +590,6 @@ async function startServer() {
             const isEmpleado = req.session.user?.rol === 'empleado';
             const isRecepcionista = req.session.user?.rol === 'recepcionista';
 
-            // Intentar recuperar al menos los counts
             const counts = {
                 pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
                 en_produccion: (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'EN_PRODUCCION'"))?.c || 0,
@@ -736,11 +616,6 @@ async function startServer() {
         }
     });
 
-    // ────────────────────────────────────────────────────────────────────
-    // DEBUG: Ver conteos en consola
-    // ────────────────────────────────────────────────────────────────────
-
-    // ✅ DEBUG endpoint protegido por autenticación
     app.get('/debug/counts', authMiddleware.isAuthenticated, permitirRoles('admin'), async (_, res) => {
         const counts = {
             pendientes:    (await dbInstance.get("SELECT COUNT(*) AS c FROM pedidos WHERE estado = 'PENDIENTE'"))?.c || 0,
@@ -752,21 +627,25 @@ async function startServer() {
         res.json({ counts, allEstados });
     });
 
-    // ────────────────────────────────────────────────────────────────────
-    // 404
-    // ────────────────────────────────────────────────────────────────────
+    // ════════════════════════════════════════════════════════════════
+    // DESCARGAR BD (TEMPORAL)
+    // ════════════════════════════════════════════════════════════════
+    app.get('/descargar-bd-segura', (req, res) => {
+        const dbPath = '/var/lib/imprenta.db';
 
+        if (!fs.existsSync(dbPath)) {
+            return res.status(404).send('No se encontró la base de datos');
+        }
+
+        res.download(dbPath, 'imprenta-produccion.db');
+    });
+
+    // 404
     app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
 
-    // ────────────────────────────────────────────────────────────────────
     // INICIAR SERVIDOR
-    // ────────────────────────────────────────────────────────────────────
-
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, '0.0.0.0', () => console.log(`\n✅ Server corriendo en http://localhost:${PORT}\n`));
 }
 
 startServer();
-
-
-

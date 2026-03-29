@@ -146,6 +146,9 @@
             </div>
             <div class="card-body">
               <p><strong>👤 Cliente:</strong> <%= p.cliente_nombre || 'N/A' %></p>
+              <% if (p.cliente_phone) { %>
+                <p><strong>📞 Teléfono:</strong> <a href="tel:<%= p.cliente_phone %>"><%= p.cliente_phone %></a></p>
+              <% } %>
               <p><strong>🧑‍💼 Responsable:</strong> <%= p.username || '-' %></p>
               <p><strong>📅 Entrega:</strong> <%= p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-AR') : 'No definida' %></p>
               <p><strong>📝 Detalle:</strong> 
@@ -204,6 +207,7 @@
             <tr>
               <th>ID</th>
               <th>Cliente</th>
+              <th>Teléfono</th>
               <th>Fecha</th>
               <th>Entrega</th>
               <th>Detalle</th>
@@ -220,6 +224,7 @@
             <tr>
               <td><strong>#<%= p.id %></strong></td>
               <td><%= p.cliente_nombre || 'N/A' %></td>
+              <td><small><%= p.cliente_phone || '-' %></small></td>
               <td><small><%= new Date(p.fecha).toLocaleDateString('es-AR') %></small></td>
               <td><small><%= p.fecha_entrega ? new Date(p.fecha_entrega).toLocaleDateString('es-AR') : '-' %></small></td>
               <td style="max-width: 240px;">

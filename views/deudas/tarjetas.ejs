@@ -124,7 +124,7 @@
                     <th style="width: 60px;">Cierre</th>
                     <th style="width: 80px;">Vence</th>
                     <th style="width: 70px;">Estado</th>
-                    <th style="width: 120px;">Acciones</th>
+                    <th style="width: 150px;">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -191,18 +191,20 @@
                         <% } %>
                       </td>
                       <td>
-                        <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#modalPagar"
+                        <a href="/deudas/tarjetas/<%= t.id %>" class="btn btn-sm btn-primary mb-1">
+                          <i class="bi bi-eye"></i> Ver
+                        </a>
+                        <button class="btn btn-sm btn-info mb-1" data-bs-toggle="modal" data-bs-target="#modalPagar"
                                 onclick="setTarjetaPago(<%= t.id %>)">
                           <i class="bi bi-cash"></i> Pagar
                         </button>
-                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalEditar"
+                        <button class="btn btn-sm btn-warning mb-1" data-bs-toggle="modal" data-bs-target="#modalEditar"
                                 onclick="preLlenarEditar(<%= JSON.stringify(t) %>)">
                           <i class="bi bi-pencil"></i>
                         </button>
                         <form method="POST" action="/deudas/tarjetas/<%= t.id %>/eliminar" style="display: inline;"
                               onsubmit="return confirm('¿Eliminar esta tarjeta?');">
-                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                          <button type="submit" class="btn btn-sm btn-danger">
+                          <button type="submit" class="btn btn-sm btn-danger mb-1">
                             <i class="bi bi-trash"></i>
                           </button>
                         </form>
@@ -228,7 +230,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/deudas/tarjetas">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -318,7 +319,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formEditar">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="row">
             <div class="col-md-6 mb-3">
@@ -406,7 +406,6 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" id="formPagar">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Monto a Pagar *</label>

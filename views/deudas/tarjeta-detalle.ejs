@@ -1,0 +1,376 @@
+<!-- views/deudas/tarjeta-detalle.ejs -->
+<div class="container-fluid py-4">
+
+  <!-- ENCABEZADO -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex align-items-center gap-3 flex-wrap">
+        <a href="/deudas/tarjetas" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left"></i> Volver
+        </a>
+        <div>
+          <h1 class="display-6 mb-0"><i class="bi bi-credit-card"></i> <%= tarjeta.nombre_tarjeta %></h1>
+          <small class="text-muted"><%= tarjeta.banco || '' %><%= tarjeta.banco && tarjeta.titular ? ' · ' : '' %><%= tarjeta.titular || '' %></small>
+        </div>
+        <% if (tarjeta.estado === 'activa') { %>
+          <span class="badge bg-success fs-6">Activa</span>
+        <% } else { %>
+          <span class="badge bg-secondary fs-6">Inactiva</span>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAJES -->
+  <% if (error && error.length) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+      <%= error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+  <% if (success && success.length) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+      <%= success %><button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  <% } %>
+
+  <!-- PANEL RESUMEN DE LA TARJETA -->
+  <div class="row g-3 mb-4">
+    <!-- Límite y uso -->
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Margen de Crédito</h6>
+          <% if (tarjeta.limite_credito > 0) { %>
+            <div class="d-flex justify-content-between mb-1">
+              <small class="text-muted">Usado: <strong class="text-danger">$<%= tarjeta.saldo_adeudado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></small>
+              <small class="text-muted">Límite: <strong>$<%= tarjeta.limite_credito.toLocaleString('es-AR', {minimumFractionDigits: 0}) %></strong></small>
+            </div>
+            <div class="progress mb-2" style="height: 20px;">
+              <% let colorBarra = 'success'; if (porcentajeUso > 80) colorBarra = 'danger'; else if (porcentajeUso > 60) colorBarra = 'warning'; %>
+              <div class="progress-bar bg-<%= colorBarra %>" style="width: <%= porcentajeUso %>%;">
+                <span style="font-size:12px; font-weight:bold;"><%= porcentajeUso.toFixed(0) %>%</span>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-success fw-bold">Disponible: $<%= disponible.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+            </div>
+          <% } else { %>
+            <p class="text-warning mb-0"><i class="bi bi-exclamation-triangle"></i> Sin límite configurado</p>
+            <small class="text-muted">Saldo adeudado: <strong class="text-danger">$<%= tarjeta.saldo_adeudado.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></small>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fechas -->
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Próximas Fechas</h6>
+          <div class="mb-2">
+            <small class="text-muted">Fecha de Cierre</small>
+            <div class="fw-bold">
+              Día <%= tarjeta.fecha_cierre || '-' %>
+              <% if (diasHastaCierre !== null) { %>
+                <% if (diasHastaCierre <= 3) { %>
+                  <span class="badge bg-danger">en <%= diasHastaCierre %> día(s)</span>
+                <% } else if (diasHastaCierre <= 7) { %>
+                  <span class="badge bg-warning">en <%= diasHastaCierre %> días</span>
+                <% } else { %>
+                  <span class="badge bg-light text-dark">en <%= diasHastaCierre %> días</span>
+                <% } %>
+              <% } %>
+            </div>
+          </div>
+          <div>
+            <small class="text-muted">Vencimiento Pago</small>
+            <div class="fw-bold">
+              Día <%= tarjeta.fecha_vencimiento || '-' %>
+              <% if (diasHastaVencimiento !== null) { %>
+                <% if (diasHastaVencimiento <= 3) { %>
+                  <span class="badge bg-danger">en <%= diasHastaVencimiento %> día(s)</span>
+                <% } else if (diasHastaVencimiento <= 5) { %>
+                  <span class="badge bg-warning">en <%= diasHastaVencimiento %> días</span>
+                <% } else { %>
+                  <span class="badge bg-light text-dark">en <%= diasHastaVencimiento %> días</span>
+                <% } %>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Obligación mensual -->
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm h-100 border-start border-4 border-primary">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">Este Mes Tenés que Pagar</h6>
+          <h3 class="text-primary mb-1">$<%= obligacionMensual.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></h3>
+          <small class="text-muted">
+            <%= totalCompras %> cargo<%= totalCompras !== 1 ? 's' : '' %> activo<%= totalCompras !== 1 ? 's' : '' %>
+            <% if (totalPagadas > 0) { %> · <%= totalPagadas %> completado<%= totalPagadas !== 1 ? 's' : '' %><% } %>
+          </small>
+          <% if (tarjeta.monto_minimo > 0) { %>
+            <div class="mt-2 p-2 bg-warning bg-opacity-10 rounded">
+              <small><strong>Mínimo:</strong> $<%= tarjeta.monto_minimo.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></small>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTÓN AGREGAR CARGO -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNuevoCargo">
+        <i class="bi bi-plus-circle"></i> Agregar Compra / Cargo
+      </button>
+    </div>
+  </div>
+
+  <!-- FORM AGREGAR CARGO (colapsable) -->
+  <div class="collapse mb-4" id="collapseNuevoCargo">
+    <div class="card border-primary shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <strong><i class="bi bi-plus-circle"></i> Nueva Compra o Cargo</strong>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="/deudas/tarjetas/<%= tarjeta.id %>/compras">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label">Descripción *</label>
+              <input type="text" name="descripcion" class="form-control" placeholder="Ej: Tóner para impresora" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tipo *</label>
+              <select name="tipo" class="form-select" id="tipoCompra" onchange="actualizarFormCompra()">
+                <option value="compra">Compra (cuotas)</option>
+                <option value="debito_automatico">Débito Automático</option>
+                <option value="gasto_fijo">Gasto Fijo Mensual</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Monto Total *</label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" name="monto_total" id="montoTotalInput" class="form-control" step="0.01" min="0.01" placeholder="0.00" required onchange="calcularCuotaPreview()">
+              </div>
+            </div>
+            <div class="col-md-2" id="colCuotas">
+              <label class="form-label">Cuotas</label>
+              <input type="number" name="cuotas_total" id="cuotasInput" class="form-control" min="1" max="99" value="1" onchange="calcularCuotaPreview()">
+              <small class="text-muted" id="cuotaPreview"></small>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label">Fecha Compra</label>
+              <input type="date" name="fecha_compra" class="form-control" value="<%= new Date().toISOString().slice(0,10) %>">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Categoría</label>
+              <select name="categoria" class="form-select">
+                <option value="General">General</option>
+                <option value="Insumos">Insumos</option>
+                <option value="Equipos">Equipos</option>
+                <option value="Servicios">Servicios</option>
+                <option value="Personal">Personal</option>
+                <option value="Impuestos">Impuestos</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Notas</label>
+              <input type="text" name="notas" class="form-control" placeholder="Opcional">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-check-circle"></i> Guardar
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTA DE COMPRAS ACTIVAS -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong><i class="bi bi-list-check"></i> Compras y Cargos Activos</strong>
+          <span class="badge bg-primary"><%= comprasActivas.length %></span>
+        </div>
+        <div class="card-body p-0">
+          <% if (comprasActivas.length === 0) { %>
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-inbox display-4 d-block mb-2"></i>
+              No hay compras activas.<br>
+              <small>Usá el botón "Agregar Compra / Cargo" de arriba para cargar tus compras en cuotas o débitos automáticos.</small>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Descripción</th>
+                    <th style="width:100px">Tipo</th>
+                    <th style="width:90px">Categoría</th>
+                    <th style="width:110px">Total</th>
+                    <th style="width:120px">Cuota Mensual</th>
+                    <th style="width:160px">Progreso Cuotas</th>
+                    <th style="width:95px">Fecha</th>
+                    <th style="width:110px">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% comprasActivas.forEach(c => {
+                    const cuotasPagadas = c.cuota_actual - 1;
+                    const cuotasPendientes = c.cuotas_total - cuotasPagadas;
+                    const progresoPct = c.cuotas_total > 1 ? Math.round((cuotasPagadas / c.cuotas_total) * 100) : 0;
+                    const tipoLabels = { compra: { label: 'Compra', color: 'primary' }, debito_automatico: { label: 'Débito Auto', color: 'warning' }, gasto_fijo: { label: 'Fijo', color: 'info' } };
+                    const tl = tipoLabels[c.tipo] || tipoLabels.compra;
+                  %>
+                  <tr>
+                    <td>
+                      <strong><%= c.descripcion %></strong>
+                      <% if (c.notas) { %><br><small class="text-muted"><%= c.notas %></small><% } %>
+                    </td>
+                    <td><span class="badge bg-<%= tl.color %>"><%= tl.label %></span></td>
+                    <td><small><%= c.categoria %></small></td>
+                    <td><strong>$<%= c.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                    <td>
+                      <span class="text-danger fw-bold">$<%= c.monto_cuota.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></span>
+                      <% if (c.cuotas_total > 1) { %><br><small class="text-muted">cuota <%= c.cuota_actual %>/<%= c.cuotas_total %></small><% } %>
+                    </td>
+                    <td>
+                      <% if (c.cuotas_total > 1) { %>
+                        <div class="progress mb-1" style="height:14px;">
+                          <div class="progress-bar bg-success" style="width:<%= progresoPct %>%; font-size:10px; line-height:14px;">
+                            <%= progresoPct > 20 ? progresoPct + '%' : '' %>
+                          </div>
+                        </div>
+                        <small class="text-muted"><%= cuotasPagadas %> pagada<%= cuotasPagadas !== 1 ? 's' : '' %>, <%= cuotasPendientes %> restante<%= cuotasPendientes !== 1 ? 's' : '' %></small>
+                      <% } else { %>
+                        <span class="badge bg-secondary">Pago único</span>
+                      <% } %>
+                    </td>
+                    <td><small><%= c.fecha_compra %></small></td>
+                    <td>
+                      <form method="POST" action="/deudas/tarjetas/compras/<%= c.id %>/pagar-cuota" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-success mb-1" title="Registrar cuota pagada">
+                          <i class="bi bi-check"></i> Cuota
+                        </button>
+                      </form>
+                      <form method="POST" action="/deudas/tarjetas/compras/<%= c.id %>/eliminar" style="display:inline;"
+                            onsubmit="return confirm('¿Eliminar este cargo? Se restará del saldo adeudado.')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                      </form>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+                <tfoot class="table-light">
+                  <tr>
+                    <td colspan="4" class="text-end"><strong>Total mensual:</strong></td>
+                    <td><strong class="text-danger">$<%= obligacionMensual.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></strong></td>
+                    <td colspan="3"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPRAS COMPLETADAS / HISTORIAL -->
+  <% const comprasHistorial = compras.filter(c => c.estado !== 'activo'); %>
+  <% if (comprasHistorial.length > 0) { %>
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center"
+             style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#collapseHistorial">
+          <strong><i class="bi bi-clock-history"></i> Historial (completados/cancelados)</strong>
+          <span class="badge bg-secondary"><%= comprasHistorial.length %> <i class="bi bi-chevron-down"></i></span>
+        </div>
+        <div class="collapse" id="collapseHistorial">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-sm mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Descripción</th>
+                    <th>Total</th>
+                    <th>Cuotas</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% comprasHistorial.forEach(c => { %>
+                  <tr class="text-muted">
+                    <td><%= c.descripcion %></td>
+                    <td>$<%= c.monto_total.toLocaleString('es-AR', {minimumFractionDigits: 2}) %></td>
+                    <td><%= c.cuotas_total %> cuota<%= c.cuotas_total !== 1 ? 's' : '' %></td>
+                    <td>
+                      <% if (c.estado === 'pagado') { %>
+                        <span class="badge bg-success">Pagado</span>
+                      <% } else { %>
+                        <span class="badge bg-secondary">Cancelado</span>
+                      <% } %>
+                    </td>
+                    <td><small><%= c.fecha_compra %></small></td>
+                    <td>
+                      <form method="POST" action="/deudas/tarjetas/compras/<%= c.id %>/eliminar" style="display:inline;"
+                            onsubmit="return confirm('¿Eliminar del historial?')">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-trash"></i></button>
+                      </form>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+</div>
+
+<script>
+function actualizarFormCompra() {
+  const tipo = document.getElementById('tipoCompra').value;
+  const colCuotas = document.getElementById('colCuotas');
+  const cuotasInput = document.getElementById('cuotasInput');
+  if (tipo === 'debito_automatico' || tipo === 'gasto_fijo') {
+    cuotasInput.value = 1;
+    colCuotas.style.opacity = '0.4';
+    cuotasInput.disabled = true;
+  } else {
+    colCuotas.style.opacity = '1';
+    cuotasInput.disabled = false;
+  }
+  calcularCuotaPreview();
+}
+
+function calcularCuotaPreview() {
+  const monto = parseFloat(document.getElementById('montoTotalInput').value) || 0;
+  const cuotas = parseInt(document.getElementById('cuotasInput').value) || 1;
+  const preview = document.getElementById('cuotaPreview');
+  if (monto > 0 && cuotas > 1) {
+    const cuotaVal = (monto / cuotas).toFixed(2);
+    preview.textContent = `$${parseFloat(cuotaVal).toLocaleString('es-AR', {minimumFractionDigits: 2})} x cuota`;
+  } else {
+    preview.textContent = '';
+  }
+}
+</script>

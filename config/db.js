@@ -759,6 +759,27 @@ async function initDb() {
         `);
 
         // ════════════════════════════════════════════════════════════════
+        // TABLA: COMPRAS/CARGOS POR TARJETA DE CRÉDITO
+        // ════════════════════════════════════════════════════════════════
+        await db.run(`
+            CREATE TABLE IF NOT EXISTS tarjeta_compras (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                tarjeta_id      INTEGER NOT NULL REFERENCES deudas_tarjetas(id) ON DELETE CASCADE,
+                descripcion     TEXT NOT NULL,
+                monto_total     REAL NOT NULL,
+                cuotas_total    INTEGER DEFAULT 1,
+                cuota_actual    INTEGER DEFAULT 1,
+                monto_cuota     REAL NOT NULL,
+                fecha_compra    TEXT DEFAULT (date('now')),
+                categoria       TEXT DEFAULT 'General',
+                tipo            TEXT DEFAULT 'compra' CHECK(tipo IN ('compra', 'debito_automatico', 'gasto_fijo')),
+                estado          TEXT DEFAULT 'activo' CHECK(estado IN ('activo', 'pagado', 'cancelado')),
+                notas           TEXT,
+                created_at      TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // ════════════════════════════════════════════════════════════════
         // ÍNDICES: Optimización de queries (FIX #6)
         // ════════════════════════════════════════════════════════════════
         // Índices críticos para 200+ pedidos/mes con 4 usuarios concurrentes

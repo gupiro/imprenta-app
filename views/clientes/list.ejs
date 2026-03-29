@@ -34,16 +34,25 @@
       <thead class="table-dark">
         <tr>
           <th>ID</th>
-          <th>Nombre</th>
+          <th onclick="ordenarClientes('nombre')" style="cursor:pointer; user-select:none;">
+            Nombre <span id="flecha-nombre" class="text-warning">⇅</span>
+          </th>
           <th>Teléfono</th>
-          <th class="text-center">Presupuestos Pendientes</th>
-          <th class="text-end">Deuda Total</th>
+          <th class="text-center" onclick="ordenarClientes('presup')" style="cursor:pointer; user-select:none;">
+            Presupuestos Pendientes <span id="flecha-presup" class="text-warning">⇅</span>
+          </th>
+          <th class="text-end" onclick="ordenarClientes('deuda')" style="cursor:pointer; user-select:none;">
+            Deuda Total <span id="flecha-deuda" class="text-warning">⇅</span>
+          </th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <% clients.forEach(client => { %>
-          <tr <%= client.deuda_total > 0 || client.cant_presupuestos > 0 ? 'class="table-warning"' : '' %>>
+          <tr data-nombre="<%= client.name.toLowerCase() %>"
+              data-presup="<%= client.cant_presupuestos %>"
+              data-deuda="<%= client.deuda_total %>"
+              <%= client.deuda_total > 0 || client.cant_presupuestos > 0 ? 'class="table-warning"' : '' %>>
             <td><%= client.id %></td>
             <td class="col-nombre"><strong><%= client.name %></strong></td>
             <td><%= client.phone || '-' %></td>
@@ -262,7 +271,6 @@
           ⚠️ Esta acción no se puede deshacer.
         </p>
         <form id="formEliminarCliente" action="" method="POST" class="needs-validation">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <div class="mb-3">
             <label for="claveEliminar" class="form-label fw-bold">Ingresa la clave para confirmar:</label>
             <input type="password" id="claveEliminar" name="clave" class="form-control" required
@@ -282,7 +290,7 @@
 </div>
 
 <script>
-  let modalPerfilRiesgo = new bootstrap.Modal(document.getElementById('modalPerfilRiesgo'));
+  let modalPerfilRiesgo = null;
 
   async function analizarRiesgoCliente(clienteId, clienteNombre) {
     // Limpiar modal
@@ -290,6 +298,9 @@
     document.getElementById('riesgoResultado').style.display = 'none';
     document.getElementById('riesgoError').style.display = 'none';
 
+    if (!modalPerfilRiesgo) {
+      modalPerfilRiesgo = new bootstrap.Modal(document.getElementById('modalPerfilRiesgo'));
+    }
     modalPerfilRiesgo.show();
 
     try {
@@ -349,6 +360,63 @@
       document.getElementById('riesgoError').style.display = 'block';
       document.getElementById('riesgoCargando').style.display = 'none';
     }
+  }
+
+  // ═══ ORDENAMIENTO DE TABLA ════════════════════════════════════
+  let sortState = { col: null, dir: 'asc' };
+
+  function ordenarClientes(col) {
+    if (sortState.col === col) {
+      sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortState.col = col;
+      sortState.dir = col === 'nombre' ? 'asc' : 'desc'; // nombre: A-Z por defecto; números: mayor primero
+    }
+
+    // Actualizar flechas
+    ['nombre', 'presup', 'deuda'].forEach(c => {
+      const el = document.getElementById('flecha-' + c);
+      if (el) el.textContent = c === sortState.col ? (sortState.dir === 'asc' ? '↑' : '↓') : '⇅';
+    });
+
+    const tbody = document.querySelector('#tablaClientes tbody');
+
+    // Recolectar pares (fila principal + filas collapse que la siguen)
+    const pares = [];
+    let current = null;
+    Array.from(tbody.children).forEach(row => {
+      if (row.hasAttribute('data-nombre')) {
+        // Es fila principal
+        current = { main: row, collapse: [] };
+        pares.push(current);
+      } else if (current && row.classList.contains('collapse')) {
+        current.collapse.push(row);
+      } else {
+        current = null;
+      }
+    });
+
+    // Ordenar pares
+    pares.sort((a, b) => {
+      let valA, valB;
+      if (sortState.col === 'nombre') {
+        valA = a.main.getAttribute('data-nombre') || '';
+        valB = b.main.getAttribute('data-nombre') || '';
+        return sortState.dir === 'asc'
+          ? valA.localeCompare(valB, 'es')
+          : valB.localeCompare(valA, 'es');
+      } else {
+        valA = parseFloat(a.main.getAttribute('data-' + sortState.col)) || 0;
+        valB = parseFloat(b.main.getAttribute('data-' + sortState.col)) || 0;
+        return sortState.dir === 'asc' ? valA - valB : valB - valA;
+      }
+    });
+
+    // Reinsertar en el DOM en el nuevo orden
+    pares.forEach(par => {
+      tbody.appendChild(par.main);
+      par.collapse.forEach(r => tbody.appendChild(r));
+    });
   }
 
   document.getElementById('buscarCliente').addEventListener('input', function () {

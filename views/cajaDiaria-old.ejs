@@ -74,7 +74,6 @@
     </div>
     <div class="card-body">
       <form action="/caja-diaria/agregar" method="POST">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
   <input type="hidden" name="fecha" value="<%= fechaSeleccionada %>">
         <div class="row">
           <div class="col-md-3 mb-3">
@@ -312,7 +311,6 @@
                     <% if (user && user.rol === 'admin') { %>
                     <form method="POST" action="/caja-diaria/eliminar/<%= mov.id %>" style="display: inline;"
                           onsubmit="return confirm('¿Eliminar este movimiento de $<%= mov.monto.toLocaleString('es-AR', {minimumFractionDigits: 2}) %>?')">
-                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <button type="submit" class="btn btn-sm btn-outline-danger">
                         <i class="bi bi-trash"></i>
                       </button>
@@ -519,7 +517,6 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <form id="formEditar" action="" method="POST">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="modal-header">
           <h5 class="modal-title">Editar Movimiento</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

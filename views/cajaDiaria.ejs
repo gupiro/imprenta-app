@@ -236,18 +236,19 @@
     <table class="table-minimal" data-interactive="true">
       <thead>
         <tr>
-          <th style="width: 10%;">Hora</th>
-          <th style="width: 10%;">Tipo</th>
-          <th style="width: 30%;">Concepto</th>
-          <th style="width: 12%;">Monto</th>
-          <th style="width: 12%;">Método</th>
-          <th style="width: 12%;">Turno</th>
+          <th style="width: 8%;">Hora</th>
+          <th style="width: 9%;">Tipo</th>
+          <th style="width: 26%;">Concepto</th>
+          <th style="width: 11%;">Monto</th>
+          <th style="width: 10%;">Método</th>
+          <th style="width: 10%;">Turno</th>
+          <th style="width: 12%;">Usuario</th>
           <th style="width: 14%;">Acciones</th>
         </tr>
       </thead>
       <tbody id="tablaMovimientos">
         <tr>
-          <td colspan="7" style="text-align: center; padding: 2rem; color: #9ca3af;">
+          <td colspan="8" style="text-align: center; padding: 2rem; color: #9ca3af;">
             <i class="bi bi-inbox"></i> Cargando movimientos...
           </td>
         </tr>
@@ -381,7 +382,7 @@
     if (!movimientos || movimientos.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align: center; padding: 2rem; color: #9ca3af;">
+          <td colspan="8" style="text-align: center; padding: 2rem; color: #9ca3af;">
             <i class="bi bi-inbox"></i> No hay movimientos registrados hoy
           </td>
         </tr>
@@ -405,6 +406,7 @@
         </td>
         <td><small>${m.metodo_pago || '-'}</small></td>
         <td><small>${m.turno || '-'}</small></td>
+        <td><small>${m.creador_username || '<span class="text-muted">-</span>'}</small></td>
         <td>
           <a href="/caja-diaria/editar/${m.id}" class="btn btn-sm btn-outline-primary" title="Editar">
             <i class="bi bi-pencil"></i>

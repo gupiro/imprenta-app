@@ -31,10 +31,10 @@ module.exports = (db) => {
         };
         const columnaSQL = columnasPermitidas[sortBy] || 'm.fecha';
 
-        // Construir query dinámica con JOIN a users para obtener username
+        // Construir query dinámica con JOIN a users para obtener username y rol
         // Soporte de fechas UTC vs local en el campo fecha
         let query = `
-          SELECT m.*, u.username FROM movimientos_caja m
+          SELECT m.*, u.username, u.rol AS creador_rol FROM movimientos_caja m
           LEFT JOIN users u ON m.usuario_id = u.id
           WHERE (
             DATE(m.fecha) = ? OR
@@ -65,13 +65,15 @@ module.exports = (db) => {
         query += ` ORDER BY ${columnaSQL} ${sortDir}`;
         const movimientos = await db.all(query, params) || [];
 
-        const rolUsuario = req.session.user?.rol || 'empleado';
+        const rolUsuario = (req.session.user?.rol || 'empleado').toLowerCase();
         const esAdmin = rolUsuario === 'admin';
-        const usuarioId = req.session.user?.id || null;
 
         let movimientosFiltrados = movimientos;
         if (!esAdmin) {
-          movimientosFiltrados = movimientos.filter(m => m.usuario_id === usuarioId);
+          // Los no-admin NO ven movimientos creados por el admin
+          movimientosFiltrados = movimientos.filter(m =>
+            (m.creador_rol || '').toLowerCase() !== 'admin'
+          );
         }
 
         const totales = {

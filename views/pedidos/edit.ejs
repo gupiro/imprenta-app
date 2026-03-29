@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <!-- ═══ PRODUCTOS ═══════════════════════════════════════════════ -->
+    <!-- ═══ PRODUCTOS EXISTENTES ══════════════════════════════════ -->
     <div class="card border-0 shadow-sm mb-4">
       <div class="card-header bg-success text-white">
         <h6 class="mb-0"><i class="bi bi-box"></i> Productos del Pedido</h6>
@@ -73,7 +73,13 @@
         <% if (items.length === 0) { %>
           <p class="text-muted text-center py-3">No hay productos en este pedido</p>
         <% } %>
-        <% items.forEach(item => { %>
+        <% items.forEach(item => {
+          const cant = item.cantidad || 1;
+          const ancho = item.ancho || 0;
+          const alto = item.alto || 0;
+          const area = (ancho > 0 && alto > 0) ? ancho * alto : 1;
+          const pu = parseFloat((item.precio / (cant * area)).toFixed(4));
+        %>
           <div class="card mb-3 border border-secondary-subtle">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-start mb-3">
@@ -86,23 +92,44 @@
                   <i class="bi bi-trash"></i> Eliminar
                 </button>
               </div>
-              <div class="row g-3">
-                <div class="col-md-2">
+              <div class="row g-3 align-items-end">
+                <div class="col-6 col-md-2">
+                  <label class="form-label fw-bold">P.U. ($)</label>
+                  <input type="number" step="0.01" id="pu_<%= item.id %>" class="form-control"
+                         value="<%= pu %>"
+                         onchange="calcularExistente(<%= item.id %>)">
+                  <small class="text-muted">Precio por unidad/m²</small>
+                </div>
+                <div class="col-6 col-md-2">
+                  <label class="form-label">Cantidad</label>
+                  <input type="number" step="1" name="cantidad_<%= item.id %>" id="cant_<%= item.id %>" class="form-control"
+                         value="<%= cant %>" min="1"
+                         onchange="calcularExistente(<%= item.id %>)">
+                </div>
+                <div class="col-6 col-md-2">
                   <label class="form-label">Ancho (m)</label>
-                  <input type="number" step="0.01" name="ancho_<%= item.id %>" class="form-control"
-                         value="<%= item.ancho || '' %>">
+                  <input type="number" step="0.01" name="ancho_<%= item.id %>" id="ancho_<%= item.id %>" class="form-control"
+                         value="<%= ancho || '' %>" placeholder="0.00"
+                         onchange="calcularExistente(<%= item.id %>)">
                 </div>
-                <div class="col-md-2">
+                <div class="col-6 col-md-2">
                   <label class="form-label">Alto (m)</label>
-                  <input type="number" step="0.01" name="alto_<%= item.id %>" class="form-control"
-                         value="<%= item.alto || '' %>">
+                  <input type="number" step="0.01" name="alto_<%= item.id %>" id="alto_<%= item.id %>" class="form-control"
+                         value="<%= alto || '' %>" placeholder="0.00"
+                         onchange="calcularExistente(<%= item.id %>)">
                 </div>
                 <div class="col-md-2">
-                  <label class="form-label fw-bold">Precio ($)</label>
-                  <input type="number" step="0.01" name="precio_<%= item.id %>" class="form-control fw-bold"
+                  <label class="form-label fw-bold text-success">Total ($)</label>
+                  <input type="number" step="0.01" name="precio_<%= item.id %>" id="precio_<%= item.id %>" class="form-control fw-bold text-success"
                          value="<%= item.precio || 0 %>" required>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-2">
+                  <label class="form-label text-muted" style="font-size:0.8rem;">Área / Cálculo</label>
+                  <div id="formula_<%= item.id %>" class="form-control-plaintext text-muted small" style="font-size:0.8rem;"></div>
+                </div>
+              </div>
+              <div class="row g-3 mt-1">
+                <div class="col-12">
                   <label class="form-label">Descripción</label>
                   <textarea name="descripcion_<%= item.id %>" class="form-control" rows="2"><%= item.descripcion || '' %></textarea>
                 </div>
@@ -122,12 +149,24 @@
         </button>
       </div>
       <div class="card-body">
-        <div id="nuevosProductos">
-          <!-- Filas dinámicas agregadas por JS -->
-        </div>
+        <div id="nuevosProductos"></div>
         <p id="sinNuevos" class="text-muted text-center py-2 mb-0">
           Hacé click en "Agregar Producto" para añadir ítems al pedido.
         </p>
+      </div>
+    </div>
+
+    <!-- ═══ TOTAL DEL PEDIDO ══════════════════════════════════════ -->
+    <div class="card border-0 shadow-sm mb-4 border-warning border-2">
+      <div class="card-body bg-light">
+        <div class="row align-items-center">
+          <div class="col">
+            <span class="text-muted">Total calculado del pedido:</span>
+          </div>
+          <div class="col-auto">
+            <span class="fs-4 fw-bold text-success" id="totalEditDisplay">$0,00</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -145,8 +184,82 @@
 
 <script>
 let nuevoIdx = 0;
-let productosCache = {}; // Almacenar productos por idx para evitar problemas con HTML escaping
+let productosCache = {};
 
+// ═══ CÁLCULO PARA PRODUCTOS EXISTENTES ═══════════════════════
+function calcularExistente(itemId) {
+  const pu     = parseFloat(document.getElementById('pu_' + itemId).value)    || 0;
+  const cant   = parseFloat(document.getElementById('cant_' + itemId).value)   || 1;
+  const ancho  = parseFloat(document.getElementById('ancho_' + itemId).value)  || 0;
+  const alto   = parseFloat(document.getElementById('alto_' + itemId).value)   || 0;
+
+  let total;
+  let formula;
+  if (ancho > 0 && alto > 0) {
+    const area = ancho * alto;
+    total = pu * area * cant;
+    formula = `${pu} × ${ancho}m × ${alto}m × ${cant} = $${total.toFixed(2)}`;
+  } else {
+    total = pu * cant;
+    formula = `${pu} × ${cant} = $${total.toFixed(2)}`;
+  }
+
+  document.getElementById('precio_' + itemId).value = total.toFixed(2);
+  const formulaEl = document.getElementById('formula_' + itemId);
+  if (formulaEl) formulaEl.textContent = formula;
+
+  actualizarTotalEdit();
+}
+
+// ═══ CÁLCULO PARA NUEVOS PRODUCTOS ═══════════════════════════
+function calcularNuevo(idx) {
+  const pu    = parseFloat(document.getElementById('np_pu_' + idx).value)    || 0;
+  const cant  = parseFloat(document.getElementById('np_cant_' + idx).value)  || 1;
+  const ancho = parseFloat(document.getElementById('np_ancho_' + idx).value) || 0;
+  const alto  = parseFloat(document.getElementById('np_alto_' + idx).value)  || 0;
+
+  let total;
+  let formula;
+  if (ancho > 0 && alto > 0) {
+    const area = ancho * alto;
+    total = pu * area * cant;
+    formula = `${pu} × ${ancho}m × ${alto}m × ${cant} = $${total.toFixed(2)}`;
+  } else {
+    total = pu * cant;
+    formula = `${pu} × ${cant} = $${total.toFixed(2)}`;
+  }
+
+  document.getElementById('np_precio_' + idx).value = total.toFixed(2);
+  const formulaEl = document.getElementById('np_formula_' + idx);
+  if (formulaEl) formulaEl.textContent = formula;
+
+  actualizarTotalEdit();
+}
+
+// ═══ TOTAL GENERAL ════════════════════════════════════════════
+function actualizarTotalEdit() {
+  let suma = 0;
+  // Sumar items existentes
+  document.querySelectorAll('[id^="precio_"]').forEach(el => {
+    if (/^precio_\d+$/.test(el.id)) suma += parseFloat(el.value) || 0;
+  });
+  // Sumar nuevos items
+  document.querySelectorAll('[id^="np_precio_"]').forEach(el => {
+    suma += parseFloat(el.value) || 0;
+  });
+  document.getElementById('totalEditDisplay').textContent =
+    '$' + suma.toLocaleString('es-AR', { minimumFractionDigits: 2 });
+}
+
+// ═══ INICIALIZAR FÓRMULAS DE ITEMS EXISTENTES ════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  <% items.forEach(item => { %>
+    calcularExistente(<%= item.id %>);
+  <% }) %>
+  actualizarTotalEdit();
+});
+
+// ═══ AGREGAR NUEVO PRODUCTO ═══════════════════════════════════
 function agregarNuevoProducto() {
   document.getElementById('sinNuevos').style.display = 'none';
   const idx = nuevoIdx++;
@@ -155,43 +268,52 @@ function agregarNuevoProducto() {
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-start mb-3">
           <h6 class="mb-0 text-muted">Nuevo Producto</h6>
-          <button type="button"
-                  class="btn btn-sm btn-outline-danger"
-                  onclick="eliminarNuevoProducto(${idx})">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarNuevoProducto(${idx})">
             <i class="bi bi-trash"></i> Eliminar
           </button>
         </div>
-        <div class="row g-3">
-          <div class="col-md-6">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
             <label class="form-label fw-bold">Producto / Material *</label>
-            <input type="text" id="np_buscar_${idx}" class="form-control" placeholder="Busca producto..."
+            <input type="text" id="np_buscar_${idx}" name="nuevo_material[]" class="form-control"
+                   placeholder="Busca por nombre o código..."
                    oninput="buscarProductoNuevo(${idx}, this.value)">
-            <small class="text-muted" id="np_hint_${idx}" style="display:none;">
-              Selecciona de la lista de sugerencias
-            </small>
-            <div id="np_dropdown_${idx}" class="list-group mt-2" style="max-height:200px; overflow-y:auto;"></div>
-            <input type="hidden" id="np_producto_id_${idx}" name="nuevo_producto_id[]" value="">
-            <input type="hidden" id="np_material_${idx}" name="nuevo_material[]" value="">
+            <div id="np_dropdown_${idx}" class="list-group mt-1" style="max-height:200px; overflow-y:auto; position:relative; z-index:100;"></div>
+            <small class="text-muted" id="np_hint_${idx}" style="display:none;">Seleccioná de la lista</small>
           </div>
-          <div class="col-md-2">
+          <div class="col-6 col-md-2">
+            <label class="form-label fw-bold">P.U. ($)</label>
+            <input type="number" step="0.01" id="np_pu_${idx}" class="form-control"
+                   placeholder="0.00" onchange="calcularNuevo(${idx})" oninput="calcularNuevo(${idx})">
+            <small class="text-muted">Precio unitario/m²</small>
+          </div>
+          <div class="col-6 col-md-1">
             <label class="form-label">Cantidad</label>
-            <input type="number" step="1" name="nuevo_cantidad[]" class="form-control" value="1" min="1">
+            <input type="number" step="1" id="np_cant_${idx}" name="nuevo_cantidad[]" class="form-control"
+                   value="1" min="1" onchange="calcularNuevo(${idx})">
           </div>
-          <div class="col-md-2">
+          <div class="col-6 col-md-1">
             <label class="form-label">Ancho (m)</label>
-            <input type="number" step="0.01" name="nuevo_ancho[]" class="form-control" placeholder="0.00">
+            <input type="number" step="0.01" id="np_ancho_${idx}" name="nuevo_ancho[]" class="form-control"
+                   placeholder="0.00" onchange="calcularNuevo(${idx})" oninput="calcularNuevo(${idx})">
+          </div>
+          <div class="col-6 col-md-1">
+            <label class="form-label">Alto (m)</label>
+            <input type="number" step="0.01" id="np_alto_${idx}" name="nuevo_alto[]" class="form-control"
+                   placeholder="0.00" onchange="calcularNuevo(${idx})" oninput="calcularNuevo(${idx})">
           </div>
           <div class="col-md-2">
-            <label class="form-label">Alto (m)</label>
-            <input type="number" step="0.01" name="nuevo_alto[]" class="form-control" placeholder="0.00">
+            <label class="form-label fw-bold text-success">Total ($)</label>
+            <input type="number" step="0.01" id="np_precio_${idx}" name="nuevo_precio[]" class="form-control fw-bold text-success"
+                   placeholder="0.00" min="0" required>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label text-muted" style="font-size:0.75rem;">Cálculo</label>
+            <div id="np_formula_${idx}" class="text-muted" style="font-size:0.75rem;"></div>
           </div>
         </div>
-        <div class="row g-3 mt-2">
-          <div class="col-md-3">
-            <label class="form-label fw-bold">Precio ($) *</label>
-            <input type="number" step="0.01" name="nuevo_precio[]" class="form-control" placeholder="0.00" min="0" required>
-          </div>
-          <div class="col-md-9">
+        <div class="row g-3 mt-1">
+          <div class="col-12">
             <label class="form-label">Descripción</label>
             <textarea name="nuevo_descripcion[]" class="form-control" rows="2" placeholder="Notas adicionales..."></textarea>
           </div>
@@ -202,6 +324,7 @@ function agregarNuevoProducto() {
   document.getElementById('nuevosProductos').insertAdjacentHTML('beforeend', html);
 }
 
+// ═══ BUSCAR PRODUCTO (AUTOCOMPLETE) ══════════════════════════
 async function buscarProductoNuevo(idx, q) {
   const dropdown = document.getElementById('np_dropdown_' + idx);
   const hint = document.getElementById('np_hint_' + idx);
@@ -222,28 +345,28 @@ async function buscarProductoNuevo(idx, q) {
       return;
     }
 
-    // Guardar productos en cache para evitar problemas con caracteres especiales en HTML
     productosCache[idx] = productos;
-
     hint.style.display = '';
     dropdown.innerHTML = productos.map((p, pidx) => `
-      <div class="list-group-item list-group-item-action text-start np-producto-item" data-idx="${idx}" data-pidx="${pidx}" style="cursor: pointer;">
+      <div class="list-group-item list-group-item-action text-start np-producto-item"
+           data-idx="${idx}" data-pidx="${pidx}" style="cursor:pointer;">
         <div class="fw-bold">${p.nombre}</div>
         <small class="text-muted">
-          $${parseFloat(p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}
-          ${p.codigo ? ' • Código: ' + p.codigo : ''}
+          P.U.: $${parseFloat(p.precio || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})}
+          ${p.codigo ? ' • ' + p.codigo : ''}
+          ${p.tipo ? ' • ' + p.tipo : ''}
         </small>
       </div>
     `).join('');
 
-    // Event delegation para items del dropdown
     dropdown.querySelectorAll('.np-producto-item').forEach(item => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const idx = item.getAttribute('data-idx');
-        const pidx = item.getAttribute('data-pidx');
-        seleccionarProductoDesdeDropdown(parseInt(idx), parseInt(pidx));
+        seleccionarProductoDesdeDropdown(
+          parseInt(item.getAttribute('data-idx')),
+          parseInt(item.getAttribute('data-pidx'))
+        );
       });
     });
   } catch (err) {
@@ -254,19 +377,12 @@ async function buscarProductoNuevo(idx, q) {
 
 function seleccionarProductoDesdeDropdown(idx, pidx) {
   const p = productosCache[idx] && productosCache[idx][pidx];
-  if (!p) {
-    console.error('Producto no encontrado');
-    return;
-  }
-  seleccionarProductoNuevo(idx, null, p.nombre, p.precio);
-}
-
-function seleccionarProductoNuevo(idx, id, nombre, precio) {
-  document.getElementById('np_material_' + idx).value = nombre;
-  document.getElementById('np_precio_' + idx).value = precio;
-  document.getElementById('np_buscar_' + idx).value = nombre;
+  if (!p) return;
+  document.getElementById('np_buscar_' + idx).value = p.nombre;
+  document.getElementById('np_pu_' + idx).value = parseFloat(p.precio || 0).toFixed(2);
   document.getElementById('np_dropdown_' + idx).innerHTML = '';
   document.getElementById('np_hint_' + idx).style.display = 'none';
+  calcularNuevo(idx);
 }
 
 function eliminarNuevoProducto(idx) {
@@ -275,5 +391,6 @@ function eliminarNuevoProducto(idx) {
   if (document.getElementById('nuevosProductos').children.length === 0) {
     document.getElementById('sinNuevos').style.display = '';
   }
+  actualizarTotalEdit();
 }
 </script>

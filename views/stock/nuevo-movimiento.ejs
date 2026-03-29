@@ -11,7 +11,6 @@
       <div class="card border-0 shadow-sm">
         <div class="card-body">
           <form method="POST" action="/stock/nuevo-movimiento">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="mb-3">
               <label class="form-label">Producto <span class="text-danger">*</span></label>
               <select name="producto_id" class="form-control" required id="selectProducto">

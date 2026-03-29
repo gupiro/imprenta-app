@@ -592,12 +592,13 @@ module.exports = (db) => {
             const montoNum = parseFloat(monto);
             const { fecha, timestamp } = obtenerFechaLocal();
             const turno = turnoByHora(timestamp);
+            const usuarioId = req.session.user?.id || null;
 
             // Insertar egreso en movimientos_caja (para que aparezca en caja diaria)
             await db.run(
                 `INSERT INTO movimientos_caja
-                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno, usuario_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     'egreso',
                     (descripcion || 'Gasto Rápido').trim(),
@@ -605,7 +606,8 @@ module.exports = (db) => {
                     montoNum,
                     'manual',
                     timestamp,
-                    turno
+                    turno,
+                    usuarioId
                 ]
             );
 
@@ -638,12 +640,13 @@ module.exports = (db) => {
             const montoNum = parseFloat(monto);
             const { fecha, timestamp } = obtenerFechaLocal();
             const turno = turnoByHora(timestamp);
+            const usuarioId = req.session.user?.id || null;
 
             // Insertar ingreso en movimientos_caja
             await db.run(
                 `INSERT INTO movimientos_caja
-                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                 (tipo, concepto, categoria, monto, metodo_pago, fecha, turno, usuario_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     'ingreso',
                     (descripcion || 'Ingreso Rápido').trim(),
@@ -651,7 +654,8 @@ module.exports = (db) => {
                     montoNum,
                     'manual',
                     timestamp,
-                    turno
+                    turno,
+                    usuarioId
                 ]
             );
 

@@ -107,7 +107,6 @@
                 <% } %>
                 <form action="/presupuestos/<%= p.id %>/eliminar" method="POST" class="d-inline"
                       onsubmit="return confirm('¿Eliminar este presupuesto?');">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <button type="submit" class="btn btn-outline-danger" title="Eliminar">
                     <i class="bi bi-trash"></i>
                   </button>

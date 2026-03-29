@@ -1231,5 +1231,187 @@ module.exports = (db) => {
         }
     });
 
+    // ════════════════════════════════════════════════════════════════
+    // DETALLE DE TARJETA - COMPRAS Y CUOTAS
+    // ════════════════════════════════════════════════════════════════
+
+    // GET /deudas/tarjetas/compras/:compraId/pagar-cuota (must be before /:id)
+    router.post('/tarjetas/compras/:compraId/pagar-cuota', checkPermission, async (req, res) => {
+        try {
+            const compraId = parseInt(req.params.compraId);
+            const compra = await db.get('SELECT * FROM tarjeta_compras WHERE id = ?', [compraId]);
+            if (!compra) {
+                req.flash('error', 'Compra no encontrada');
+                return res.redirect('/deudas/tarjetas');
+            }
+            if (compra.estado !== 'activo') {
+                req.flash('error', 'Esta compra ya está pagada o cancelada');
+                return res.redirect(`/deudas/tarjetas/${compra.tarjeta_id}`);
+            }
+
+            const nuevaCuota = compra.cuota_actual + 1;
+            const nuevoEstado = nuevaCuota > compra.cuotas_total ? 'pagado' : 'activo';
+
+            await db.run(
+                'UPDATE tarjeta_compras SET cuota_actual = ?, estado = ? WHERE id = ?',
+                [Math.min(nuevaCuota, compra.cuotas_total + 1), nuevoEstado, compraId]
+            );
+
+            // Actualizar saldo_adeudado de la tarjeta
+            await db.run(
+                'UPDATE deudas_tarjetas SET saldo_adeudado = MAX(0, saldo_adeudado - ?) WHERE id = ?',
+                [compra.monto_cuota, compra.tarjeta_id]
+            );
+
+            if (nuevoEstado === 'pagado') {
+                req.flash('success', `✅ Última cuota pagada. "${compra.descripcion}" completamente pagado`);
+            } else {
+                req.flash('success', `✅ Cuota ${compra.cuota_actual}/${compra.cuotas_total} de "${compra.descripcion}" registrada`);
+            }
+            res.redirect(`/deudas/tarjetas/${compra.tarjeta_id}`);
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error: ' + err.message);
+            res.redirect('/deudas/tarjetas');
+        }
+    });
+
+    router.post('/tarjetas/compras/:compraId/eliminar', checkPermission, async (req, res) => {
+        try {
+            const compraId = parseInt(req.params.compraId);
+            const compra = await db.get('SELECT * FROM tarjeta_compras WHERE id = ?', [compraId]);
+            if (!compra) {
+                req.flash('error', 'Compra no encontrada');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            // Restar del saldo las cuotas pendientes si estaba activa
+            if (compra.estado === 'activo') {
+                const cuotasPendientes = compra.cuotas_total - compra.cuota_actual + 1;
+                const montoPendiente = cuotasPendientes * compra.monto_cuota;
+                await db.run(
+                    'UPDATE deudas_tarjetas SET saldo_adeudado = MAX(0, saldo_adeudado - ?) WHERE id = ?',
+                    [montoPendiente, compra.tarjeta_id]
+                );
+            }
+
+            await db.run('DELETE FROM tarjeta_compras WHERE id = ?', [compraId]);
+            req.flash('success', `✅ "${compra.descripcion}" eliminado`);
+            res.redirect(`/deudas/tarjetas/${compra.tarjeta_id}`);
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error: ' + err.message);
+            res.redirect('/deudas/tarjetas');
+        }
+    });
+
+    // GET /deudas/tarjetas/:id - Detalle completo de una tarjeta
+    router.get('/tarjetas/:id', checkPermission, async (req, res) => {
+        try {
+            const id = parseInt(req.params.id);
+            const tarjeta = await db.get('SELECT * FROM deudas_tarjetas WHERE id = ?', [id]);
+            if (!tarjeta) {
+                req.flash('error', 'Tarjeta no encontrada');
+                return res.redirect('/deudas/tarjetas');
+            }
+
+            const compras = await db.all(
+                'SELECT * FROM tarjeta_compras WHERE tarjeta_id = ? ORDER BY fecha_compra DESC, created_at DESC',
+                [id]
+            ) || [];
+
+            // Calcular totales
+            const comprasActivas = compras.filter(c => c.estado === 'activo');
+            const obligacionMensual = comprasActivas.reduce((s, c) => s + c.monto_cuota, 0);
+            const totalCompras = comprasActivas.length;
+            const totalPagadas = compras.filter(c => c.estado === 'pagado').length;
+
+            // Calcular días hasta cierre y vencimiento
+            const hoy = new Date();
+            const diaHoy = hoy.getDate();
+            let diasHastaCierre = null;
+            let diasHastaVencimiento = null;
+            if (tarjeta.fecha_cierre) {
+                diasHastaCierre = tarjeta.fecha_cierre - diaHoy;
+                if (diasHastaCierre < 0) {
+                    const diasEnMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+                    diasHastaCierre = (diasEnMes - diaHoy) + tarjeta.fecha_cierre;
+                }
+            }
+            if (tarjeta.fecha_vencimiento) {
+                diasHastaVencimiento = tarjeta.fecha_vencimiento - diaHoy;
+                if (diasHastaVencimiento < 0) {
+                    const diasEnMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+                    diasHastaVencimiento = (diasEnMes - diaHoy) + tarjeta.fecha_vencimiento;
+                }
+            }
+
+            const disponible = Math.max(0, (tarjeta.limite_credito || 0) - (tarjeta.saldo_adeudado || 0));
+            const porcentajeUso = tarjeta.limite_credito > 0
+                ? Math.min(100, (tarjeta.saldo_adeudado / tarjeta.limite_credito) * 100)
+                : 0;
+
+            res.render('deudas/tarjeta-detalle', {
+                title: `Tarjeta: ${tarjeta.nombre_tarjeta}`,
+                tarjeta,
+                compras,
+                comprasActivas,
+                obligacionMensual,
+                totalCompras,
+                totalPagadas,
+                diasHastaCierre,
+                diasHastaVencimiento,
+                disponible,
+                porcentajeUso,
+                success: req.flash('success'),
+                error: req.flash('error')
+            });
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error al cargar tarjeta: ' + err.message);
+            res.redirect('/deudas/tarjetas');
+        }
+    });
+
+    // POST /deudas/tarjetas/:id/compras - Agregar compra/cargo a tarjeta
+    router.post('/tarjetas/:id/compras', checkPermission, async (req, res) => {
+        try {
+            const tarjetaId = parseInt(req.params.id);
+            const { descripcion, monto_total, cuotas_total, fecha_compra, categoria, tipo, notas } = req.body;
+
+            const montoNum = parseFloat(monto_total);
+            const cuotasNum = Math.max(1, parseInt(cuotas_total) || 1);
+
+            if (!descripcion || isNaN(montoNum) || montoNum <= 0) {
+                req.flash('error', 'Ingresá una descripción y un monto válido');
+                return res.redirect(`/deudas/tarjetas/${tarjetaId}`);
+            }
+
+            const montoCuota = parseFloat((montoNum / cuotasNum).toFixed(2));
+            const tipoValido = ['compra', 'debito_automatico', 'gasto_fijo'].includes(tipo) ? tipo : 'compra';
+
+            await db.run(
+                `INSERT INTO tarjeta_compras (tarjeta_id, descripcion, monto_total, cuotas_total, cuota_actual, monto_cuota, fecha_compra, categoria, tipo, notas)
+                 VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`,
+                [tarjetaId, descripcion.trim(), montoNum, cuotasNum, montoCuota,
+                 fecha_compra || new Date().toISOString().slice(0, 10),
+                 categoria?.trim() || 'General', tipoValido, notas?.trim() || null]
+            );
+
+            // Actualizar saldo_adeudado de la tarjeta
+            await db.run(
+                'UPDATE deudas_tarjetas SET saldo_adeudado = saldo_adeudado + ? WHERE id = ?',
+                [montoNum, tarjetaId]
+            );
+
+            req.flash('success', `✅ "${descripcion}" agregado (${cuotasNum} cuota${cuotasNum > 1 ? 's' : ''} de $${montoCuota.toLocaleString('es-AR', {minimumFractionDigits: 2})})`);
+            res.redirect(`/deudas/tarjetas/${tarjetaId}`);
+        } catch (err) {
+            console.error('Error:', err);
+            req.flash('error', 'Error: ' + err.message);
+            res.redirect('/deudas/tarjetas');
+        }
+    });
+
     return router;
 };

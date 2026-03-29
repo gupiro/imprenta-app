@@ -291,18 +291,25 @@ async function startServer() {
             const { obtenerFechaLocal } = require('./utils/dateHelper');
             const hoy = obtenerFechaLocal().fecha;
             const movimientos = await dbInstance.all(
-                `SELECT id, tipo, concepto, monto, metodo_pago, turno, fecha, categoria
-                 FROM movimientos_caja
+                `SELECT m.id, m.tipo, m.concepto, m.monto, m.metodo_pago, m.turno, m.fecha, m.categoria,
+                        u.username AS creador_username, u.rol AS creador_rol
+                 FROM movimientos_caja m
+                 LEFT JOIN users u ON m.usuario_id = u.id
                  WHERE (
-                    DATE(fecha) = ? OR
-                    DATE(fecha, 'localtime') = ? OR
-                    SUBSTR(fecha, 1, 10) = ?
+                    DATE(m.fecha) = ? OR
+                    DATE(m.fecha, 'localtime') = ? OR
+                    SUBSTR(m.fecha, 1, 10) = ?
                  )
-                 ORDER BY fecha DESC`,
+                 ORDER BY m.fecha DESC`,
                 [hoy, hoy, hoy]
             ) || [];
 
-            res.json(movimientos);
+            const esAdmin = (req.session.user?.rol || '').toLowerCase() === 'admin';
+            const resultado = esAdmin
+                ? movimientos
+                : movimientos.filter(m => (m.creador_rol || '').toLowerCase() !== 'admin');
+
+            res.json(resultado);
         } catch(e) {
             console.error('Error en /api/caja-movimientos:', e.message);
             res.status(500).json({ error: e.message });

@@ -20,7 +20,7 @@ module.exports = (db) => {
 
   // Función para obtener pedidos con filtrado, búsqueda y ordenamiento
   async function obtenerPedidosFiltrados(estado = '', search = '', sortBy = 'fecha', sortDir = 'desc', mes = '', deuda = '', hoy = '', estadoFiltro = '') {
-    let query = 'SELECT p.*, c.name AS cliente_nombre, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE 1=1';
+    let query = 'SELECT p.*, c.name AS cliente_nombre, c.phone AS cliente_phone, u.username FROM pedidos p LEFT JOIN clients c ON p.client_id = c.id LEFT JOIN users u ON p.usuario_id = u.id WHERE 1=1';
     const params = [];
 
     if (estado) {
@@ -723,14 +723,15 @@ module.exports = (db) => {
       const itemIds = [].concat(req.body.item_id || []);
       let totalItems = 0;
       for (const itemId of itemIds) {
-        const ancho  = parseFloat(req.body[`ancho_${itemId}`])  || 0;
-        const alto   = parseFloat(req.body[`alto_${itemId}`])   || 0;
-        const precio = parseFloat(req.body[`precio_${itemId}`]) || 0;
-        const desc   = req.body[`descripcion_${itemId}`] || '';
+        const ancho    = parseFloat(req.body[`ancho_${itemId}`])    || 0;
+        const alto     = parseFloat(req.body[`alto_${itemId}`])     || 0;
+        const cantidad = parseFloat(req.body[`cantidad_${itemId}`]) || 1;
+        const precio   = parseFloat(req.body[`precio_${itemId}`])   || 0;
+        const desc     = req.body[`descripcion_${itemId}`] || '';
         totalItems += precio;
         await db.run(
-          'UPDATE productos SET ancho = ?, alto = ?, precio = ?, descripcion = ? WHERE id = ? AND pedido_id = ?',
-          [ancho, alto, precio, desc, itemId, id]
+          'UPDATE productos SET ancho = ?, alto = ?, cantidad = ?, precio = ?, descripcion = ? WHERE id = ? AND pedido_id = ?',
+          [ancho, alto, cantidad, precio, desc, itemId, id]
         );
       }
 

@@ -754,7 +754,16 @@ async function startServer() {
     // ────────────────────────────────────────────────────────────────────
     // INICIAR SERVIDOR
     // ────────────────────────────────────────────────────────────────────
+app.get('/descargar-bd-segura', (req, res) => {
+  const fs = require('fs');
+  const dbPath = '/var/lib/imprenta.db';
 
+  if (!fs.existsSync(dbPath)) {
+    return res.status(404).send('No se encontró la base de datos');
+  }
+
+  res.download(dbPath, 'imprenta-produccion.db');
+});
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, '0.0.0.0', () => console.log(`\n✅ Server corriendo en http://localhost:${PORT}\n`));
 }
@@ -762,4 +771,4 @@ async function startServer() {
 startServer();
 
 
-
+agregar descarga temporal de bd

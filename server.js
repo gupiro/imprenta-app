@@ -748,12 +748,6 @@ async function startServer() {
     // ────────────────────────────────────────────────────────────────────
     // 404
     // ────────────────────────────────────────────────────────────────────
-
-    app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
-
-    // ────────────────────────────────────────────────────────────────────
-    // INICIAR SERVIDOR
-    // ────────────────────────────────────────────────────────────────────
 app.get('/descargar-bd-segura', (req, res) => {
   const fs = require('fs');
   const dbPath = '/var/lib/imprenta.db';
@@ -764,6 +758,12 @@ app.get('/descargar-bd-segura', (req, res) => {
 
   res.download(dbPath, 'imprenta-produccion.db');
 });
+    app.use((_, res) => res.status(404).render('404', { title: 'Página no encontrada' }));
+
+    // ────────────────────────────────────────────────────────────────────
+    // INICIAR SERVIDOR
+    // ────────────────────────────────────────────────────────────────────
+
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, '0.0.0.0', () => console.log(`\n✅ Server corriendo en http://localhost:${PORT}\n`));
 }
